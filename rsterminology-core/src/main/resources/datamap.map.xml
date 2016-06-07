@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<data-map xmlns="http://cayenne.apache.org/schema/7/modelMap"
+	 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	 xsi:schemaLocation="http://cayenne.apache.org/schema/7/modelMap http://cayenne.apache.org/schema/7/modelMap.xsd"
+	 project-version="7">
+	<property name="defaultPackage" value="com.eldrix.terminology.snomedct"/>
+	<property name="defaultSchema" value="public"/>
+	<db-entity name="t_cached_parent_concepts" schema="public">
+		<db-attribute name="child_concept_id" type="BIGINT" isPrimaryKey="true" isMandatory="true" length="19"/>
+		<db-attribute name="parent_concept_id" type="BIGINT" isPrimaryKey="true" isMandatory="true" length="19"/>
+	</db-entity>
+	<db-entity name="t_concept" schema="public">
+		<db-attribute name="concept_id" type="BIGINT" isPrimaryKey="true" isMandatory="true" length="19"/>
+		<db-attribute name="concept_status_code" type="INTEGER" isMandatory="true" length="10"/>
+		<db-attribute name="ctv_id" type="VARCHAR" isMandatory="true" length="10"/>
+		<db-attribute name="fully_specified_name" type="VARCHAR" isMandatory="true" length="255"/>
+		<db-attribute name="is_primitive" type="INTEGER" isMandatory="true" length="10"/>
+		<db-attribute name="snomed_id" type="VARCHAR" isMandatory="true" length="10"/>
+	</db-entity>
+	<db-entity name="t_description" schema="public">
+		<db-attribute name="concept_id" type="BIGINT" isMandatory="true" length="19"/>
+		<db-attribute name="description_id" type="BIGINT" isPrimaryKey="true" isMandatory="true" length="19"/>
+		<db-attribute name="description_status_code" type="INTEGER" isMandatory="true" length="10"/>
+		<db-attribute name="description_type_code" type="INTEGER" isMandatory="true" length="10"/>
+		<db-attribute name="initial_capital_status" type="VARCHAR" isMandatory="true" length="10"/>
+		<db-attribute name="language_code" type="VARCHAR" isMandatory="true" length="10"/>
+		<db-attribute name="term" type="VARCHAR" isMandatory="true" length="255"/>
+	</db-entity>
+	<db-entity name="t_relationship" schema="public">
+		<db-attribute name="characteristic_type" type="INTEGER" isMandatory="true" length="10"/>
+		<db-attribute name="refinability" type="INTEGER" isMandatory="true" length="10"/>
+		<db-attribute name="relationship_group" type="VARCHAR" isMandatory="true" length="10"/>
+		<db-attribute name="relationship_id" type="BIGINT" isPrimaryKey="true" isGenerated="true" isMandatory="true" length="19"/>
+		<db-attribute name="relationship_type_concept_id" type="BIGINT" isMandatory="true" length="19"/>
+		<db-attribute name="source_concept_id" type="BIGINT" isMandatory="true" length="19"/>
+		<db-attribute name="target_concept_id" type="BIGINT" isMandatory="true" length="19"/>
+	</db-entity>
+	<obj-entity name="Concept" className="com.eldrix.terminology.snomedct.Concept" dbEntityName="t_concept">
+		<obj-attribute name="conceptId" type="java.lang.Long" db-attribute-path="concept_id"/>
+		<obj-attribute name="conceptStatusCode" type="java.lang.Integer" db-attribute-path="concept_status_code"/>
+		<obj-attribute name="ctvId" type="java.lang.String" db-attribute-path="ctv_id"/>
+		<obj-attribute name="fullySpecifiedName" type="java.lang.String" db-attribute-path="fully_specified_name"/>
+		<obj-attribute name="isPrimitive" type="java.lang.Integer" db-attribute-path="is_primitive"/>
+		<obj-attribute name="snomedId" type="java.lang.String" db-attribute-path="snomed_id"/>
+	</obj-entity>
+	<obj-entity name="Description" className="com.eldrix.terminology.snomedct.Description" dbEntityName="t_description">
+		<obj-attribute name="descriptionId" type="java.lang.Long" db-attribute-path="description_id"/>
+		<obj-attribute name="descriptionStatusCode" type="java.lang.Integer" db-attribute-path="description_status_code"/>
+		<obj-attribute name="descriptionTypeCode" type="java.lang.Integer" db-attribute-path="description_type_code"/>
+		<obj-attribute name="initialCapitalStatus" type="java.lang.String" db-attribute-path="initial_capital_status"/>
+		<obj-attribute name="languageCode" type="java.lang.String" db-attribute-path="language_code"/>
+		<obj-attribute name="term" type="java.lang.String" db-attribute-path="term"/>
+	</obj-entity>
+	<obj-entity name="Relationship" className="com.eldrix.terminology.snomedct.Relationship" dbEntityName="t_relationship">
+		<obj-attribute name="characteristicType" type="java.lang.Integer" db-attribute-path="characteristic_type"/>
+		<obj-attribute name="refinability" type="java.lang.Integer" db-attribute-path="refinability"/>
+		<obj-attribute name="relationshipGroup" type="java.lang.String" db-attribute-path="relationship_group"/>
+	</obj-entity>
+	<db-relationship name="childConcept" source="t_cached_parent_concepts" target="t_concept" toMany="false">
+		<db-attribute-pair source="child_concept_id" target="concept_id"/>
+	</db-relationship>
+	<db-relationship name="parentConcept" source="t_cached_parent_concepts" target="t_concept" toMany="false">
+		<db-attribute-pair source="parent_concept_id" target="concept_id"/>
+	</db-relationship>
+	<db-relationship name="cachedChildConcepts" source="t_concept" target="t_cached_parent_concepts" toMany="true">
+		<db-attribute-pair source="concept_id" target="parent_concept_id"/>
+	</db-relationship>
+	<db-relationship name="cachedParentConcepts" source="t_concept" target="t_cached_parent_concepts" toMany="true">
+		<db-attribute-pair source="concept_id" target="child_concept_id"/>
+	</db-relationship>
+	<db-relationship name="childRelationships" source="t_concept" target="t_relationship" toMany="true">
+		<db-attribute-pair source="concept_id" target="target_concept_id"/>
+	</db-relationship>
+	<db-relationship name="descriptions" source="t_concept" target="t_description" toMany="true">
+		<db-attribute-pair source="concept_id" target="concept_id"/>
+	</db-relationship>
+	<db-relationship name="parentRelationships" source="t_concept" target="t_relationship" toMany="true">
+		<db-attribute-pair source="concept_id" target="source_concept_id"/>
+	</db-relationship>
+	<db-relationship name="concept" source="t_description" target="t_concept" toMany="false">
+		<db-attribute-pair source="concept_id" target="concept_id"/>
+	</db-relationship>
+	<db-relationship name="relationshipTypeConcept" source="t_relationship" target="t_concept" toMany="false">
+		<db-attribute-pair source="relationship_type_concept_id" target="concept_id"/>
+	</db-relationship>
+	<db-relationship name="sourceConcept" source="t_relationship" target="t_concept" toMany="false">
+		<db-attribute-pair source="source_concept_id" target="concept_id"/>
+	</db-relationship>
+	<db-relationship name="targetConcept" source="t_relationship" target="t_concept" toMany="false">
+		<db-attribute-pair source="target_concept_id" target="concept_id"/>
+	</db-relationship>
+	<obj-relationship name="childConcepts" source="Concept" target="Concept" deleteRule="Deny" db-relationship-path="cachedChildConcepts.childConcept"/>
+	<obj-relationship name="childRelationships" source="Concept" target="Relationship" deleteRule="Deny" db-relationship-path="childRelationships"/>
+	<obj-relationship name="descriptions" source="Concept" target="Description" deleteRule="Deny" db-relationship-path="descriptions"/>
+	<obj-relationship name="parentConcepts" source="Concept" target="Concept" deleteRule="Deny" db-relationship-path="cachedParentConcepts.parentConcept"/>
+	<obj-relationship name="parentRelationships" source="Concept" target="Relationship" deleteRule="Deny" db-relationship-path="parentRelationships"/>
+	<obj-relationship name="concept" source="Description" target="Concept" deleteRule="Nullify" db-relationship-path="concept"/>
+	<obj-relationship name="relationshipTypeConcept" source="Relationship" target="Concept" deleteRule="Nullify" db-relationship-path="relationshipTypeConcept"/>
+	<obj-relationship name="sourceConcept" source="Relationship" target="Concept" deleteRule="Nullify" db-relationship-path="sourceConcept"/>
+	<obj-relationship name="targetConcept" source="Relationship" target="Concept" deleteRule="Nullify" db-relationship-path="targetConcept"/>
+</data-map>

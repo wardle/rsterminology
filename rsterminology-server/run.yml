@@ -1,0 +1,14 @@
+jdbc:
+  rsdb:
+    url: jdbc:postgresql:rsdb
+    driver: org.postgresql.Driver
+
+cayenne:
+  datasource: rsdb
+  createSchema: false
+
+log:
+  level: warn
+  loggers:
+    com.eldrix.terminology.snomedct:
+      level: debug
