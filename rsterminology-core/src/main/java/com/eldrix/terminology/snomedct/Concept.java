@@ -179,16 +179,47 @@ public class Concept extends _Concept {
 		if (_cachedRecursiveParents == null) {
 			synchronized(this) {
 				if (_cachedRecursiveParents == null) {
-					HashSet<Long> parents = new HashSet<Long>();
-					getParentConcepts().forEach(c -> {
-						parents.add(c.getConceptId());
-					});
-					_cachedRecursiveParents = Collections.unmodifiableSet(parents);
+					_cachedRecursiveParents = _getRecursiveParentsFromDatabaseCache();
 				}
 			}
 		}
 		return _cachedRecursiveParents;
 	}
 
+	public void clearCachedRecursiveParents() {
+		if (_cachedRecursiveParents != null) {
+			synchronized(this) {
+				if (_cachedRecursiveParents != null) {
+					_cachedRecursiveParents = null;
+				}
+			}			
+		}
+	}
+
+	/**
+	 * Determine recursive parents from a fetch the result of which is cached on a per-concept
+	 * basis.
+	 * @return
+	 */
+	private Set<Long> _getRecursiveParentsFromFetch() {
+		Set<Long> parents = new HashSet<>(ParentCache.fetchRecursiveParentsForConcept(getObjectContext(), getConceptId()));
+		return Collections.unmodifiableSet(parents);
+	}
+
+	/**
+	 * Determine recursive parents from the database table that acts as a cache.
+	 * This is the legacy method for determining parents, and will be used in some profiling
+	 * tests to see whether it is better to use that an in-memory per-concept cache.
+	 * The benefit of this method is that prefetching means that a concept and its parents
+	 * can be pulled in using one fetch.
+	 * @return
+	 */
+	private Set<Long> _getRecursiveParentsFromDatabaseCache() {
+		HashSet<Long> parents = new HashSet<Long>();
+		getParentConcepts().forEach(c -> {
+			parents.add(c.getConceptId());
+		});
+		return Collections.unmodifiableSet(parents);
+	}
 
 }

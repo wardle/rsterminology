@@ -59,7 +59,7 @@
 	<db-relationship name="childConcept" source="t_cached_parent_concepts" target="t_concept" toMany="false">
 		<db-attribute-pair source="child_concept_id" target="concept_id"/>
 	</db-relationship>
-	<db-relationship name="parentConcept" source="t_cached_parent_concepts" target="t_concept" toMany="false">
+	<db-relationship name="parentConcept" source="t_cached_parent_concepts" target="t_concept" toDependentPK="true" toMany="false">
 		<db-attribute-pair source="parent_concept_id" target="concept_id"/>
 	</db-relationship>
 	<db-relationship name="cachedChildConcepts" source="t_concept" target="t_cached_parent_concepts" toMany="true">
