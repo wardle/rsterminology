@@ -12,7 +12,31 @@ import org.apache.cayenne.exp.Expression;
 
 import com.eldrix.terminology.snomedct.Semantic.RelationType;
 import com.eldrix.terminology.snomedct.auto._Concept;
-
+/**
+ * A SNOMED CT clinical concept.
+ * A concept is described by multiple descriptions.
+ *
+ * ConceptID: the unique SNOMED CT identifier for this concept.
+ * ConceptStatus: status, whether in active use or not, and if not, indicates reason why withdrawn.
+ * FullySpecifiedName: unique phrase describing concept (unambiguously).
+ * CTV3ID: Read code for this concept.
+ * SNOMEDID: SNOMED identifier for this concept.
+ * isPrimitive: indicates whether concept is  primitive or fully defined by its current set of defining characteristics.
+ *
+ * Concept status:
+ * 0: current (considered active)
+ * 1: Retired (considered inactive)
+ * 2: Duplicate (considered inactive)
+ * 3: Outdated (considered inactive)
+ * 4: Ambiguous (considered inactive)
+ * 5: Erroneous (considered inactive)
+ * 6: Limited (considered active)
+ * 10: Moved elsewhere (considered inactive)
+ * 11: Pending move (considered active)
+ *
+ *
+ * @author Mark Wardle
+ */
 public class Concept extends _Concept {
 	private static final long serialVersionUID = 1L;
 	private Description _preferredDescription;
@@ -49,10 +73,19 @@ public class Concept extends _Concept {
 		return Status._lookup.get(super.getConceptStatusCode());
 	}
 
+	/**
+	 * Is this concept active? For most use-cases, only active concepts should be used.
+	 * @return
+	 */
 	public boolean isActive() {
 		return getStatus().active;
 	}
 
+	/**
+	 * Return the preferred description for this concept.
+	 * TODO: This should take into account the language preferences.
+	 * @return
+	 */
 	public Description getPreferredDescription() {
 		if (_preferredDescription == null) {
 			List<Description> all = getDescriptions();
@@ -89,15 +122,30 @@ public class Concept extends _Concept {
 		return qual.filterObjects(getParentRelationships());
 	}
 
-	
+	/**
+	 * Return the relationships for this concept of the specified type.
+	 * @param type
+	 * @return
+	 */
 	public List<Relationship> getRelationshipsOfType(RelationType type) {
 		return getRelationshipsOfType(type.conceptId);
 	}
-	
+
+
+	/**
+	 * Is this concept a type of the specified concept?
+	 * @param c
+	 * @return
+	 */
 	public boolean isAConcept(Concept c) {
 		return isAConcept(c.getConceptId());
 	}
 
+	/**
+	 * Is this concept a type of the specified concept?
+	 * @param c
+	 * @return
+	 */
 	public boolean isAConcept(long conceptId) {
 		if (this.getConceptId() == conceptId) {
 			return true;
@@ -105,6 +153,11 @@ public class Concept extends _Concept {
 		return getCachedRecursiveParents().contains(conceptId);
 	}
 
+	/**
+	 * Is this concept a type of one of the specified concepts?
+	 * @param conceptIds
+	 * @return
+	 */
 	public boolean isAConcept(long[] conceptIds) {
 		for (long conceptId : conceptIds) {
 			if (this.getConceptId() == conceptId) {
@@ -117,6 +170,11 @@ public class Concept extends _Concept {
 		return false;
 	}
 
+	/**
+	 * This determines a list of concept identifiers that are the recursive parents
+	 * of this concept.
+	 * @return
+	 */
 	public Set<Long> getCachedRecursiveParents() {
 		if (_cachedRecursiveParents == null) {
 			synchronized(this) {
