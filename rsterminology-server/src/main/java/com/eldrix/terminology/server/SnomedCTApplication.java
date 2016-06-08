@@ -1,10 +1,13 @@
 package com.eldrix.terminology.server;
 
+import com.eldrix.terminology.server.commands.BuildParentCache;
+import com.eldrix.terminology.server.commands.CreateIndex;
 import com.google.inject.Binder;
 import com.google.inject.Module;
+import com.google.inject.multibindings.Multibinder;
 import com.nhl.bootique.BQCoreModule;
 import com.nhl.bootique.Bootique;
-import com.nhl.bootique.cli.CliOption;
+import com.nhl.bootique.command.Command;
 import com.nhl.bootique.jersey.JerseyModule;
 
 /**
@@ -26,15 +29,8 @@ public class SnomedCTApplication implements Module {
 
 	@Override
 	public void configure(Binder binder) {
-		BQCoreModule.contributeCommands(binder)
-		.addBinding()
-		.to(CreateIndex.class);
-		CliOption option = CliOption
-				.builder("email", "An admin email address")
-				.valueRequired("email_address")
-				.build();
-		BQCoreModule.contributeOptions(binder)
-		.addBinding()
-		.toInstance(option);
+		Multibinder<Command> multibinder = BQCoreModule.contributeCommands(binder);
+		multibinder.addBinding().to(CreateIndex.class);
+		multibinder.addBinding().to(BuildParentCache.class);
 	}
 }
