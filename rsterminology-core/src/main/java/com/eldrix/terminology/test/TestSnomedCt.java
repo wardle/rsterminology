@@ -14,6 +14,8 @@ import org.apache.cayenne.configuration.server.ServerRuntime;
 import org.apache.cayenne.exp.Expression;
 import org.apache.cayenne.exp.ExpressionFactory;
 import org.apache.cayenne.query.ObjectSelect;
+import org.apache.cayenne.validation.ValidationException;
+import org.apache.cayenne.validation.ValidationResult;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.queryParser.ParseException;
 import org.junit.After;
@@ -122,4 +124,27 @@ public class TestSnomedCt {
 		// are methods equivalent?
 		assertTrue(parents2.equals(new HashSet<Long>(parents)));
 	}
+	
+	@Test
+	public void testConceptCreation() {
+		ObjectContext context = getRuntime().newContext();
+		Concept c = context.newObject(Concept.class);
+		c.setConceptId(123456L);		// an invalid concept identifier
+		c.setFullySpecifiedName("A test concept");
+		c.setCtvId("ctvId");
+		c.setIsPrimitive(0);
+		c.setSnomedId("snomedid");
+		c.setConceptStatusCode(0);
+		try {
+			context.commitChanges();
+			assertFalse("Didn't catch validation errors", true);
+		}
+		catch (ValidationException e) {
+			ValidationResult r = e.getValidationResult();
+			assertTrue(r.hasFailures(c));
+			assertTrue("Invalid concept identifier".equals(r.getFailures().get(0).getError()));
+		}
+		
+	}
+
 }
