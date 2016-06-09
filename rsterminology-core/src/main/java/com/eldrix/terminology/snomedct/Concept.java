@@ -9,6 +9,8 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.cayenne.exp.Expression;
+import org.apache.cayenne.validation.BeanValidationFailure;
+import org.apache.cayenne.validation.ValidationResult;
 
 import com.eldrix.terminology.snomedct.Semantic.RelationType;
 import com.eldrix.terminology.snomedct.auto._Concept;
@@ -68,7 +70,7 @@ public class Concept extends _Concept {
 			this.active = active;
 		}
 	}
-
+	
 	public Status getStatus() {
 		return Status._lookup.get(super.getConceptStatusCode());
 	}
@@ -222,4 +224,14 @@ public class Concept extends _Concept {
 		return Collections.unmodifiableSet(parents);
 	}
 
+	@Override
+	protected void validateForSave(ValidationResult validationResult) {
+		super.validateForSave(validationResult);
+		if (new SnomedCtIdentifier(getConceptId()).isValidConcept() == false) {
+			validationResult.addFailure(new BeanValidationFailure(this, Concept.CONCEPT_ID.getName(), "Invalid concept identifier"));
+		}
+		
+	}
+
+	
 }
