@@ -2,6 +2,7 @@ package com.eldrix.terminology.server;
 
 import com.eldrix.terminology.server.commands.BuildParentCache;
 import com.eldrix.terminology.server.commands.CreateIndex;
+import com.eldrix.terminology.server.commands.ImportRf1;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.multibindings.Multibinder;
@@ -32,5 +33,6 @@ public class SnomedCTApplication implements Module {
 		Multibinder<Command> multibinder = BQCoreModule.contributeCommands(binder);
 		multibinder.addBinding().to(CreateIndex.class);
 		multibinder.addBinding().to(BuildParentCache.class);
+		multibinder.addBinding().to(ImportRf1.class);
 	}
 }

@@ -30,7 +30,7 @@
 		<db-attribute name="characteristic_type" type="INTEGER" isMandatory="true" length="10"/>
 		<db-attribute name="refinability" type="INTEGER" isMandatory="true" length="10"/>
 		<db-attribute name="relationship_group" type="VARCHAR" isMandatory="true" length="10"/>
-		<db-attribute name="relationship_id" type="BIGINT" isPrimaryKey="true" isGenerated="true" isMandatory="true" length="19"/>
+		<db-attribute name="relationship_id" type="BIGINT" isPrimaryKey="true" isMandatory="true" length="19"/>
 		<db-attribute name="relationship_type_concept_id" type="BIGINT" isMandatory="true" length="19"/>
 		<db-attribute name="source_concept_id" type="BIGINT" isMandatory="true" length="19"/>
 		<db-attribute name="target_concept_id" type="BIGINT" isMandatory="true" length="19"/>
@@ -44,6 +44,7 @@
 		<obj-attribute name="snomedId" type="java.lang.String" db-attribute-path="snomed_id"/>
 	</obj-entity>
 	<obj-entity name="Description" className="com.eldrix.terminology.snomedct.Description" dbEntityName="t_description">
+		<obj-attribute name="conceptId" type="java.lang.Long" db-attribute-path="concept_id"/>
 		<obj-attribute name="descriptionId" type="java.lang.Long" db-attribute-path="description_id"/>
 		<obj-attribute name="descriptionStatusCode" type="java.lang.Integer" db-attribute-path="description_status_code"/>
 		<obj-attribute name="descriptionTypeCode" type="java.lang.Integer" db-attribute-path="description_type_code"/>
@@ -55,6 +56,10 @@
 		<obj-attribute name="characteristicType" type="java.lang.Integer" db-attribute-path="characteristic_type"/>
 		<obj-attribute name="refinability" type="java.lang.Integer" db-attribute-path="refinability"/>
 		<obj-attribute name="relationshipGroup" type="java.lang.String" db-attribute-path="relationship_group"/>
+		<obj-attribute name="relationshipId" type="java.lang.Long" db-attribute-path="relationship_id"/>
+		<obj-attribute name="relationshipTypeConceptId" type="java.lang.Long" db-attribute-path="relationship_type_concept_id"/>
+		<obj-attribute name="sourceConceptId" type="java.lang.Long" db-attribute-path="source_concept_id"/>
+		<obj-attribute name="targetConceptId" type="java.lang.Long" db-attribute-path="target_concept_id"/>
 	</obj-entity>
 	<db-relationship name="childConcept" source="t_cached_parent_concepts" target="t_concept" toMany="false">
 		<db-attribute-pair source="child_concept_id" target="concept_id"/>

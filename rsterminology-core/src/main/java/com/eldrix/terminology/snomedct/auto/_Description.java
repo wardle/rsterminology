@@ -17,6 +17,7 @@ public abstract class _Description extends CayenneDataObject {
 
     public static final String DESCRIPTION_ID_PK_COLUMN = "description_id";
 
+    public static final Property<Long> CONCEPT_ID = new Property<Long>("conceptId");
     public static final Property<Long> DESCRIPTION_ID = new Property<Long>("descriptionId");
     public static final Property<Integer> DESCRIPTION_STATUS_CODE = new Property<Integer>("descriptionStatusCode");
     public static final Property<Integer> DESCRIPTION_TYPE_CODE = new Property<Integer>("descriptionTypeCode");
@@ -24,6 +25,13 @@ public abstract class _Description extends CayenneDataObject {
     public static final Property<String> LANGUAGE_CODE = new Property<String>("languageCode");
     public static final Property<String> TERM = new Property<String>("term");
     public static final Property<Concept> CONCEPT = new Property<Concept>("concept");
+
+    public void setConceptId(Long conceptId) {
+        writeProperty("conceptId", conceptId);
+    }
+    public Long getConceptId() {
+        return (Long)readProperty("conceptId");
+    }
 
     public void setDescriptionId(Long descriptionId) {
         writeProperty("descriptionId", descriptionId);
