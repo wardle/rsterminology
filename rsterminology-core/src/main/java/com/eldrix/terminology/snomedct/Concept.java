@@ -230,7 +230,6 @@ public class Concept extends _Concept {
 		if (new SnomedCtIdentifier(getConceptId()).isValidConcept() == false) {
 			validationResult.addFailure(new BeanValidationFailure(this, Concept.CONCEPT_ID.getName(), "Invalid concept identifier"));
 		}
-		
 	}
 
 	
