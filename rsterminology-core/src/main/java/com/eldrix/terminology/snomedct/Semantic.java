@@ -1,6 +1,10 @@
 package com.eldrix.terminology.snomedct;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class Semantic {
 
@@ -35,4 +39,227 @@ public class Semantic {
 		}
 	}
 	
+	/**
+	 * The DM&D consists of the following structure:
+	 * VTM - Virtual therapeutic moiety
+	 * VMP - Virtual medicinal product
+	 * VMPP - Virtual medicinal product pack
+	 * AMP - Actual medicinal product
+	 * AMPP - Actual medicinal product pack
+	 * TF - Trade family
+	 * A TF has multiple AMP.
+	 * An AMP has multiple AMPP
+	 * A VMPP has multiple AMPP
+	 * A VMP has multiple AMPs and multiple VMPPs
+	 * A VTM has multiple VMP. 
+	 * 
+	 * @see http://www.nhsbsa.nhs.uk/PrescriptionServices/Documents/PrescriptionServices/dmd_Implementation_Guide_Secondary_Care.pdf
+	 * @author mark
+	 *
+	 */
+	public enum MedicationProduct {
+		TRADE_FAMILY("TF", 9191801000001103L),
+		VIRTUAL_MEDICINAL_PRODUCT("VMP", 10363801000001108L),
+		VIRTUAL_MEDICINAL_PRODUCT_PACK("VMPP",8653601000001108L),
+		VIRTUAL_THERAPEUTIC_MOIETY("VTM",10363701000001104L),
+		ACTUAL_MEDICINAL_PRODUCT("AMP", 10363901000001102L),
+		ACTUAL_MEDICINAL_PRODUCT_PACK("AMPP", 10364001000001104L);
+
+		private String _abbreviation;
+		private long _conceptId;
+
+		MedicationProduct(String abbreviation, long conceptId) {
+			_abbreviation = abbreviation;
+			_conceptId = conceptId;
+
+		}
+		
+		public String abbreviation() {
+			return _abbreviation;
+		}
+		
+		/**
+		 * Determine the type of pharmaceutical product of this concept
+		 * @param c
+		 * @return
+		 */
+		public static MedicationProduct productForConcept(Concept c) {
+			for (Concept p : c.getParentConcepts()) {
+				for (MedicationProduct med : MedicationProduct.values()) {
+					if (p.getConceptId() == med._conceptId) {
+						return med;
+					}
+				}
+			}
+			return null;
+		}
+		
+		/**
+		 * Is this concept a type of this product?
+		 * Note: This is different to the usual SNOMED-CT understanding as the DM&D has slightly
+		 * broken semantics as IS-A relationships should result in a grandchild concept being equal
+		 * to a parent AND the grandparent, but this isn't the case for the DM&D structures.
+		 * As such, we check only DIRECT relationships for equality within DM&D concepts.
+		 * @param c
+		 * @return
+		 */
+		public boolean isAConcept(Concept c) {
+			for (Concept p : c.getParentConcepts()) {
+				if (_conceptId == p.getConceptId()) {
+					return true;
+				}
+			}
+			return false;
+		}
+		
+		/**
+		 * Return the TF for the given AMP.
+		 * TF <->> AMP
+		 * @param amp
+		 * @return
+		 */
+		public static Concept tfForAmp(Concept amp) {
+			return amp.getParentConcepts().stream()
+					.filter(parent -> MedicationProduct.TRADE_FAMILY.isAConcept(parent))
+					.findFirst().orElse(null);
+		}
+		/**
+		 * Return the AMPs for the given TF
+		 * TF <->> AMP
+		 * @param tf
+		 * @return
+		 */
+		public static List<Concept> ampsForTf(Concept tf) {
+			return tf.getChildConcepts().stream()
+					.filter(child -> ACTUAL_MEDICINAL_PRODUCT.isAConcept(child))
+					.collect(Collectors.toList());
+		}
+
+
+		/**
+		 * Return the VMP for the given VMPP
+		 * VMP <->> VMPP
+		 * @param vmpp
+		 * @return
+		 */
+		public static Concept vmpForVmpp(Concept vmpp) {
+			Relationship vmpRelationship = vmpp.getParentRelationships().stream()
+					.filter(r -> r.getRelationshipTypeConcept().getConceptId() == RelationType.HAS_VMP.conceptId)
+					.findFirst().orElse(null);
+			return vmpRelationship != null ? vmpRelationship.getTargetConcept() : null;
+		}
+
+		/**
+		 * Return the VMPPs for the given VMP
+		 * VMP <->> VMPP
+		 * @param vmp
+		 * @return
+		 */
+		public static List<Concept> vmppsForVmp(Concept vmp) {
+			ArrayList<Concept> vmpps = new ArrayList<>();
+			for (Relationship r : vmp.getChildRelationships()) {
+				if (r.getRelationshipTypeConcept().getConceptId() == RelationType.HAS_VMP.conceptId) {
+					vmpps.add(r.getSourceConcept());
+				}
+			}
+			return vmpps;
+		}
+		
+		/**
+		 * Return the VMP for the given AMP
+		 * VMP <->> AMP
+		 * @param amp
+		 * @return
+		 */
+		public static Concept vmpForAmp(Concept amp) {
+			return amp.getParentConcepts().stream()
+					.filter(parent -> MedicationProduct.VIRTUAL_MEDICINAL_PRODUCT.isAConcept(parent))
+					.findFirst().orElse(null);
+		}
+
+		/**
+		 * Return the AMPs for the given VMP
+		 * VMP <->> AMP
+		 * @param vmp
+		 * @return
+		 */
+		public static List<Concept> ampsForVmp(Concept vmp) {
+			return vmp.getChildConcepts().stream()
+					.filter(child -> MedicationProduct.ACTUAL_MEDICINAL_PRODUCT.isAConcept(child))
+					.collect(Collectors.toList());
+		}
+		/**
+		 * Return the VTM for the given VMP
+		 * VTM <->> VMP
+		 * @param vmp
+		 * @return
+		 */
+		public static Concept vtmForVmp(Concept vmp) {
+			return vmp.getParentConcepts().stream()
+					.filter(parent -> MedicationProduct.VIRTUAL_THERAPEUTIC_MOIETY.isAConcept(parent))
+					.findFirst().orElse(null);
+		}
+		/**
+		 * Return the VMPs for the given VTM
+		 * VTM <->> VMP
+		 * @param vtm
+		 * @return
+		 */
+		public static List<Concept> vmpsForVtm(Concept vtm) {
+			return vtm.getChildConcepts().stream()
+					.filter(child -> MedicationProduct.VIRTUAL_MEDICINAL_PRODUCT.isAConcept(child))
+					.collect(Collectors.toList());
+		}
+		/**
+		 * Return the AMPPs for the given AMP
+		 * AMP <->> AMPP 
+		 * @param amp
+		 * @return
+		 */
+		public static List<Concept> amppsForAmp(Concept amp) {
+			ArrayList<Concept> ampps = new ArrayList<>();
+			for (Relationship r : amp.getChildRelationships()) {
+				if (r.getRelationshipTypeConcept().getConceptId() == RelationType.HAS_AMP.conceptId) {
+					ampps.add(r.getSourceConcept());
+				}
+			}
+			return Collections.unmodifiableList(ampps);
+		}
+		/**
+		 * Return the AMP for the given AMPP
+		 * AMP <->> AMPP
+		 * @param ampp
+		 * @return
+		 */
+		public static Concept ampForAmpp(Concept ampp) {
+			Relationship ampRelationship = ampp.getParentRelationships().stream()
+					.filter(r -> r.getRelationshipTypeConcept().getConceptId() == RelationType.HAS_AMP.conceptId)
+					.findFirst().orElse(null);
+			return ampRelationship != null ? ampRelationship.getTargetConcept() : null;
+		}
+
+		/**
+		 * Return the VMPP for the given AMPP
+		 * VMPP <-->> AMPP
+		 * @param ampp
+		 * @return
+		 */
+		public static Concept vmppForAmpp(Concept ampp) {
+			return ampp.getParentConcepts().stream()
+					.filter(parent -> MedicationProduct.VIRTUAL_MEDICINAL_PRODUCT_PACK.isAConcept(parent))
+					.findFirst().orElse(null);
+		}
+		/**
+		 * Return the AMPPs for the given VMPP.
+		 * VMPP <->> AMPP
+		 */
+		public static List<Concept>amppsForVmpp(Concept vmpp) {
+			return vmpp.getChildConcepts().stream()
+					.filter(child -> MedicationProduct.ACTUAL_MEDICINAL_PRODUCT_PACK.isAConcept(child))
+					.collect(Collectors.toList());
+		}
+
+
+
+	}
 }
