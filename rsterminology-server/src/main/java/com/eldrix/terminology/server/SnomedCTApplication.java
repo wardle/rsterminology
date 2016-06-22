@@ -1,5 +1,6 @@
 package com.eldrix.terminology.server;
 
+import com.eldrix.terminology.server.commands.Browser;
 import com.eldrix.terminology.server.commands.BuildParentCache;
 import com.eldrix.terminology.server.commands.CreateIndex;
 import com.eldrix.terminology.server.commands.ImportRf1;
@@ -34,5 +35,6 @@ public class SnomedCTApplication implements Module {
 		multibinder.addBinding().to(CreateIndex.class);
 		multibinder.addBinding().to(BuildParentCache.class);
 		multibinder.addBinding().to(ImportRf1.class);
+		multibinder.addBinding().to(Browser.class);
 	}
 }
