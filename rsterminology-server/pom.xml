@@ -22,7 +22,16 @@
 		<bootique-version>0.12.1</bootique-version>
 		<cayenne-version>4.0.M3</cayenne-version>
 		<slf4j-version>1.7.12</slf4j-version>
+		
+		<main.class>com.eldrix.terminology.server.SnomedCTApplication</main.class>
+		
 	</properties>
+
+<parent>
+    <groupId>com.nhl.bootique.parent</groupId>
+    <artifactId>bootique-parent</artifactId>
+    <version>0.10</version>
+</parent>
 
 	<dependencyManagement>
 		<dependencies>
@@ -145,7 +154,7 @@
 									implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
 								<transformer
 									implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-									<mainClass>org.objectstyle.linkrest.cms.BQApplication</mainClass>
+									<mainClass>com.eldrix.terminology.server.SnomedCTApplication</mainClass>
 								</transformer>
 							</transformers>
 						</configuration>
