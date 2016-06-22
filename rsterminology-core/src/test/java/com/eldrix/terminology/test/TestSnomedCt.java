@@ -45,7 +45,7 @@ public class TestSnomedCt {
 
 	@Before
 	public void setUp() throws Exception {
-		_runtime = new ServerRuntime("cayenne-rsterminology.xml");        
+		_runtime = new ServerRuntime("cayenne-project.xml");        
 	}
 
 	@After
