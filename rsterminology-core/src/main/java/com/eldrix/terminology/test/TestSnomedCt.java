@@ -27,7 +27,14 @@ import com.eldrix.terminology.snomedct.Concept;
 import com.eldrix.terminology.snomedct.Description;
 import com.eldrix.terminology.snomedct.ParentCache;
 import com.eldrix.terminology.snomedct.Search;
-import com.eldrix.terminology.snomedct.Semantic.MedicationProduct;
+import com.eldrix.terminology.snomedct.Semantic.Amp;
+import com.eldrix.terminology.snomedct.Semantic.Ampp;
+import com.eldrix.terminology.snomedct.Semantic.DmdProduct;
+import com.eldrix.terminology.snomedct.Semantic.RelationType;
+import com.eldrix.terminology.snomedct.Semantic.Tf;
+import com.eldrix.terminology.snomedct.Semantic.Vmp;
+import com.eldrix.terminology.snomedct.Semantic.Vmpp;
+import com.eldrix.terminology.snomedct.Semantic.Vtm;
 
 public class TestSnomedCt {
 	ServerRuntime _runtime;
@@ -154,65 +161,101 @@ public class TestSnomedCt {
 	@Test
 	public void testMedications() {
 		ObjectContext context = getRuntime().newContext();
-
 		// madopar CR is a trade family product
 		Concept madoparCr = ObjectSelect.query(Concept.class, Concept.CONCEPT_ID.eq(9491001000001109L)).selectOne(context);
-		MedicationProduct tf = MedicationProduct.productForConcept(madoparCr);
-		assertEquals(tf, MedicationProduct.TRADE_FAMILY);
+		testAMedication(madoparCr);
+	
+		Concept amlodipineTf = ObjectSelect.query(Concept.class, Concept.CONCEPT_ID.eq(108537001L)).selectOne(context);
+		Tf.isA(amlodipineTf);
+		Concept amlodipineAmp = Tf.getAmps(amlodipineTf).get(0);
+		Concept amlodipineVmp = Amp.getVmp(amlodipineAmp);
+		printConcept(amlodipineVmp);
+		printConcept(amlodipineAmp);
+		Amp.getDispensedDoseForms(amlodipineAmp).stream()
+			.forEach(c -> System.out.println(c.getFullySpecifiedName()));
+		Vmp.getDispensedDoseForms(amlodipineVmp).stream()
+			.forEach(c -> System.out.println(c.getFullySpecifiedName()));
+		printConcept(Vmp.getVtm(amlodipineVmp));
+		Vtm.getDispensedDoseForms(Vmp.getVtm(amlodipineVmp)).stream()
+			.forEach(c -> System.out.println(c.getFullySpecifiedName()));
+		Concept amlodipineVtm = ObjectSelect.query(Concept.class, Concept.CONCEPT_ID.eq(108537001L)).selectOne(context);
+		assertEquals(Vmp.getVtm(amlodipineVmp), amlodipineVtm);
+		assertTrue(Vtm.getDispensedDoseForms(amlodipineVtm).size() > 0);
+		
+		Concept amlodipineSuspensionVmp = ObjectSelect.query(Concept.class, Concept.CONCEPT_ID.eq(8278311000001107L)).selectOne(context);
+		assertTrue(Vtm.getVmps(amlodipineVtm).contains(amlodipineSuspensionVmp));
+	}
+
+	public void showDoseForms(Concept concept) {
+		concept.getParentRelationships().stream()
+		.filter(r ->
+			r.getRelationshipTypeConcept().getConceptId() == RelationType.HAS_DOSE_FORM.conceptId ||
+			r.getRelationshipTypeConcept().getConceptId() == RelationType.HAS_DISPENSED_DOSE_FORM.conceptId)
+		.forEach(r ->
+		System.out.println("Dose forms for :" + concept.getFullySpecifiedName() + " :" + r.getTargetConcept().getFullySpecifiedName() + " (" + r.getRelationshipTypeConcept().getFullySpecifiedName() + ")")
+		);
+	}
+	
+	public void testAMedication(Concept tradeFamily) {
+		DmdProduct tf = DmdProduct.productForConcept(tradeFamily);
+		assertEquals(tf, DmdProduct.TRADE_FAMILY);
+		assertTrue(Tf.isA(tradeFamily));
 		
 		// now let's get its AMPs.
-		MedicationProduct.ampsForTf(madoparCr).forEach(c -> {
-			System.out.println("AMP for " + madoparCr.getFullySpecifiedName() + ": " + c.getFullySpecifiedName());
+		Tf.getAmps(tradeFamily).forEach(c -> {
+			assertTrue(Amp.isA(c));
 		});
 		
 		// choose one AMP and interrogate it
-		Concept madoparAmp = MedicationProduct.ampsForTf(madoparCr).get(0);		// get the first AMP
-		assertEquals(MedicationProduct.ACTUAL_MEDICINAL_PRODUCT, MedicationProduct.productForConcept(madoparAmp));
-		assertEquals(madoparCr, MedicationProduct.tfForAmp(madoparAmp));
+		Concept madoparAmp = Tf.getAmps(tradeFamily).get(0);		// get the first AMP
+		assertEquals(DmdProduct.ACTUAL_MEDICINAL_PRODUCT, DmdProduct.productForConcept(madoparAmp));
+		assertTrue(Amp.isA(madoparAmp));
+		assertEquals(tradeFamily, Amp.getTf(madoparAmp));
 		
 		// get its VMP
-		Concept madoparVmp = MedicationProduct.vmpForAmp(madoparAmp);
+		Concept madoparVmp = Amp.getVmp(madoparAmp);
 		assertNotNull(madoparVmp);
-		assertEquals(MedicationProduct.VIRTUAL_MEDICINAL_PRODUCT, MedicationProduct.productForConcept(madoparVmp));
-		assertTrue(MedicationProduct.ampsForVmp(madoparVmp).contains(madoparAmp));
+		assertEquals(DmdProduct.VIRTUAL_MEDICINAL_PRODUCT, DmdProduct.productForConcept(madoparVmp));
+		assertTrue(Vmp.getAmps(madoparVmp).contains(madoparAmp));
 		printConcept(madoparAmp);
 		printConcept(madoparVmp);
 		
 		// get the VTM
-		Concept madoparVtm = MedicationProduct.vtmForVmp(madoparVmp);
-		assertEquals(MedicationProduct.VIRTUAL_THERAPEUTIC_MOIETY, MedicationProduct.productForConcept(madoparVtm));
-		assertTrue(MedicationProduct.vmpsForVtm(madoparVtm).contains(madoparVmp));
+		Concept madoparVtm = Vmp.getVtm(madoparVmp);
+		assertEquals(DmdProduct.VIRTUAL_THERAPEUTIC_MOIETY, DmdProduct.productForConcept(madoparVtm));
+		assertTrue(Vtm.getVmps(madoparVtm).contains(madoparVmp));
 		
 		// get an AMPP from our AMP
-		List<Concept> ampps = MedicationProduct.amppsForAmp(madoparAmp);
+		List<Concept> ampps = Amp.getAmpps(madoparAmp);
 		assertTrue(ampps.size() > 0);
 		Concept madoparAmpp = ampps.get(0);
-		assertEquals(MedicationProduct.ACTUAL_MEDICINAL_PRODUCT_PACK, MedicationProduct.productForConcept(madoparAmpp));
+		assertEquals(DmdProduct.ACTUAL_MEDICINAL_PRODUCT_PACK, DmdProduct.productForConcept(madoparAmpp));
 		
 		// get AMP from AMPP
-		assertEquals(madoparAmp, MedicationProduct.ampForAmpp(madoparAmpp));
+		assertEquals(madoparAmp, Ampp.getAmp(madoparAmpp));
 		printConcept(madoparAmpp);
 		
 		// get VMPP from AMPP
-		Concept madoparVmpp = MedicationProduct.vmppForAmpp(madoparAmpp);
-		assertEquals(MedicationProduct.VIRTUAL_MEDICINAL_PRODUCT_PACK, MedicationProduct.productForConcept(madoparVmpp));
+		Concept madoparVmpp = Ampp.getVmpp(madoparAmpp);
+		assertEquals(DmdProduct.VIRTUAL_MEDICINAL_PRODUCT_PACK, DmdProduct.productForConcept(madoparVmpp));
 
 		// and now get VMP from the VMPP and check it is what we think it should be
 		printConcept(madoparVmpp);
-		assertEquals(madoparVmp, MedicationProduct.vmpForVmpp(madoparVmpp));
-		assertTrue(MedicationProduct.amppsForVmpp(madoparVmpp).contains(madoparAmpp));
-		assertTrue(MedicationProduct.vmppsForVmp(madoparVmp).contains(madoparVmpp));
+		assertEquals(madoparVmp, Vmpp.getVmp(madoparVmpp));
+		assertTrue(Vmpp.getAmpps(madoparVmpp).contains(madoparAmpp));
+		assertTrue(Vmp.getVmpps(madoparVmp).contains(madoparVmpp));
 		
 		// walk the dm&d structure directly to get from TF to VTM
-		Concept madoparVtm2 = MedicationProduct.vtmForVmp(MedicationProduct.vmpForAmp(MedicationProduct.ampsForTf(madoparCr).get(0)));
+		Concept madoparVtm2 = Vmp.getVtm(Amp.getVmp(Tf.getAmps(tradeFamily).get(0)));
 		assertEquals(madoparVtm2, madoparVtm);
 		
+		assertTrue(Vtm.getVmps(madoparVtm).contains(madoparVmp));
 		//assertEquals(MedicationProduct.TRADE_FAMILY.vtm(madoparCr), madoparVtm);
 	}
 	
 	private static void printConcept(Concept c) {
 		StringBuilder sb = new StringBuilder();
-		sb.append("Concept : " + c.getConceptId() + " : " + c.getFullySpecifiedName() + " DM&D structure : " + MedicationProduct.productForConcept(c));
+		sb.append("Concept : " + c.getConceptId() + " : " + c.getFullySpecifiedName() + " DM&D structure : " + DmdProduct.productForConcept(c));
 		c.getChildConcepts().forEach(child -> sb.append("\n  childConcept: " + child.getFullySpecifiedName()));
 		c.getParentConcepts().forEach(parent -> sb.append("\n  parentConcept: " + parent.getFullySpecifiedName()));
 		c.getChildRelationships().forEach(r -> {

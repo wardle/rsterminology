@@ -119,7 +119,7 @@ public class Concept extends _Concept {
 	 * @param conceptId
 	 * @return
 	 */
-	public List<Relationship> getRelationshipsOfType(long conceptId) {
+	public List<Relationship> getParentRelationshipsOfType(long conceptId) {
 		Expression qual = Relationship.RELATIONSHIP_TYPE_CONCEPT.dot(Concept.CONCEPT_ID).eq(conceptId);
 		return qual.filterObjects(getParentRelationships());
 	}
@@ -129,8 +129,8 @@ public class Concept extends _Concept {
 	 * @param type
 	 * @return
 	 */
-	public List<Relationship> getRelationshipsOfType(RelationType type) {
-		return getRelationshipsOfType(type.conceptId);
+	public List<Relationship> getParentRelationshipsOfType(RelationType type) {
+		return getParentRelationshipsOfType(type.conceptId);
 	}
 
 
