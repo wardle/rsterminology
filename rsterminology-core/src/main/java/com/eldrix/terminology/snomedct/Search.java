@@ -113,12 +113,12 @@ public class Search {
 					processDescription(writer, d);
 				}
 			}
-			writer.optimize();
-			writer.close();
-			IndexSearcher oldSearcher = _searcher;
-			_searcher = createSearcher();		// create a new searcher now the index has changed.
-			oldSearcher.close();
 		}
+		writer.optimize();
+		writer.close();
+		IndexSearcher oldSearcher = _searcher;
+		_searcher = createSearcher();		// create a new searcher now the index has changed.
+		oldSearcher.close();
 	}
 
 	/**
