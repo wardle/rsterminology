@@ -6,8 +6,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class Semantic {
+import org.apache.commons.lang3.StringUtils;
 
+/**
+ * Helper methods to provide additional understanding within SNOMED-CT.
+ * @author Mark Wardle
+ *
+ */
+public class Semantic {
+	
 	public enum RelationType {
 		IS_A(116680003L),
 		HAS_ACTIVE_INGREDIENT(127489000L),
@@ -47,11 +54,13 @@ public class Semantic {
 	 * AMP - Actual medicinal product
 	 * AMPP - Actual medicinal product pack
 	 * TF - Trade family
-	 * A TF has multiple AMP.
-	 * An AMP has multiple AMPP
-	 * A VMPP has multiple AMPP
-	 * A VMP has multiple AMPs and multiple VMPPs
-	 * A VTM has multiple VMP. 
+	 *
+	 * TF <-->> AMP
+	 * AMP <-->> AMPP
+	 * VMPP <-->> AMPP
+	 * VMP <-->> AMP
+	 * VMP <-->> VMPP
+	 * VTM <-->> VMP
 	 * 
 	 * @see http://www.nhsbsa.nhs.uk/PrescriptionServices/Documents/PrescriptionServices/dmd_Implementation_Guide_Secondary_Care.pdf
 	 * @author mark
@@ -139,7 +148,11 @@ public class Semantic {
 	}
 
 	public static class Vmp {
-		
+		public static long VMP_VALID_AS_A_PRESCRIBABLE_PRODUCT=8940201000001104L;
+		public static long VMP_INVALID_AS_A_PRESCRIBABLE_PRODUCT=8940301000001108L;
+		public static long VMP_NOT_RECOMMENDED_TO_PRESCRIBE__BRANDS_NOT_BIOEQUIVALENT=9900001000001104L;
+		public static long VMP_NOT_RECOMMENDED_TO_PRESCRIBE__PATIENT_TRAINING=9900101000001103L;
+
 		public static boolean isA(Concept c) {
 			return DmdProduct.VIRTUAL_MEDICINAL_PRODUCT.isAConcept(c);
 		}
@@ -187,6 +200,77 @@ public class Semantic {
 				.map(Relationship::getTargetConcept)
 				.collect(Collectors.toList());
 		}
+
+		/**
+		 * Does this VMP contain multiple active ingredients listed in its name?
+		 * See Rule #1 of the DM&D implementation guide
+		 * Note: this does not (rather unintuitively) include all drugs with multiple active ingredients
+		 * @param vmp
+		 * @return
+		 */
+		public static boolean hasMultipleActiveIngredientsInName(Concept vmp) {
+			return vmp.getFullySpecifiedName().contains("+");
+		}
+		
+		/**
+		 * Is this a top level VMP with no VTM?
+		 * See Rule #2 of the DM&D implementation guide.
+		 * @param vmp
+		 * @return
+		 */
+		public static boolean hasNoVtm(Concept vmp) {
+			return getVtm(vmp) == null;
+		}
+		
+		/**
+		 * Is this VMP invalid to prescribe?
+		 * See Rule #3 of the DM&D implementation guide
+		 * @param vmp
+		 * @return
+		 */
+		public static boolean isInvalidToPrescribe(Concept vmp) {
+			return vmp.getParentRelationships().stream()
+					.filter(r -> r.getRelationshipTypeConcept().getConceptId() == RelationType.VMP_PRESCRIBING_STATUS.conceptId)
+					.map(Relationship::getTargetConcept)
+					.map(Concept::getConceptId)
+					.anyMatch(id -> VMP_INVALID_AS_A_PRESCRIBABLE_PRODUCT == id);
+		}
+		
+		/**
+		 * Is this a co-name drug?
+		 * @param vmp
+		 * @return
+		 */
+		public static boolean isCoNameDrug(Concept vmp) {
+			return StringUtils.containsIgnoreCase(vmp.getFullySpecifiedName(), "co-");
+		}
+		
+		/**
+		 * Is this VMP not recommended for prescribing?
+		 * @param vmp
+		 * @return
+		 */
+		public static boolean isNotRecommendedToPrescribe(Concept vmp) {
+			return vmp.getParentRelationships().stream()
+					.filter(r -> r.getRelationshipTypeConcept().getConceptId() == RelationType.VMP_PRESCRIBING_STATUS.conceptId)
+					.map(Relationship::getTargetConcept)
+					.map(Concept::getConceptId)
+					.anyMatch(id -> VMP_NOT_RECOMMENDED_TO_PRESCRIBE__BRANDS_NOT_BIOEQUIVALENT == id ||
+							VMP_NOT_RECOMMENDED_TO_PRESCRIBE__PATIENT_TRAINING == id);
+		}
+		
+		/**
+		 * Return the active ingredients for this VMP.
+		 * @param vmp
+		 * @return
+		 */
+		public static List<Concept> activeIngredients(Concept vmp) {
+			return vmp.getParentRelationships().stream()
+					.filter(r -> r.getRelationshipTypeConcept().getConceptId() == RelationType.HAS_ACTIVE_INGREDIENT.conceptId)
+					.map(Relationship::getTargetConcept)
+					.collect(Collectors.toList());
+		}
+		
 	}
 	
 
