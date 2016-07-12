@@ -72,7 +72,7 @@ public class Browser extends CommandWithMetadata {
 			System.out.println("help/h/? : This help");
 			System.out.println("quit/q   : Quit");
 			System.out.println("c <conceptId> : Display the specified concept.");
-			System.out.println("s        : Show information for currently selected concept");
+			System.out.println("i        : Show information for currently selected concept");
 			System.out.println("d        : Show descriptions for currently selected concept");
 		}
 	}
