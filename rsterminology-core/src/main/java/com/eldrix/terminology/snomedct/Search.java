@@ -46,7 +46,8 @@ import com.eldrix.terminology.snomedct.Description.Status;
  * Provides full-text indexing and search facilities for SNOMED CT concepts (descriptions really) using Apache Lucene.
  * This provides a thin-wrapper around Apache Lucene's full-text search facilities.
  * 
- * This is essentially immutable and thread-safe.
+ * Objects of this class are usually singleton objects for the index location specified and are 
+ * essentially immutable and thread-safe.
  *
  */
 public class Search {
@@ -65,18 +66,32 @@ public class Search {
 	private static final String FIELD_LANGUAGE="language";
 	private static final String FIELD_STATUS="status";
 	private static final String FIELD_DESCRIPTION_ID="descriptionId";
-	
+
 	private StandardAnalyzer _analyzer = new StandardAnalyzer(LUCENE_VERSION);
 	private IndexSearcher _searcher;
 	private String _indexLocation; 
-	
-	
+
+	/**
+	 * Get a shared instance at the default location.
+	 * @return
+	 * @throws CorruptIndexException
+	 * @throws IOException
+	 */
 	public static Search getInstance() throws CorruptIndexException, IOException {
-		String indexLocation = System.getProperty(INDEX_LOCATION_PROPERTY_KEY, DEFAULT_INDEX_LOCATION);
-		return getInstance(indexLocation);
+		return getInstance(null);
 	}
-	
+
+	/**
+	 * Get a shared instance at the location specified
+	 * @param indexLocation
+	 * @return
+	 * @throws CorruptIndexException
+	 * @throws IOException
+	 */
 	public static Search getInstance(String indexLocation) throws CorruptIndexException, IOException {
+		if (indexLocation == null) {
+			indexLocation = System.getProperty(INDEX_LOCATION_PROPERTY_KEY, DEFAULT_INDEX_LOCATION);
+		}
 		Search search = factory.get(indexLocation);
 		if (search == null) {
 			factory.putIfAbsent(indexLocation, new Search(indexLocation));
@@ -84,16 +99,21 @@ public class Search {
 		}
 		return search;
 	}
-	
+
 	private Search(String indexLocation) throws CorruptIndexException, IOException {
 		_indexLocation = indexLocation;
 		_searcher = createSearcher();
 	}
 
+	@Override
+	public String toString() {
+		return super.toString() + ": loc: `" + _indexLocation + "'";
+	}
+
 	private IndexSearcher createSearcher() throws CorruptIndexException, IOException {
 		return new IndexSearcher(createOrLoadIndexReader(indexFile(), analyser()));
 	}
-	
+
 	/**
 	 * Create a new index based on all known SNOMED CT descriptions.
 	 * This may take a *long* time....
