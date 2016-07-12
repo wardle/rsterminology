@@ -3,12 +3,23 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
+	<parent>
+                <groupId>com.eldrix.rsterminology</groupId>
+                <artifactId>rsterminology</artifactId>
+                <version>1.0</version>
+        </parent>
+
 	<groupId>com.eldrix.rsterminology.server</groupId>
 	<artifactId>rsterminology-server</artifactId>
 	<version>1.0-SNAPSHOT</version>
 
 	<name>RSTerminology server</name>
-	<description>A SNOMED-CT terminology server</description>
+	<description>A SNOMED-CT terminology server.</description>
+
+	<url>http://eldrix.com</url>
+	<organization>
+		<name>Eldrix Ltd</name>
+	</organization>
 
 	<properties>
 
@@ -22,16 +33,20 @@
 		<bootique-version>0.12.1</bootique-version>
 		<cayenne-version>4.0.M3</cayenne-version>
 		<slf4j-version>1.7.12</slf4j-version>
-		
+
 		<main.class>com.eldrix.terminology.server.SnomedCTApplication</main.class>
-		
+
 	</properties>
 
-<parent>
-    <groupId>com.nhl.bootique.parent</groupId>
-    <artifactId>bootique-parent</artifactId>
-    <version>0.10</version>
-</parent>
+	<developers>
+		<developer>
+			<id>mwardle</id>
+			<name>Mark Wardle</name>
+			<email>mark@wardle.org</email>
+			<organization>Eldrix Ltd</organization>
+			<timezone>Europe/London</timezone>
+		</developer>
+	</developers>
 
 	<dependencyManagement>
 		<dependencies>
