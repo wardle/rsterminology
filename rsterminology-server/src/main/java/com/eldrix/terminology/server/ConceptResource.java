@@ -27,19 +27,33 @@ public class ConceptResource {
 	@Context
 	private Configuration config;
 
+	/**
+	 * Return information about a specified concept.
+	 * @param id
+	 * @param uriInfo
+	 * @return
+	 */
 	@GET
 	@Path("{conceptId}")
 	public DataResponse<Concept> getOne(@PathParam("conceptId") int id, @Context UriInfo uriInfo) {
-		return LinkRest.select(Concept.class, config).byId(id).uri(uriInfo).selectOne();
+		return LinkRest.select(Concept.class, config)
+				.byId(id).uri(uriInfo)
+				.selectOne();
 	}
-	
+
+	/**
+	 * Search for a concept using the search terms provided.
+	 * @param search
+	 * @param rootIds
+	 * @param uriInfo
+	 * @return
+	 */
 	@GET
 	@Path("search")
 	public DataResponse<ResultItem> search(@QueryParam("s") String search, @QueryParam("rootIds") String rootIds, @Context UriInfo uriInfo) {
 		long[] rootConceptIds = _parseLongArray(rootIds);
-		List<ResultItem> result;
 		try {
-			result = Search.query(search, 200, rootConceptIds);
+			List<ResultItem> result = Search.getInstance().query(search, 200, rootConceptIds);
 			return DataResponse.forObjects(result);
 		} catch (ParseException | IOException e) {
 			// TODO Auto-generated catch block

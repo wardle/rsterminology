@@ -72,15 +72,17 @@ public class TestSnomedCt {
 	public void testSearch() {
 		try {
 			ObjectContext context = getRuntime().newContext();
-			List<Long> results = Search.queryForConcepts(Search.fixSearchString("mult sclerosis"), 100, 64572001L);
+			List<Long> results = Search.getInstance().queryForConcepts(Search.fixSearchString("mult sclerosis"), 100, 64572001L);
 			Expression qual = ExpressionFactory.inExp(Concept.CONCEPT_ID.getName(), results);
 			List<Concept> concepts = ObjectSelect.query(Concept.class, qual).select(context);
-			/*
-			concepts.forEach(concept -> {
-				System.out.println(concept.getFullySpecifiedName());
-			});
-			*/
 			assertTrue(concepts.size() > 0);
+			
+			assertTrue(Search.getInstance().query("mult* sclerosis", 200, 64572001L).size() > 0);
+			assertTrue(Search.getInstance().query("parkin*", 200, 64572001L).size() > 0);
+			assertEquals(0, Search.getInstance().query("mult scler", 200, 64572001L).size());
+			assertEquals(0, Search.getInstance().query("parkin", 200, 64572001L).size());
+			
+			
 		} catch (CorruptIndexException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -92,7 +94,7 @@ public class TestSnomedCt {
 			e.printStackTrace();
 		}
 	}
-
+	
 	@Test
 	public void testRecursiveParents() {
 		ObjectContext context = getRuntime().newContext();
@@ -162,13 +164,20 @@ public class TestSnomedCt {
 	public void testMedications() {
 		ObjectContext context = getRuntime().newContext();
 		// madopar CR is a trade family product
-		Concept madoparCr = ObjectSelect.query(Concept.class, Concept.CONCEPT_ID.eq(9491001000001109L)).selectOne(context);
-		testAMedication(madoparCr);
+		Concept madoparTf = ObjectSelect.query(Concept.class, Concept.CONCEPT_ID.eq(9491001000001109L)).prefetch(Concept.PARENT_RELATIONSHIPS.joint()).selectOne(context);
+		Concept madoparVmp = Amp.getVmp(Tf.getAmps(madoparTf).get(0));
+		printConcept(madoparVmp);
+		assertEquals(2, Vmp.activeIngredients(madoparVmp).size());
+		
+		testAMedication(madoparTf);
 	
 		Concept amlodipineTf = ObjectSelect.query(Concept.class, Concept.CONCEPT_ID.eq(108537001L)).selectOne(context);
 		Tf.isA(amlodipineTf);
 		Concept amlodipineAmp = Tf.getAmps(amlodipineTf).get(0);
 		Concept amlodipineVmp = Amp.getVmp(amlodipineAmp);
+		assertFalse(Vmp.hasMultipleActiveIngredientsInName(amlodipineVmp));
+		assertEquals(1, Vmp.activeIngredients(amlodipineVmp).size());
+		assertFalse(Vmp.isInvalidToPrescribe(amlodipineVmp));
 		printConcept(amlodipineVmp);
 		printConcept(amlodipineAmp);
 		Amp.getDispensedDoseForms(amlodipineAmp).stream()
@@ -217,8 +226,6 @@ public class TestSnomedCt {
 		assertNotNull(madoparVmp);
 		assertEquals(DmdProduct.VIRTUAL_MEDICINAL_PRODUCT, DmdProduct.productForConcept(madoparVmp));
 		assertTrue(Vmp.getAmps(madoparVmp).contains(madoparAmp));
-		printConcept(madoparAmp);
-		printConcept(madoparVmp);
 		
 		// get the VTM
 		Concept madoparVtm = Vmp.getVtm(madoparVmp);
@@ -233,7 +240,6 @@ public class TestSnomedCt {
 		
 		// get AMP from AMPP
 		assertEquals(madoparAmp, Ampp.getAmp(madoparAmpp));
-		printConcept(madoparAmpp);
 		
 		// get VMPP from AMPP
 		Concept madoparVmpp = Ampp.getVmpp(madoparAmpp);
@@ -250,7 +256,6 @@ public class TestSnomedCt {
 		assertEquals(madoparVtm2, madoparVtm);
 		
 		assertTrue(Vtm.getVmps(madoparVtm).contains(madoparVmp));
-		//assertEquals(MedicationProduct.TRADE_FAMILY.vtm(madoparCr), madoparVtm);
 	}
 	
 	private static void printConcept(Concept c) {

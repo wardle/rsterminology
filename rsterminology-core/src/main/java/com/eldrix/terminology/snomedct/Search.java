@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.cayenne.ObjectContext;
 import org.apache.cayenne.ResultBatchIterator;
@@ -44,12 +45,16 @@ import com.eldrix.terminology.snomedct.Description.Status;
 /*
  * Provides full-text indexing and search facilities for SNOMED CT concepts (descriptions really) using Apache Lucene.
  * This provides a thin-wrapper around Apache Lucene's full-text search facilities.
+ * 
+ * This is essentially immutable and thread-safe.
  *
  */
 public class Search {
 	final static Logger log = LoggerFactory.getLogger(Search.class);
+	final static ConcurrentHashMap<String, Search> factory = new ConcurrentHashMap<>();
 
 	private static final String INDEX_LOCATION_PROPERTY_KEY="com.eldrix.snomedct.search.lucene.IndexLocation";
+	private static final String DEFAULT_INDEX_LOCATION="/var/rsdb/sct_lucene/";
 	private static final Version LUCENE_VERSION=Version.LUCENE_30;
 	private static final String FIELD_TERM="term";
 	private static final String FIELD_PREFERRED_TERM="preferredTerm";
@@ -60,13 +65,35 @@ public class Search {
 	private static final String FIELD_LANGUAGE="language";
 	private static final String FIELD_STATUS="status";
 	private static final String FIELD_DESCRIPTION_ID="descriptionId";
-	private static StandardAnalyzer _analyzer = new StandardAnalyzer(LUCENE_VERSION);
-	private static QueryParser _queryParser;
+	
+	private StandardAnalyzer _analyzer = new StandardAnalyzer(LUCENE_VERSION);
+	private IndexSearcher _searcher;
+	private String _indexLocation; 
+	
+	
+	public static Search getInstance() throws CorruptIndexException, IOException {
+		String indexLocation = System.getProperty(INDEX_LOCATION_PROPERTY_KEY, DEFAULT_INDEX_LOCATION);
+		return getInstance(indexLocation);
+	}
+	
+	public static Search getInstance(String indexLocation) throws CorruptIndexException, IOException {
+		Search search = factory.get(indexLocation);
+		if (search == null) {
+			factory.putIfAbsent(indexLocation, new Search(indexLocation));
+			search = factory.get(indexLocation);
+		}
+		return search;
+	}
+	
+	private Search(String indexLocation) throws CorruptIndexException, IOException {
+		_indexLocation = indexLocation;
+		_searcher = createSearcher();
+	}
 
-	private static IndexSearcher _searcher;
-	private Search() {}
-
-
+	private IndexSearcher createSearcher() throws CorruptIndexException, IOException {
+		return new IndexSearcher(createOrLoadIndexReader(indexFile(), analyser()));
+	}
+	
 	/**
 	 * Create a new index based on all known SNOMED CT descriptions.
 	 * This may take a *long* time....
@@ -75,8 +102,8 @@ public class Search {
 	 * @throws CorruptIndexException
 	 *
 	 */
-	public static void processAllDescriptions(ObjectContext context) throws CorruptIndexException, LockObtainFailedException, IOException {
-		IndexWriter writer = createOrLoadIndexWriter();
+	public void processAllDescriptions(ObjectContext context) throws CorruptIndexException, LockObtainFailedException, IOException {
+		IndexWriter writer = createOrLoadIndexWriter(indexFile(), analyser());
 		SelectQuery<Description> query = SelectQuery.query(Description.class);
 		long i = 0;
 		try (ResultBatchIterator<Description> iterator = query.batchIterator(context, 500)) {
@@ -88,7 +115,9 @@ public class Search {
 			}
 			writer.optimize();
 			writer.close();
-			_searcher = null;			// create a new IndexSearcher for next search please...
+			IndexSearcher oldSearcher = _searcher;
+			_searcher = createSearcher();		// create a new searcher now the index has changed.
+			oldSearcher.close();
 		}
 	}
 
@@ -103,7 +132,7 @@ public class Search {
 	 * @throws CorruptIndexException
 	 * @throws IOException
 	 */
-	protected static void processDescription(IndexWriter writer, Description d) throws CorruptIndexException, IOException {
+	protected void processDescription(IndexWriter writer, Description d) throws CorruptIndexException, IOException {
 		writer.deleteDocuments(new Term("descriptionId", d.getDescriptionId().toString()));
 		Document doc = new Document();
 		doc.add(new Field(FIELD_TERM, d.getTerm(), Field.Store.YES, Field.Index.ANALYZED));
@@ -128,7 +157,7 @@ public class Search {
 	 * @throws IOException
 	 * @throws ParseException
 	 */
-	@Deprecated public static TopDocs queryForTopHits(String searchText, int n) throws CorruptIndexException, IOException, ParseException {
+	@Deprecated public TopDocs queryForTopHits(String searchText, int n) throws CorruptIndexException, IOException, ParseException {
 		Query q1 = queryParser().parse(searchText);
 		// Query query = new TermQuery(new Term("term", searchText));
 		Explanation explain = searcher().explain(q1, 200);
@@ -138,19 +167,19 @@ public class Search {
 	}
 
 
-	public static List<ResultItem> query(String searchText, int n, long parentConceptId) throws CorruptIndexException, ParseException, IOException {
+	public List<ResultItem> query(String searchText, int n, long parentConceptId) throws CorruptIndexException, ParseException, IOException {
 		TopDocs docs = queryForTopHitsWithFilter(searchText, n, parentConceptId);
-		return Search.resultsFromTopDocs(docs);
+		return resultsFromTopDocs(docs);
 	}
-	public static List<ResultItem> query(String searchText, int n, long[] parentConceptIds) throws CorruptIndexException, ParseException, IOException {
+	public List<ResultItem> query(String searchText, int n, long[] parentConceptIds) throws CorruptIndexException, ParseException, IOException {
 		TopDocs docs = queryForTopHitsWithFilter(searchText, n, parentConceptIds);
 		return resultsFromTopDocs(docs);
 	}
-	public static List<ResultItem> query(long parentConceptId, int n) throws CorruptIndexException, IOException {
+	public List<ResultItem> query(long parentConceptId, int n) throws CorruptIndexException, IOException {
 		TopDocs docs = queryForTopHitsForParent(parentConceptId, n);
 		return resultsFromTopDocs(docs);
 	}
-	public static List<ResultItem> query(long[] parentConceptIds, int n) throws CorruptIndexException, IOException {
+	public List<ResultItem> query(long[] parentConceptIds, int n) throws CorruptIndexException, IOException {
 		TopDocs docs = queryForTopHitsForParents(parentConceptIds, n);
 		return resultsFromTopDocs(docs);
 	}
@@ -159,12 +188,12 @@ public class Search {
 	 * Performs the search limiting results to those descendants of the given parent concept.
 	 * Results are from the Description's "term" field.
 	 */
-	public static List<String> queryForDescriptions(String searchText, int n, long parentConceptId) throws CorruptIndexException, ParseException, IOException {
+	public List<String> queryForDescriptions(String searchText, int n, long parentConceptId) throws CorruptIndexException, ParseException, IOException {
 		TopDocs docs = queryForTopHitsWithFilter(searchText, n, parentConceptId);
 		return descriptionsFromTopDocs(docs);
 	}
 
-	public static List<String> queryForDescriptions(String searchText, int n, long[] parentConceptIds) throws CorruptIndexException, ParseException, IOException {
+	public List<String> queryForDescriptions(String searchText, int n, long[] parentConceptIds) throws CorruptIndexException, ParseException, IOException {
 		TopDocs docs = queryForTopHitsWithFilter(searchText, n, parentConceptIds);
 		return descriptionsFromTopDocs(docs);
 	}
@@ -183,7 +212,7 @@ public class Search {
 	 * @throws ParseException
 	 * @throws IOException
 	 */
-	public static ResultItem queryForSingle(String searchText, long[] parentConceptIds) throws CorruptIndexException, ParseException, IOException {
+	public ResultItem queryForSingle(String searchText, long[] parentConceptIds) throws CorruptIndexException, ParseException, IOException {
 		String search = QueryParser.escape(searchText.trim());
 		Query q1 = queryParser().parse("\"" + search + "\"");
 		TopDocs docs = searcher().search(q1, Search.filterForParentConcepts(parentConceptIds), 500);
@@ -215,17 +244,17 @@ public class Search {
 		return null;
 	}
 
-	public static List<Long> queryForConcepts(String searchText, int n, long parentConceptId) throws CorruptIndexException, IOException, ParseException {
+	public List<Long> queryForConcepts(String searchText, int n, long parentConceptId) throws CorruptIndexException, IOException, ParseException {
 		TopDocs docs = queryForTopHitsWithFilter(searchText, n, parentConceptId);
 		return conceptsFromTopDocs(docs);
 	}
 
-	public static List<Long> queryForConcepts(String searchText, int n, long[] parentConceptIds) throws CorruptIndexException, ParseException, IOException {
+	public List<Long> queryForConcepts(String searchText, int n, long[] parentConceptIds) throws CorruptIndexException, ParseException, IOException {
 		TopDocs docs = queryForTopHitsWithFilter(searchText, n, parentConceptIds);
 		return conceptsFromTopDocs(docs);
 	}
 
-	protected static List<String> descriptionsFromTopDocs(TopDocs docs) throws CorruptIndexException, IOException {
+	protected List<String> descriptionsFromTopDocs(TopDocs docs) throws CorruptIndexException, IOException {
 		ArrayList<String> descs = new ArrayList<String>(docs.totalHits);
 		ScoreDoc[] sds = docs.scoreDocs;
 		for (ScoreDoc sd : sds) {
@@ -236,7 +265,7 @@ public class Search {
 		return Collections.unmodifiableList(descs);
 	}
 
-	protected static List<Long> conceptsFromTopDocs(TopDocs docs) throws CorruptIndexException, IOException {
+	protected List<Long> conceptsFromTopDocs(TopDocs docs) throws CorruptIndexException, IOException {
 		ArrayList<Long> concepts = new ArrayList<Long>(docs.totalHits);
 		ScoreDoc[] sds = docs.scoreDocs;
 		for (ScoreDoc sd : sds) {
@@ -248,11 +277,11 @@ public class Search {
 		return Collections.unmodifiableList(concepts);
 	}
 
-	protected static TopDocs queryForTopHitsForParent(long parentConceptId, int n) throws CorruptIndexException, IOException {
+	protected TopDocs queryForTopHitsForParent(long parentConceptId, int n) throws CorruptIndexException, IOException {
 		Query q = queryForChildConcepts(parentConceptId);
 		return searcher().search(q, n);
 	}
-	protected static TopDocs queryForTopHitsForParents(long[] parentConceptIds, int n) throws CorruptIndexException, IOException {
+	protected TopDocs queryForTopHitsForParents(long[] parentConceptIds, int n) throws CorruptIndexException, IOException {
 		Query q = queryForChildConcepts(parentConceptIds);
 		return searcher().search(q, n);
 	}
@@ -269,7 +298,7 @@ public class Search {
 	 * @throws CorruptIndexException
 	 * @throws IOException
 	 */
-	public static TopDocs queryForTopHitsWithFilter(String searchText, int n, long parentConceptId) throws ParseException, CorruptIndexException, IOException {
+	public TopDocs queryForTopHitsWithFilter(String searchText, int n, long parentConceptId) throws ParseException, CorruptIndexException, IOException {
 		Query q1 = queryParser().parse(searchText);
 		return searcher().search(q1, Search.filterForParentConcept(parentConceptId), n);
 	}
@@ -284,7 +313,7 @@ public class Search {
 	 * @throws CorruptIndexException
 	 * @throws IOException
 	 */
-	public static TopDocs queryForTopHitsWithFilter(String searchText, int n, long[] parentConceptIds) throws ParseException, CorruptIndexException, IOException {
+	public TopDocs queryForTopHitsWithFilter(String searchText, int n, long[] parentConceptIds) throws ParseException, CorruptIndexException, IOException {
 		Query q1 = queryParser().parse(searchText);
 		return searcher().search(q1, Search.filterForParentConcepts(parentConceptIds), n);
 	}
@@ -349,7 +378,7 @@ public class Search {
 	 * @throws CorruptIndexException
 	 * @throws IOException
 	 */
-	protected static TopDocs printDocuments(TopDocs rs) throws CorruptIndexException, IOException {
+	protected TopDocs printDocuments(TopDocs rs) throws CorruptIndexException, IOException {
 		ScoreDoc[] docs = rs.scoreDocs;
 		System.out.println("Found " + rs.totalHits + " hits");
 		for (ScoreDoc sd: docs) {
@@ -362,10 +391,7 @@ public class Search {
 	/*
 	 * Returns the IndexSearcher used to search against the Lucene index.
 	 */
-	protected static synchronized IndexSearcher searcher() throws CorruptIndexException, IOException {
-		if (_searcher == null) {
-			_searcher = new IndexSearcher(createOrLoadIndexReader());
-		}
+	protected IndexSearcher searcher() throws CorruptIndexException, IOException {
 		return _searcher;
 	}
 
@@ -375,31 +401,30 @@ public class Search {
 	 * @throws CorruptIndexException
 	 * @throws IOException
 	 */
-	public static IndexReader createOrLoadIndexReader() throws CorruptIndexException, IOException {
-		Directory directory = FSDirectory.open(indexFile());
+	protected static IndexReader createOrLoadIndexReader(File index, StandardAnalyzer analyser) throws CorruptIndexException, IOException {
+		Directory directory = FSDirectory.open(index);
 		if (IndexReader.indexExists(directory)==false) {
-			IndexWriter writer = createOrLoadIndexWriter();
+			IndexWriter writer = createOrLoadIndexWriter(index, analyser);
 			writer.close();
 		}
 		IndexReader reader = IndexReader.open(directory, true);
 		return reader;
 	}
 
-	protected static IndexWriter createOrLoadIndexWriter() throws CorruptIndexException, LockObtainFailedException, IOException  {
-		Directory directory = FSDirectory.open(indexFile());
+	protected static IndexWriter createOrLoadIndexWriter(File index, StandardAnalyzer analyser) throws CorruptIndexException, LockObtainFailedException, IOException  {
+		Directory directory = FSDirectory.open(index);
 		IndexWriter writer = new IndexWriter(directory,
-				analyser(),
+				analyser,
 				IndexReader.indexExists(directory)==false,
 				IndexWriter.MaxFieldLength.LIMITED);
 		return writer;
 	}
 
-	protected static File indexFile() {
-		String filename = System.getProperty(INDEX_LOCATION_PROPERTY_KEY, "/var/rsdb/sct_lucene/");
-		return new File(filename);
+	protected File indexFile() {
+		return new File(_indexLocation);
 	}
 
-	protected static StandardAnalyzer analyser() {
+	protected StandardAnalyzer analyser() {
 		return _analyzer;
 	}
 
@@ -407,14 +432,13 @@ public class Search {
 	 * A queryparser is not thread safe so we create a new instance when required.
 	 * @return
 	 */
-	protected static QueryParser queryParser() {
+	protected QueryParser queryParser() {
 		QueryParser qp = new QueryParser(LUCENE_VERSION, FIELD_TERM, analyser());
 		qp.setDefaultOperator(QueryParser.Operator.AND);
 		return qp;
 	}
 
-
-	protected static List<ResultItem> resultsFromTopDocs(TopDocs docs) throws CorruptIndexException, IOException {
+	protected List<ResultItem> resultsFromTopDocs(TopDocs docs) throws CorruptIndexException, IOException {
 		ArrayList<ResultItem> results = new ArrayList<ResultItem>(docs.totalHits);
 		ScoreDoc[] sds = docs.scoreDocs;
 		for (ScoreDoc sd : sds) {
@@ -480,6 +504,10 @@ public class Search {
 		@Override
 		public String getPreferredTerm() {
 			return _preferredTerm;
+		}
+		@Override
+		public String toString() {
+			return super.toString() + ": " + getPreferredTerm() + " (" + getConceptId() + ")";
 		}
 	}
 }

@@ -40,7 +40,7 @@ public class CreateIndex extends CommandWithMetadata {
 		System.out.println("Building lucene index.... ");
 		ObjectContext context = cayenne.get().newContext();
 		try {
-			Search.processAllDescriptions(context);
+			Search.getInstance().processAllDescriptions(context);
 			return CommandOutcome.succeeded();
 		} catch (IOException e) {
 			return CommandOutcome.failed(-1, e);
