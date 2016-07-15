@@ -2,6 +2,8 @@ package com.eldrix.terminology.snomedct;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -12,30 +14,31 @@ import org.apache.cayenne.ResultBatchIterator;
 import org.apache.cayenne.query.SelectQuery;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.LongPoint;
+import org.apache.lucene.document.StoredField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queryParser.ParseException;
-import org.apache.lucene.queryParser.QueryParser;
-import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.queryparser.classic.ParseException;
+import org.apache.lucene.queryparser.classic.QueryParser;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.ConstantScoreQuery;
-import org.apache.lucene.search.Explanation;
-import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.FilterManager;
+import org.apache.lucene.search.BooleanQuery.Builder;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.LockObtainFailedException;
-import org.apache.lucene.util.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,19 +58,17 @@ public class Search {
 	final static ConcurrentHashMap<String, Search> factory = new ConcurrentHashMap<>();
 
 	private static final String INDEX_LOCATION_PROPERTY_KEY="com.eldrix.snomedct.search.lucene.IndexLocation";
-	private static final String DEFAULT_INDEX_LOCATION="/var/rsdb/sct_lucene/";
-	private static final Version LUCENE_VERSION=Version.LUCENE_30;
+	private static final String DEFAULT_INDEX_LOCATION="/var/rsdb/sct_lucene6/";
 	private static final String FIELD_TERM="term";
 	private static final String FIELD_PREFERRED_TERM="preferredTerm";
 	private static final String FIELD_CONCEPT_ID="conceptId";
 	private static final String FIELD_PARENT_CONCEPT_ID="parentConceptId";
-	private static final String FIELD_ISA_PARENT_CONCEPT_ID="directParentConceptId";
-	private static final String FIELD_ISA_CHILD_CONCEPT_ID="directChildConceptId";
+	private static final String FIELD_ISA_PARENT_CONCEPT_ID="isA";
 	private static final String FIELD_LANGUAGE="language";
 	private static final String FIELD_STATUS="status";
 	private static final String FIELD_DESCRIPTION_ID="descriptionId";
 
-	private StandardAnalyzer _analyzer = new StandardAnalyzer(LUCENE_VERSION);
+	private StandardAnalyzer _analyzer = new StandardAnalyzer();
 	private IndexSearcher _searcher;
 	private String _indexLocation; 
 
@@ -132,20 +133,16 @@ public class Search {
 				for (Description d : batch) {
 					processDescription(writer, d);
 				}
+				writer.commit();
 			}
 		}
-		writer.optimize();
+		writer.forceMerge(1);
 		writer.close();
-		IndexSearcher oldSearcher = _searcher;
 		_searcher = createSearcher();		// create a new searcher now the index has changed.
-		oldSearcher.close();
 	}
 
 	/**
 	 * Process a single description.
-	 *
-	 * This is fairly inefficient - looking for the recursive parents of each concept without caching the
-	 * result. However, it is logically correct and simpler than any clever caching mechanism.
 	 *
 	 * @param writer
 	 * @param d
@@ -155,69 +152,30 @@ public class Search {
 	protected void processDescription(IndexWriter writer, Description d) throws CorruptIndexException, IOException {
 		writer.deleteDocuments(new Term("descriptionId", d.getDescriptionId().toString()));
 		Document doc = new Document();
-		doc.add(new Field(FIELD_TERM, d.getTerm(), Field.Store.YES, Field.Index.ANALYZED));
-		doc.add(new Field(FIELD_PREFERRED_TERM, d.getConcept().getPreferredDescription().getTerm(), Field.Store.YES, Field.Index.NOT_ANALYZED));
-		doc.add(new Field(FIELD_LANGUAGE, d.getLanguageCode(), Field.Store.YES, Field.Index.NOT_ANALYZED));
-		doc.add(new Field(FIELD_STATUS, d.getStatus().orElse(Status.CURRENT).getTitle(), Field.Store.YES, Field.Index.NOT_ANALYZED));
-		doc.add(new Field(FIELD_DESCRIPTION_ID, d.getDescriptionId().toString(), Field.Store.YES, Field.Index.NOT_ANALYZED));
-		doc.add(new Field(FIELD_CONCEPT_ID, d.getConcept().getConceptId().toString(), Field.Store.YES, Field.Index.NOT_ANALYZED));
+		doc.add(new TextField(FIELD_TERM, d.getTerm(), Store.YES));
+		doc.add(new StoredField(FIELD_PREFERRED_TERM, d.getConcept().getPreferredDescription().getTerm()));
+		doc.add(new StoredField(FIELD_LANGUAGE, d.getLanguageCode()));
+		doc.add(new StoredField(FIELD_STATUS, d.getStatus().orElse(Status.CURRENT).getTitle()));
+		doc.add(new StoredField(FIELD_DESCRIPTION_ID, d.getDescriptionId()));
+		doc.add(new StoredField(FIELD_CONCEPT_ID, d.getConcept().getConceptId()));
 		for (long parent : d.getConcept().getCachedRecursiveParents()) {
-			doc.add(new Field(FIELD_PARENT_CONCEPT_ID, String.valueOf(parent), Field.Store.YES, Field.Index.NOT_ANALYZED));
+			doc.add(new LongPoint(FIELD_PARENT_CONCEPT_ID, parent));
+		}
+		for (Concept parent : d.getConcept().getParentConcepts()) {
+			doc.add(new LongPoint(FIELD_ISA_PARENT_CONCEPT_ID, parent.getConceptId()));
 		}
 		writer.addDocument(doc);
 	}
 
-	/**
-	 * Return the top 'n' hits for a given search term.
-	 *
-	 * @param searchText
-	 * @param n
-	 * @return
-	 * @throws CorruptIndexException
-	 * @throws IOException
-	 * @throws ParseException
-	 */
-	@Deprecated public TopDocs queryForTopHits(String searchText, int n) throws CorruptIndexException, IOException, ParseException {
-		Query q1 = queryParser().parse(searchText);
-		// Query query = new TermQuery(new Term("term", searchText));
-		Explanation explain = searcher().explain(q1, 200);
-		TopDocs rs = searcher().search(q1, null, n);
-		// printDocuments(rs);
-		return rs;
-	}
-
-
-	public List<ResultItem> query(String searchText, int n, long parentConceptId) throws CorruptIndexException, ParseException, IOException {
-		TopDocs docs = queryForTopHitsWithFilter(searchText, n, parentConceptId);
-		return resultsFromTopDocs(docs);
-	}
+	
 	public List<ResultItem> query(String searchText, int n, long[] parentConceptIds) throws CorruptIndexException, ParseException, IOException {
 		TopDocs docs = queryForTopHitsWithFilter(searchText, n, parentConceptIds);
 		return resultsFromTopDocs(docs);
 	}
-	public List<ResultItem> query(long parentConceptId, int n) throws CorruptIndexException, IOException {
-		TopDocs docs = queryForTopHitsForParent(parentConceptId, n);
-		return resultsFromTopDocs(docs);
+	public List<ResultItem> query(String searchText, int n, long parentConceptId) throws CorruptIndexException, ParseException, IOException {
+		return query(searchText, n, new long[] { parentConceptId });
 	}
-	public List<ResultItem> query(long[] parentConceptIds, int n) throws CorruptIndexException, IOException {
-		TopDocs docs = queryForTopHitsForParents(parentConceptIds, n);
-		return resultsFromTopDocs(docs);
-	}
-
-	/**
-	 * Performs the search limiting results to those descendants of the given parent concept.
-	 * Results are from the Description's "term" field.
-	 */
-	public List<String> queryForDescriptions(String searchText, int n, long parentConceptId) throws CorruptIndexException, ParseException, IOException {
-		TopDocs docs = queryForTopHitsWithFilter(searchText, n, parentConceptId);
-		return descriptionsFromTopDocs(docs);
-	}
-
-	public List<String> queryForDescriptions(String searchText, int n, long[] parentConceptIds) throws CorruptIndexException, ParseException, IOException {
-		TopDocs docs = queryForTopHitsWithFilter(searchText, n, parentConceptIds);
-		return descriptionsFromTopDocs(docs);
-	}
-
+	
 	/**
 	 * Returns the single shortest named concept matching the searchtext.
 	 * We first run a full term search.
@@ -234,8 +192,11 @@ public class Search {
 	 */
 	public ResultItem queryForSingle(String searchText, long[] parentConceptIds) throws CorruptIndexException, ParseException, IOException {
 		String search = QueryParser.escape(searchText.trim());
-		Query q1 = queryParser().parse("\"" + search + "\"");
-		TopDocs docs = searcher().search(q1, Search.filterForParentConcepts(parentConceptIds), 500);
+		Query q1 = new BooleanQuery.Builder()
+			.add(queryParser().parse("\"" + search + "\""), Occur.MUST)
+			.add(filterForParentConcepts(parentConceptIds), Occur.FILTER)
+			.build();
+		TopDocs docs = searcher().search(q1, 500);
 		//printDocuments(docs);
 		ScoreDoc[] sds = docs.scoreDocs;
 		Document top = null;
@@ -243,13 +204,16 @@ public class Search {
 			top = searcher().doc(sds[0].doc);
 		}
 		else {
-			Query q2 = new PrefixQuery(new Term(FIELD_TERM, search));
-			docs = searcher().search(q2,  Search.filterForParentConcepts(parentConceptIds), 500);
+			Query q2 = new BooleanQuery.Builder()
+					.add(new PrefixQuery(new Term(FIELD_TERM, search)), Occur.MUST)
+					.add(filterForParentConcepts(parentConceptIds), Occur.FILTER)
+					.build();
+			docs = searcher().search(q2, 500);
 			sds = docs.scoreDocs;
 			int topLength = 0;
 			for (ScoreDoc sd : sds) {
 				Document doc = searcher().doc(sd.doc);
-				Field termField = doc.getField(FIELD_TERM);
+				IndexableField termField = doc.getField(FIELD_TERM);
 				String term = termField.stringValue();
 				int termLength = term.length();
 				if (top == null || topLength > termLength) {
@@ -279,7 +243,7 @@ public class Search {
 		ScoreDoc[] sds = docs.scoreDocs;
 		for (ScoreDoc sd : sds) {
 			Document doc = searcher().doc(sd.doc);
-			Field term = doc.getField(FIELD_TERM);
+			IndexableField term = doc.getField(FIELD_TERM);
 			descs.add(term.stringValue());
 		}
 		return Collections.unmodifiableList(descs);
@@ -290,21 +254,13 @@ public class Search {
 		ScoreDoc[] sds = docs.scoreDocs;
 		for (ScoreDoc sd : sds) {
 			Document doc = searcher().doc(sd.doc);
-			Field conceptField = doc.getField(FIELD_CONCEPT_ID);
-			Long conceptId = Long.parseLong(conceptField.stringValue());
+			IndexableField conceptField = doc.getField(FIELD_CONCEPT_ID);
+			Long conceptId = conceptField.numericValue().longValue();
 			concepts.add(conceptId);
 		}
 		return Collections.unmodifiableList(concepts);
 	}
 
-	protected TopDocs queryForTopHitsForParent(long parentConceptId, int n) throws CorruptIndexException, IOException {
-		Query q = queryForChildConcepts(parentConceptId);
-		return searcher().search(q, n);
-	}
-	protected TopDocs queryForTopHitsForParents(long[] parentConceptIds, int n) throws CorruptIndexException, IOException {
-		Query q = queryForChildConcepts(parentConceptIds);
-		return searcher().search(q, n);
-	}
 
 	/**
 	 * Perform specified query limiting results to those that are a descendent of the
@@ -320,7 +276,8 @@ public class Search {
 	 */
 	public TopDocs queryForTopHitsWithFilter(String searchText, int n, long parentConceptId) throws ParseException, CorruptIndexException, IOException {
 		Query q1 = queryParser().parse(searchText);
-		return searcher().search(q1, Search.filterForParentConcept(parentConceptId), n);
+		Query q = new BooleanQuery.Builder().add(q1, Occur.MUST).add(filterForParentConcepts(new long[] { parentConceptId}), Occur.FILTER).build();
+		return searcher().search(q, n);
 	}
 
 	/**
@@ -335,7 +292,8 @@ public class Search {
 	 */
 	public TopDocs queryForTopHitsWithFilter(String searchText, int n, long[] parentConceptIds) throws ParseException, CorruptIndexException, IOException {
 		Query q1 = queryParser().parse(searchText);
-		return searcher().search(q1, Search.filterForParentConcepts(parentConceptIds), n);
+		Query q = new BooleanQuery.Builder().add(q1, Occur.MUST).add(filterForParentConcepts(parentConceptIds), Occur.FILTER).build();
+		return searcher().search(q, n);
 	}
 
 
@@ -354,42 +312,18 @@ public class Search {
 	} 
 
 	/**
-	 * Returns a cached filter for descriptions with the given parent concept.
-	 *
-	 * @param parentConceptId
-	 * @return
-	 */
-	protected static Filter filterForParentConcept(long parentConceptId) {
-		Query q = new TermQuery(new Term(FIELD_PARENT_CONCEPT_ID, Long.toString(parentConceptId)));
-		QueryWrapperFilter qwf = new QueryWrapperFilter(q);
-		Filter f = FilterManager.getInstance().getFilter(qwf);
-		return f;
-	}
-
-
-	/**
 	 * Returns a cached filter for descriptions with one of the given parent concepts.
 	 *
 	 * @param parentConceptIds
 	 * @return
 	 */
-	protected static Filter filterForParentConcepts(long[] parentConceptIds) {
-		BooleanQuery bq = new BooleanQuery();
+	protected static Query filterForParentConcepts(long[] parentConceptIds) {
+		Builder builder = new BooleanQuery.Builder(); 
 		for (long conceptId: parentConceptIds) {
-			Query q = new TermQuery(new Term(FIELD_PARENT_CONCEPT_ID, Long.toString(conceptId)));
-			bq.add(q, BooleanClause.Occur.SHOULD);
+			Query q = LongPoint.newExactQuery(FIELD_PARENT_CONCEPT_ID, conceptId);
+			builder.add(q, Occur.MUST);
 		}
-		QueryWrapperFilter qwf = new QueryWrapperFilter(bq);
-		Filter f = FilterManager.getInstance().getFilter(qwf);
-		return f;
-	}
-
-	protected static Query queryForChildConcepts(long parentConceptId) {
-		return new ConstantScoreQuery(filterForParentConcept(parentConceptId));
-	}
-
-	protected static Query queryForChildConcepts(long[] parentConceptIds) {
-		return new ConstantScoreQuery(filterForParentConcepts(parentConceptIds));
+		return builder.build();
 	}
 
 	/**
@@ -421,27 +355,26 @@ public class Search {
 	 * @throws CorruptIndexException
 	 * @throws IOException
 	 */
-	protected static IndexReader createOrLoadIndexReader(File index, StandardAnalyzer analyser) throws CorruptIndexException, IOException {
-		Directory directory = FSDirectory.open(index);
-		if (IndexReader.indexExists(directory)==false) {
+	protected static IndexReader createOrLoadIndexReader(URI index, StandardAnalyzer analyser) throws CorruptIndexException, IOException {
+		Directory directory = FSDirectory.open(Paths.get(index));
+		if (DirectoryReader.indexExists(directory) == false) {
 			IndexWriter writer = createOrLoadIndexWriter(index, analyser);
 			writer.close();
 		}
-		IndexReader reader = IndexReader.open(directory, true);
+		IndexReader reader = DirectoryReader.open(directory);
 		return reader;
 	}
 
-	protected static IndexWriter createOrLoadIndexWriter(File index, StandardAnalyzer analyser) throws CorruptIndexException, LockObtainFailedException, IOException  {
-		Directory directory = FSDirectory.open(index);
-		IndexWriter writer = new IndexWriter(directory,
-				analyser,
-				IndexReader.indexExists(directory)==false,
-				IndexWriter.MaxFieldLength.LIMITED);
+	protected static IndexWriter createOrLoadIndexWriter(URI index, StandardAnalyzer analyser) throws CorruptIndexException, LockObtainFailedException, IOException  {
+		Directory directory = FSDirectory.open(Paths.get(index));
+		IndexWriterConfig iwc = new IndexWriterConfig(analyser);
+		iwc.setOpenMode(OpenMode.CREATE_OR_APPEND);
+		IndexWriter writer = new IndexWriter(directory, iwc);
 		return writer;
 	}
 
-	protected File indexFile() {
-		return new File(_indexLocation);
+	protected URI indexFile() {
+		return new File(_indexLocation).toURI();
 	}
 
 	protected StandardAnalyzer analyser() {
@@ -453,7 +386,7 @@ public class Search {
 	 * @return
 	 */
 	protected QueryParser queryParser() {
-		QueryParser qp = new QueryParser(LUCENE_VERSION, FIELD_TERM, analyser());
+		QueryParser qp = new QueryParser(FIELD_TERM, analyser());
 		qp.setDefaultOperator(QueryParser.Operator.AND);
 		return qp;
 	}
@@ -504,7 +437,7 @@ public class Search {
 		protected _ResultItem(Document doc) {
 			_term = doc.getField(FIELD_TERM).stringValue();
 			_conceptId = Long.parseLong(doc.getField(FIELD_CONCEPT_ID).stringValue());
-			Field preferredTerm = doc.getField(FIELD_PREFERRED_TERM);
+			IndexableField preferredTerm = doc.getField(FIELD_PREFERRED_TERM);
 			_preferredTerm = preferredTerm != null ? preferredTerm.stringValue() : _term;
 		}
 		protected _ResultItem(Concept concept) {

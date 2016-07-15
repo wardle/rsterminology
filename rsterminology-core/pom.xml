@@ -39,7 +39,7 @@
 		<dependency>
 			<groupId>org.apache.lucene</groupId>
 			<artifactId>lucene-core</artifactId>
-			<version>3.0.1</version>
+			<version>6.1.0</version>
 		</dependency>
 
 
@@ -60,5 +60,15 @@
      <artifactId>opencsv</artifactId>
      <version>3.8</version>
   </dependency>
+		<dependency>
+			<groupId>org.apache.lucene</groupId>
+			<artifactId>lucene-analyzers-common</artifactId>
+			<version>6.1.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.lucene</groupId>
+			<artifactId>lucene-queryparser</artifactId>
+			<version>6.1.0</version>
+		</dependency>
 	</dependencies>
 </project>

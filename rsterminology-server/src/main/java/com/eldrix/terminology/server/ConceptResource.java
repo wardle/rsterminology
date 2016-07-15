@@ -12,7 +12,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriInfo;
 
-import org.apache.lucene.queryParser.ParseException;
+import org.apache.lucene.queryparser.classic.ParseException;
 
 import com.eldrix.terminology.snomedct.Concept;
 import com.eldrix.terminology.snomedct.Search;
@@ -61,7 +61,6 @@ public class ConceptResource {
 		}
 		return null;
 	}
-	
 
 	static long[] _parseLongArray(String list) {
 		String[] roots = list.split(",");
