@@ -11,11 +11,7 @@ The current version can now:
 2. Build an optimised concept parent cache.
 3. Build a backend lucene index to support fast free-text search.
 
-The current development targets are:
-
-1. Upgrade Lucene to a latest version [complex]
-2. Add support to filter based on immediate IS-A relationships (direct parent concepts) [simple]
-3. Add support for RF2 file format and RefSets. The legacy application supported RF1 (Release format 1) as it was written in 2009 but RF2 support is required. [complex]
+The SNOMED-CT international releases are now made in RF2 file format. At the time of writing RF1 file format files are still available and the DM&D are only available in RF1 format. Future versions might need to add support for RF2 file format and RefSets. The legacy application supported RF1 (Release format 1) as it was written in 2009 but RF2 support will almost certainly be required in the future.
 
 ## Getting started
 
@@ -32,7 +28,7 @@ cd rsterminology
 mvn package
 ```    
 
-Note: this step requires unit tests to work with appropriate runtime configuration. Have a look at the run.yml file within rsterminology-server.
+Note: this step requires unit tests to work with appropriate runtime configuration. Have a look at the run.yml file within rsterminology-server. 
 
     jdbc:
       rsdb:
