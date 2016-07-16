@@ -167,6 +167,14 @@ public class Search {
 		writer.addDocument(doc);
 	}
 
+	public TopDocs query(Query query, Query filter, int n) throws CorruptIndexException, IOException {
+		Builder builder = new BooleanQuery.Builder();
+		builder.add(query, Occur.MUST);
+		if (filter != null) {
+			builder.add(filter, Occur.FILTER);
+		}
+		return searcher().search(builder.build(), n);
+	}
 	
 	public List<ResultItem> query(String searchText, int n, long[] parentConceptIds) throws CorruptIndexException, ParseException, IOException {
 		TopDocs docs = queryForTopHitsWithFilter(searchText, n, parentConceptIds);
