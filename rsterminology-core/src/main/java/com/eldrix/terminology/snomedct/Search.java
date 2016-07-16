@@ -406,8 +406,6 @@ public class Search {
 			Document doc = searcher().doc(sd.doc);
 			results.add(new _ResultItem(doc));
 		}
-		//NSArray<EOSortOrdering> sortOrderings = new NSArray<EOSortOrdering>(EOSortOrdering.sortOrderingWithKey("term",  EOSortOrdering.CompareAscending));
-		//EOSortOrdering.sortArrayUsingKeyOrderArray(results, sortOrderings);
 		return results;
 	}
 
