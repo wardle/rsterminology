@@ -3,14 +3,18 @@ package com.eldrix.terminology.server.commands;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.cayenne.ObjectContext;
 import org.apache.cayenne.configuration.server.ServerRuntime;
 import org.apache.cayenne.query.ObjectSelect;
+import org.apache.lucene.queryparser.classic.ParseException;
 
 import com.eldrix.terminology.snomedct.Concept;
+import com.eldrix.terminology.snomedct.Search;
+import com.eldrix.terminology.snomedct.Search.ResultItem;
 import com.eldrix.terminology.snomedct.Semantic.DmdProduct;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
@@ -19,6 +23,12 @@ import com.nhl.bootique.command.CommandMetadata;
 import com.nhl.bootique.command.CommandOutcome;
 import com.nhl.bootique.command.CommandWithMetadata;
 
+/**
+ * This is a very simply command-line SNOMED-CT browser.
+ * It is extremely rudimentary but it is intended to be help quickly find a concept and browse the hierarchy. 
+ * @author Mark Wardle
+ *
+ */
 public class Browser extends CommandWithMetadata {
 
 	@Inject 
@@ -41,7 +51,12 @@ public class Browser extends CommandWithMetadata {
 		System.out.println("SNOMED-CT interactive browser and search.");
 		boolean quit = false;
 		while (!quit) {
-			System.out.println("Enter command: " + (currentConcept() != null ? "Current: "+currentConcept().getConceptId()  + currentConcept().getFullySpecifiedName(): "") + "");
+			if (currentConcept() != null) {
+				System.out.println("****************************************");
+				System.out.println("Current: "+currentConcept().getConceptId()  + ": " + currentConcept().getFullySpecifiedName());
+				System.out.println("****************************************");
+			}
+			System.out.println("Enter command:");
 			BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(System.in));
 			try {
 				String line = bufferedReader.readLine();
@@ -61,6 +76,8 @@ public class Browser extends CommandWithMetadata {
 		performHelp(line);
 		performShowConcept(line);
 		performShowDescriptions(line);
+		performShowChildRelationships(line);
+		performFind(line);
 		return false;
 	}
 	private boolean performQuit(String line) {
@@ -71,9 +88,10 @@ public class Browser extends CommandWithMetadata {
 		if ("h".equalsIgnoreCase(line) || "?".equalsIgnoreCase(line) || "help".equalsIgnoreCase(line)) {
 			System.out.println("help/h/? : This help");
 			System.out.println("quit/q   : Quit");
-			System.out.println("c <conceptId> : Display the specified concept.");
-			System.out.println("i        : Show information for currently selected concept");
+			System.out.println("s <conceptId> : Show or change the currently selected concept");
 			System.out.println("d        : Show descriptions for currently selected concept");
+			System.out.println("c        : Show child relationships for currently selected concept");
+			System.out.println("f <name> : Find a concept matching the specified name");
 		}
 	}
 
@@ -85,7 +103,7 @@ public class Browser extends CommandWithMetadata {
 	}
 
 	private void performShowConcept(String line) {
-		Matcher m = Pattern.compile("c (\\d*)").matcher(line);
+		Matcher m = Pattern.compile("s (\\d*)").matcher(line);
 		if (m.matches()) {
 			try {
 				long conceptId = Long.parseLong(m.group(1));
@@ -103,32 +121,68 @@ public class Browser extends CommandWithMetadata {
 				System.err.println("Invalid concept identifier");
 			}
 		}
-		if ("s".equalsIgnoreCase(line) && currentConcept() != null) {
+		if ("s".equalsIgnoreCase(line.trim()) && currentConcept() != null) {
 			printConcept(currentConcept(), true);
 		}
 	}
 
 	private void performShowDescriptions(String line) {
 		if ("d".equalsIgnoreCase(line) && currentConcept() != null) {
+			System.out.println("Descriptions (synonyms):");
 			currentConcept().getDescriptions().stream().forEach(d -> {
-				System.out.println("Description " + d.getDescriptionId() + ": " + d.getTerm());
+				System.out.println("  |-- " + d.getDescriptionId() + ": " + d.getTerm());
 			});
 		}
 	}
 	
+	private void performShowChildRelationships(String line) {
+		if ("c".equalsIgnoreCase(line.trim()) && currentConcept() != null) {
+			StringBuilder sb = new StringBuilder();
+			sb.append("Child relationships:");
+			currentConcept().getChildRelationships().forEach(r -> {
+				sb.append("\n  |    |-" + r.getSourceConcept().getFullySpecifiedName()  + " " +r.getSourceConceptId() + " "+ " [" + r.getRelationshipTypeConcept().getFullySpecifiedName() + "] " + r.getTargetConcept().getFullySpecifiedName());
+			});
+			System.out.println(sb.toString());
+		}
+	}
+
 	private static void printConcept(Concept c, boolean includeRelations) {
 		StringBuilder sb = new StringBuilder();
-		sb.append("Concept : " + c.getConceptId() + " : " + c.getFullySpecifiedName() + " DM&D structure : " + DmdProduct.productForConcept(c));
+		sb.append("Concept : " + c.getConceptId() + " : " + c.getFullySpecifiedName());
+		if (DmdProduct.productForConcept(c) != null) {
+			sb.append("  DM&D concept: " + DmdProduct.productForConcept(c));
+		}
 		if (includeRelations) {
-			c.getChildConcepts().forEach(child -> sb.append("\n  childConcept: " + child.getFullySpecifiedName()));
-			c.getParentConcepts().forEach(parent -> sb.append("\n  parentConcept: " + parent.getFullySpecifiedName()));
-			c.getChildRelationships().forEach(r -> {
-				sb.append("\n  childRelation: " + r.getSourceConcept().getFullySpecifiedName() + " [" + r.getRelationshipTypeConcept().getFullySpecifiedName() + "] " + r.getTargetConcept().getFullySpecifiedName());
-			});
+			sb.append("\n  |-Recursive parents:");
+			c.getParentConcepts().forEach(parent -> 
+			sb.append("\n  |    |-" + parent.getConceptId() + " " + parent.getFullySpecifiedName()));
+			sb.append("\n  |-Parent relationships:");
 			c.getParentRelationships().forEach(r -> {
-				sb.append("\n  parentRelation: " + r.getSourceConcept().getFullySpecifiedName() + " [" + r.getRelationshipTypeConcept().getFullySpecifiedName() + "] " + r.getTargetConcept().getFullySpecifiedName());
+				sb.append("\n  |    |-" + r.getSourceConcept().getFullySpecifiedName() + " [" + r.getRelationshipTypeConcept().getFullySpecifiedName() + "] " + r.getTargetConcept().getFullySpecifiedName() + " " + r.getTargetConceptId());
 			});
 		}
 		System.out.println(sb.toString());
+	}
+	
+	private void performFind(String line) {
+		String[] split = line.split(" ");
+		if (split.length >= 2 && "f".equalsIgnoreCase(split[0])) {
+			String search = line.substring(2);
+			try {
+				List<ResultItem> results = Search.getInstance().query(search, 20, 138875005);
+				if (results.size() > 0) {
+					results.forEach(ri -> {
+						System.out.println(ri.getTerm() + " -- " + ri.getPreferredTerm() + " -- " + ri.getConceptId());
+					});
+				}
+				else {
+					System.out.println("No results found");
+				}
+				
+			} catch (ParseException | IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
 	}
 }
