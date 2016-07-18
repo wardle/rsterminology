@@ -9,11 +9,21 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 
 /**
- * Helper methods to provide additional understanding within SNOMED-CT.
+ * Helper methods to provide runtime-based understanding within SNOMED-CT.
  * @author Mark Wardle
  *
  */
 public class Semantic {
+	
+	public enum Category {
+		DISEASE(64572001L),
+		CLINICAL_FINDING(404684003L),
+		PHARMACEUTICAL_OR_BIOLOGICAL_PRODUCT(373873005L);
+		public final long conceptId;
+		Category(long conceptId) {
+			this.conceptId = conceptId;
+		}
+	}
 	
 	public enum RelationType {
 		IS_A(116680003L),
