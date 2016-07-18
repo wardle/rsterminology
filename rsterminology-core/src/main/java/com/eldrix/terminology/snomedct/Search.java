@@ -32,6 +32,7 @@ import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BooleanQuery.Builder;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
@@ -385,6 +386,7 @@ public class Search {
 	protected QueryParser queryParser() {
 		QueryParser qp = new QueryParser(FIELD_TERM, analyser());
 		qp.setDefaultOperator(QueryParser.Operator.AND);
+		qp.setMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_REWRITE);
 		return qp;
 	}
 
