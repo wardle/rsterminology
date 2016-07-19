@@ -165,11 +165,30 @@ public class Browser extends CommandWithMetadata {
 	}
 	
 	private void performFind(String line) {
-		String[] split = line.split(" ");
-		if (split.length >= 2 && "f".equalsIgnoreCase(split[0])) {
-			String search = line.substring(2);
+		Matcher m = Pattern.compile("^f(?<number>\\d*)?\\s+(\\[(?<roots>.*?)\\])?\\s?(?<search>.*)").matcher(line);
+		if (m.matches()) {
+			String number = m.group("number");		// number of results requested
+			String roots = m.group("roots");		// root identifiers
+			String search = m.group("search");
 			try {
-				List<ResultItem> results = Search.getInstance().query(search, 20, 138875005);
+				int hits = 20;
+				if (number != null && number.length() > 0) {
+					try {
+						int h = Integer.parseInt(number);
+						hits = h;
+					}
+					catch (NumberFormatException e) {
+						;
+					}
+				}
+				long[] rootConceptIds = new long[] { 138875005 };
+				if (roots != null && roots.length() > 0) {
+					long[] r = Search.parseLongArray(roots);
+					if (r.length > 0) {
+						rootConceptIds = r;
+					}
+				}
+				List<ResultItem> results = Search.getInstance().query(search, hits, rootConceptIds);
 				if (results.size() > 0) {
 					results.forEach(ri -> {
 						System.out.println(ri.getTerm() + " -- " + ri.getPreferredTerm() + " -- " + ri.getConceptId());
@@ -182,7 +201,8 @@ public class Browser extends CommandWithMetadata {
 			} catch (ParseException | IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
-			}
+			}			
 		}
+		
 	}
 }

@@ -460,4 +460,23 @@ public class Search {
 			return super.toString() + ": " + getPreferredTerm() + " (" + getConceptId() + ")";
 		}
 	}
+	
+	/**
+	 * Parse a list of long numbers delimited by commas into an array.
+	 * @param list
+	 * @return
+	 */
+	public static long[] parseLongArray(String list) {
+		String[] roots = list.split(",");
+		long[] rootConceptIds = new long[roots.length];
+		try {
+			for (int i=0; i<roots.length; i++) {
+				rootConceptIds[i] = Long.parseLong(roots[i]);
+			}
+			return rootConceptIds;
+		}
+		catch (NumberFormatException e) {
+			return new long[] {} ;
+		}
+	}
 }

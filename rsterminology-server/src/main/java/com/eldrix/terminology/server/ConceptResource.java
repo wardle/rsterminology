@@ -51,7 +51,7 @@ public class ConceptResource {
 	@GET
 	@Path("search")
 	public DataResponse<ResultItem> search(@QueryParam("s") String search, @QueryParam("rootIds") String rootIds, @Context UriInfo uriInfo) {
-		long[] rootConceptIds = _parseLongArray(rootIds);
+		long[] rootConceptIds = Search.parseLongArray(rootIds);
 		try {
 			List<ResultItem> result = Search.getInstance().query(search, 200, rootConceptIds);
 			return DataResponse.forObjects(result);
@@ -62,18 +62,6 @@ public class ConceptResource {
 		return null;
 	}
 
-	static long[] _parseLongArray(String list) {
-		String[] roots = list.split(",");
-		long[] rootConceptIds = new long[roots.length];
-		try {
-			for (int i=0; i<roots.length; i++) {
-				rootConceptIds[i] = Long.parseLong(roots[i]);
-			}
-			return rootConceptIds;
-		}
-		catch (NumberFormatException e) {
-			return new long[] {} ;
-		}
-	}
+
 
 }
