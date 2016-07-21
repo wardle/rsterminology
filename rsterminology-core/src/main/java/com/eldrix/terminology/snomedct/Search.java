@@ -247,6 +247,17 @@ public class Search {
 		return conceptsFromTopDocs(docs);
 	}
 
+	protected List<String> descriptionsFromTopDocs(TopDocs docs) throws CorruptIndexException, IOException {
+		ArrayList<String> descs = new ArrayList<String>(docs.totalHits);
+		ScoreDoc[] sds = docs.scoreDocs;
+		for (ScoreDoc sd : sds) {
+			Document doc = searcher().doc(sd.doc);
+			IndexableField term = doc.getField(FIELD_TERM);
+			descs.add(term.stringValue());
+		}
+		return Collections.unmodifiableList(descs);
+	}
+
 	protected List<Long> conceptsFromTopDocs(TopDocs docs) throws CorruptIndexException, IOException {
 		ArrayList<Long> concepts = new ArrayList<Long>(docs.totalHits);
 		ScoreDoc[] sds = docs.scoreDocs;
