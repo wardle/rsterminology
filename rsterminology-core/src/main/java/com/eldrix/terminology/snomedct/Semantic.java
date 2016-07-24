@@ -16,8 +16,10 @@ import org.apache.commons.lang3.StringUtils;
 public class Semantic {
 	
 	public enum Category {
+		SNOMED_CT_ROOT(138875005L),
 		DISEASE(64572001L),
 		CLINICAL_FINDING(404684003L),
+		LABORATORY_TEST(15220000L),
 		PHARMACEUTICAL_OR_BIOLOGICAL_PRODUCT(373873005L);
 		public final long conceptId;
 		Category(long conceptId) {
