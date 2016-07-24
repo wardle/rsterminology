@@ -247,6 +247,11 @@ public class Search {
 		return conceptsFromTopDocs(docs);
 	}
 
+	public List<String> queryForDescriptions(String searchText, int n, long[] parentConceptIds) throws CorruptIndexException, ParseException, IOException {
+		TopDocs docs = queryForTopHitsWithFilter(searchText, n, parentConceptIds);
+		return descriptionsFromTopDocs(docs);
+	}
+	
 	protected List<String> descriptionsFromTopDocs(TopDocs docs) throws CorruptIndexException, IOException {
 		ArrayList<String> descs = new ArrayList<String>(docs.totalHits);
 		ScoreDoc[] sds = docs.scoreDocs;
