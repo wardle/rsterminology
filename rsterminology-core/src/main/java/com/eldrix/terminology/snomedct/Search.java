@@ -306,7 +306,7 @@ public class Search {
 	 */
 	public TopDocs queryForTopHitsWithFilter(String searchText, int n, long[] parentConceptIds) throws ParseException, CorruptIndexException, IOException {
 		Query q1 = queryParser().parse(searchText);
-		Query q = new BooleanQuery.Builder().add(q1, Occur.MUST).add(filterForParentConcepts(parentConceptIds), Occur.FILTER).build();
+		Query q = parentConceptIds.length == 0 ? q1 : new BooleanQuery.Builder().add(q1, Occur.MUST).add(filterForParentConcepts(parentConceptIds), Occur.FILTER).build();
 		return searcher().search(q, n);
 	}
 
