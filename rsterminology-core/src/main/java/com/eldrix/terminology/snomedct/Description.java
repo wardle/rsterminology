@@ -12,7 +12,7 @@ import com.eldrix.terminology.snomedct.auto._Description;
 
 public class Description extends _Description {
 	private static final long serialVersionUID = 1L; 
-	static Expression QUALIFIER_FOR_PREFERRED = Description.DESCRIPTION_TYPE_CODE.eq(Type.PREFERRED.code);
+	static final Expression QUALIFIER_FOR_PREFERRED = Description.DESCRIPTION_TYPE_CODE.eq(Type.PREFERRED.code);
 	static final Expression QUALIFIER_FALLBACK_PREFERRED_DESCRIPTION = Description.DESCRIPTION_TYPE_CODE.eq(Description.Type.SYNONYM.code);
 	static final Expression QUALIFIER_FSN_DESCRIPTION = Description.DESCRIPTION_TYPE_CODE.eq(Description.Type.FULLY_SPECIFIED_NAME.code);
 
