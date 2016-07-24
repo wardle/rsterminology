@@ -483,6 +483,7 @@ public class Search {
 	 * @return
 	 */
 	public static long[] parseLongArray(String list) {
+		if (list != null && list.length() > 0) {
 		String[] roots = list.split(",");
 		long[] rootConceptIds = new long[roots.length];
 		try {
@@ -492,7 +493,9 @@ public class Search {
 			return rootConceptIds;
 		}
 		catch (NumberFormatException e) {
-			return new long[] {} ;
+			;	//NOP
 		}
+		}
+		return new long[] {} ;
 	}
 }
