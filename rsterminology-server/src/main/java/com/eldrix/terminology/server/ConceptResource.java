@@ -10,6 +10,7 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Configuration;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
 
 import org.apache.lucene.queryparser.classic.ParseException;
@@ -19,6 +20,7 @@ import com.eldrix.terminology.snomedct.Search;
 import com.eldrix.terminology.snomedct.Search.ResultItem;
 import com.nhl.link.rest.DataResponse;
 import com.nhl.link.rest.LinkRest;
+import com.nhl.link.rest.LinkRestException;
 
 @Path("concept")
 @Produces(MediaType.APPLICATION_JSON)
@@ -55,11 +57,12 @@ public class ConceptResource {
 		try {
 			List<ResultItem> result = Search.getInstance().query(search, 200, rootConceptIds);
 			return DataResponse.forObjects(result);
-		} catch (ParseException | IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();			
+			throw new LinkRestException(Status.INTERNAL_SERVER_ERROR, e.getLocalizedMessage(), e);
+		} catch (ParseException e) {
+			throw new LinkRestException(Status.BAD_REQUEST, e.getLocalizedMessage(), e);
 		}
-		return null;
 	}
 
 
