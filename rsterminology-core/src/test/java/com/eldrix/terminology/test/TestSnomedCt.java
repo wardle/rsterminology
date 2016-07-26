@@ -27,6 +27,8 @@ import com.eldrix.terminology.snomedct.Concept;
 import com.eldrix.terminology.snomedct.Description;
 import com.eldrix.terminology.snomedct.ParentCache;
 import com.eldrix.terminology.snomedct.Search;
+import com.eldrix.terminology.snomedct.Search.ResultItem;
+import com.eldrix.terminology.snomedct.Semantic;
 import com.eldrix.terminology.snomedct.Semantic.Amp;
 import com.eldrix.terminology.snomedct.Semantic.Ampp;
 import com.eldrix.terminology.snomedct.Semantic.DmdProduct;
@@ -160,6 +162,21 @@ public class TestSnomedCt {
 		
 	}
 
+	@Test
+	public void testSearchMedications() throws CorruptIndexException, ParseException, IOException {
+		ObjectContext context = getRuntime().newContext();
+		Search search = Search.getInstance();
+		List<ResultItem> sAmlodipine = search.queryForVtmOrTf("amlodip*", 1);
+		assertEquals(1, sAmlodipine.size());
+		Concept amlodipine = ObjectSelect.query(Concept.class, Concept.CONCEPT_ID.eq(sAmlodipine.get(0).getConceptId())).selectOne(context);
+		assertNotNull(amlodipine);
+		assertTrue(Semantic.Vtm.isA(amlodipine));		// this should be a VTM
+		
+		List<ResultItem> aMadopar = search.queryForVtmOrTf("madopar", 1);
+		Concept madopar = ObjectSelect.query(Concept.class, Concept.CONCEPT_ID.eq(aMadopar.get(0).getConceptId())).selectOne(context);
+		assertTrue(Semantic.Tf.isA(madopar));
+	}
+	
 	@Test
 	public void testMedications() {
 		ObjectContext context = getRuntime().newContext();

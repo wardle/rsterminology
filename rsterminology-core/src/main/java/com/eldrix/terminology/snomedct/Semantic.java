@@ -87,11 +87,11 @@ public class Semantic {
 		ACTUAL_MEDICINAL_PRODUCT_PACK("AMPP", 10364001000001104L);
 
 		private String _abbreviation;
-		private long _conceptId;
+		public long conceptId;
 
 		DmdProduct(String abbreviation, long conceptId) {
 			_abbreviation = abbreviation;
-			_conceptId = conceptId;
+			this.conceptId = conceptId;
 		}
 
 		public String abbreviation() {
@@ -106,7 +106,7 @@ public class Semantic {
 		public static DmdProduct productForConcept(Concept c) {
 			for (Concept p : c.getParentConcepts()) {
 				for (DmdProduct med : DmdProduct.values()) {
-					if (p.getConceptId() == med._conceptId) {
+					if (p.getConceptId() == med.conceptId) {
 						return med;
 					}
 				}
@@ -125,7 +125,7 @@ public class Semantic {
 		 */
 		public boolean isAConcept(Concept c) {
 			for (Concept p : c.getParentConcepts()) {
-				if (_conceptId == p.getConceptId()) {
+				if (conceptId == p.getConceptId()) {
 					return true;
 				}
 			}

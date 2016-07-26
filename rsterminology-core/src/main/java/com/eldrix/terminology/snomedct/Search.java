@@ -44,6 +44,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.eldrix.terminology.snomedct.Description.Status;
+import com.eldrix.terminology.snomedct.Semantic.DmdProduct;
 
 
 /*
@@ -73,6 +74,11 @@ public class Search {
 	private IndexSearcher _searcher;
 	private String _indexLocation; 
 
+	private long[] dmdVtmOrTf = new long[] { DmdProduct.VIRTUAL_THERAPEUTIC_MOIETY.conceptId, DmdProduct.TRADE_FAMILY.conceptId};
+	private long[] dmdVmpOrAmp = new long[] { DmdProduct.ACTUAL_MEDICINAL_PRODUCT.conceptId, DmdProduct.VIRTUAL_MEDICINAL_PRODUCT.conceptId};
+	private Query dmdVtmOrTfFilter = filterForIsAConcepts(dmdVtmOrTf);
+	private Query dmdVmpOrAmpFilter = filterForIsAConcepts(dmdVmpOrAmp);
+	
 	/**
 	 * Get a shared instance at the default location.
 	 * @return
@@ -176,13 +182,25 @@ public class Search {
 		}
 		return searcher().search(builder.build(), n);
 	}
-	
+
 	public List<ResultItem> query(String searchText, int n, long[] parentConceptIds) throws CorruptIndexException, ParseException, IOException {
 		TopDocs docs = queryForTopHitsWithFilter(searchText, n, parentConceptIds);
 		return resultsFromTopDocs(docs);
 	}
 	public List<ResultItem> query(String searchText, int n, long parentConceptId) throws CorruptIndexException, ParseException, IOException {
 		return query(searchText, n, new long[] { parentConceptId });
+	}
+
+	public List<ResultItem> queryForVtmOrTf(String searchText, int n) throws CorruptIndexException, ParseException, IOException {
+		Query query = queryParser().parse(searchText);
+		TopDocs docs = query(query, dmdVtmOrTfFilter, n);
+		return resultsFromTopDocs(docs);
+	}
+
+	public List<ResultItem> queryForVmpOrAmp(String searchText, int n) throws CorruptIndexException, ParseException, IOException {
+		Query query = queryParser().parse(searchText);
+		TopDocs docs = query(query, dmdVmpOrAmpFilter, n);
+		return resultsFromTopDocs(docs);
 	}
 	
 	/**
@@ -199,12 +217,13 @@ public class Search {
 	 * @throws ParseException
 	 * @throws IOException
 	 */
+	@Deprecated
 	public ResultItem queryForSingle(String searchText, long[] parentConceptIds) throws CorruptIndexException, ParseException, IOException {
 		String search = QueryParser.escape(searchText.trim());
 		Query q1 = new BooleanQuery.Builder()
-			.add(queryParser().parse("\"" + search + "\""), Occur.MUST)
-			.add(filterForParentConcepts(parentConceptIds), Occur.FILTER)
-			.build();
+				.add(queryParser().parse("\"" + search + "\""), Occur.MUST)
+				.add(filterForParentConcepts(parentConceptIds), Occur.FILTER)
+				.build();
 		TopDocs docs = searcher().search(q1, 500);
 		//printDocuments(docs);
 		ScoreDoc[] sds = docs.scoreDocs;
@@ -251,7 +270,7 @@ public class Search {
 		TopDocs docs = queryForTopHitsWithFilter(searchText, n, parentConceptIds);
 		return descriptionsFromTopDocs(docs);
 	}
-	
+
 	protected List<String> descriptionsFromTopDocs(TopDocs docs) throws CorruptIndexException, IOException {
 		ArrayList<String> descs = new ArrayList<String>(docs.totalHits);
 		ScoreDoc[] sds = docs.scoreDocs;
@@ -326,7 +345,7 @@ public class Search {
 	} 
 
 	/**
-	 * Returns a cached filter for descriptions with one of the given parent concepts.
+	 * Returns a filter for descriptions with one of the given parent concepts.
 	 *
 	 * @param parentConceptIds
 	 * @return
@@ -335,11 +354,23 @@ public class Search {
 		Builder builder = new BooleanQuery.Builder(); 
 		for (long conceptId: parentConceptIds) {
 			Query q = LongPoint.newExactQuery(FIELD_PARENT_CONCEPT_ID, conceptId);
-			builder.add(q, Occur.MUST);
+			builder.add(q, Occur.SHOULD);
 		}
-		return builder.build();
+		return builder.setMinimumNumberShouldMatch(1).build();
 	}
 
+	/**
+	 * Returns a filter for descriptions with one the given direct parents.
+	 */
+	protected static Query filterForIsAConcepts(long [] isAParentConceptIds) {
+		Builder builder = new BooleanQuery.Builder(); 
+		for (long conceptId: isAParentConceptIds) {
+			Query q = LongPoint.newExactQuery(FIELD_ISA_PARENT_CONCEPT_ID, conceptId);
+			builder.add(q, Occur.SHOULD);
+		}
+		return builder.setMinimumNumberShouldMatch(1).build();
+	}
+	
 	/**
 	 * This is for debugging.
 	 * @param rs
@@ -430,6 +461,9 @@ public class Search {
 	}
 
 
+	/**
+	 * A result of a search.
+	 */
 	public interface ResultItem {
 		public String getTerm();
 		public long getConceptId();
