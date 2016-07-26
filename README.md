@@ -3,7 +3,7 @@ An open-source SNOMED-CT implementation.
 
 This is a conversion of a legacy WebObjects-based SNOMED-CT web service and administration portal. It is currently running and passing unit tests to query and explore the SNOMED-CT hierarchy.
 
-It is built using Bootique, Apache Cayenne and LinkRest together with Apache Lucene. Initially, it uses an old version of Lucene as most of the code has simply migrated as-is. 
+It is built using Bootique, Apache Cayenne and LinkRest together with Apache Lucene. 
 
 The current version can now:
 
@@ -14,6 +14,8 @@ The current version can now:
 The SNOMED-CT international releases are now made in RF2 file format. At the time of writing RF1 file format files are still available and the DM&D are only available in RF1 format. Future versions might need to add support for RF2 file format and RefSets. The legacy application supported RF1 (Release format 1) as it was written in 2009 but RF2 support will almost certainly be required in the future.
 
 ## Getting started
+
+Soon, I will make a runnable jar file available so that you can experiment without having to compile the source code.
 
 ### Download the source-code from github.
 
@@ -40,7 +42,7 @@ Note: this step requires unit tests to work with appropriate runtime configurati
       createSchema: false
 
 
-For example, you may need to change your database url.
+For example, you may need to change your database url. Alternatively, you can run maven without running unit tests.
   
 ### Locate and run the executable jar file
 
