@@ -6,12 +6,12 @@
 	<parent>
                 <groupId>com.eldrix.rsterminology</groupId>
                 <artifactId>rsterminology</artifactId>
-                <version>1.0</version>
+                <version>0.1</version>
         </parent>
 
 	<groupId>com.eldrix.rsterminology.server</groupId>
 	<artifactId>rsterminology-server</artifactId>
-	<version>1.0-SNAPSHOT</version>
+	<version>0.1-SNAPSHOT</version>
 
 	<name>RSTerminology server</name>
 	<description>A SNOMED-CT terminology server.</description>
