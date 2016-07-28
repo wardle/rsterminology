@@ -15,6 +15,7 @@ import org.apache.cayenne.query.SelectQuery;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.TextField;
@@ -43,7 +44,6 @@ import org.apache.lucene.store.LockObtainFailedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.eldrix.terminology.snomedct.Description.Status;
 import com.eldrix.terminology.snomedct.Semantic.DmdProduct;
 
 
@@ -67,17 +67,35 @@ public class Search {
 	private static final String FIELD_PARENT_CONCEPT_ID="parentConceptId";
 	private static final String FIELD_ISA_PARENT_CONCEPT_ID="isA";
 	private static final String FIELD_LANGUAGE="language";
-	private static final String FIELD_STATUS="status";
+	private static final String FIELD_DESCRIPTION_STATUS="descriptionStatus";
+	private static final String FIELD_CONCEPT_STATUS="conceptStatus";
 	private static final String FIELD_DESCRIPTION_ID="descriptionId";
 
 	private StandardAnalyzer _analyzer = new StandardAnalyzer();
 	private IndexSearcher _searcher;
 	private String _indexLocation; 
 
-	private long[] dmdVtmOrTf = new long[] { DmdProduct.VIRTUAL_THERAPEUTIC_MOIETY.conceptId, DmdProduct.TRADE_FAMILY.conceptId};
-	private long[] dmdVmpOrAmp = new long[] { DmdProduct.ACTUAL_MEDICINAL_PRODUCT.conceptId, DmdProduct.VIRTUAL_MEDICINAL_PRODUCT.conceptId};
-	private Query dmdVtmOrTfFilter = filterForIsAConcepts(dmdVtmOrTf);
-	private Query dmdVmpOrAmpFilter = filterForIsAConcepts(dmdVmpOrAmp);
+	
+	public static class Filter {
+		private static long[] dmdVtmOrTfIds = new long[] { DmdProduct.VIRTUAL_THERAPEUTIC_MOIETY.conceptId, DmdProduct.TRADE_FAMILY.conceptId};
+		private static long[] dmdVmpOrAmpIds = new long[] { DmdProduct.ACTUAL_MEDICINAL_PRODUCT.conceptId, DmdProduct.VIRTUAL_MEDICINAL_PRODUCT.conceptId};
+
+		/**
+		 * Return concepts that are a type of VTM or TF.
+		 */
+		public static Query dmdVtmOrTf = filterForIsAConcepts(dmdVtmOrTfIds);
+		
+		/**
+		 * Return concepts that are a type of VMP or AMP.
+		 */
+		public static Query dmdVmpOrAmp = filterForIsAConcepts(dmdVmpOrAmpIds);
+		
+		/**
+		 * Return concepts that are active.
+		 */
+		public static Query active = IntPoint.newSetQuery(FIELD_CONCEPT_STATUS, Concept.Status.activeCodes());
+		
+	}
 	
 	/**
 	 * Get a shared instance at the default location.
@@ -161,8 +179,9 @@ public class Search {
 		Document doc = new Document();
 		doc.add(new TextField(FIELD_TERM, d.getTerm(), Store.YES));
 		doc.add(new StoredField(FIELD_PREFERRED_TERM, d.getConcept().getPreferredDescription().getTerm()));
-		doc.add(new StoredField(FIELD_LANGUAGE, d.getLanguageCode()));
-		doc.add(new StoredField(FIELD_STATUS, d.getStatus().orElse(Status.CURRENT).getTitle()));
+		doc.add(new TextField(FIELD_LANGUAGE, d.getLanguageCode(), Store.YES));
+		doc.add(new IntPoint(FIELD_DESCRIPTION_STATUS, d.getDescriptionStatusCode()));
+		doc.add(new IntPoint(FIELD_CONCEPT_STATUS, d.getConcept().getConceptStatusCode()));
 		doc.add(new StoredField(FIELD_DESCRIPTION_ID, d.getDescriptionId()));
 		doc.add(new StoredField(FIELD_CONCEPT_ID, d.getConcept().getConceptId()));
 		for (long parent : d.getConcept().getCachedRecursiveParents()) {
@@ -174,6 +193,178 @@ public class Search {
 		writer.addDocument(doc);
 	}
 
+
+	/**
+	 * A search request. 
+	 * This is immutable, so create a Request using a Request.Builder and the fluent API.
+	 *
+	 */
+	public static class Request {
+		Query _query;
+		int _maxHits;
+
+		Request(Query query, int maxHits) {
+			_query = query;
+			_maxHits = maxHits;
+		}
+		
+		public TopDocs searchForTopDocs(Search searcher) throws CorruptIndexException, IOException {
+			return searcher.query(_query, _maxHits);
+		}
+		public List<ResultItem> search(Search searcher) throws CorruptIndexException, IOException {
+			System.out.println(_query);
+			TopDocs docs = searcher.query(_query, _maxHits);
+			return searcher.resultsFromTopDocs(docs);
+		}
+
+		/**
+		 * A search request builder.
+		 *
+		 */
+		public static class Builder {
+			int _maxHits = 200;
+			Query _query;
+			QueryParser _queryParser;
+			private StandardAnalyzer _analyzer = new StandardAnalyzer();
+
+			protected QueryParser queryParser() {
+				if (_queryParser == null) {
+					_queryParser = new QueryParser(FIELD_TERM, _analyzer);
+					_queryParser.setDefaultOperator(QueryParser.Operator.AND);
+					_queryParser.setMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_REWRITE);
+				}
+				return _queryParser;
+			}
+			
+			/**
+			 * Optional method to customise the query parser used in parsing string queries.
+			 * @param parser
+			 * @return
+			 */
+			public Builder setQueryParser(QueryParser parser) {
+				_queryParser = parser;
+				return this;
+			}
+			
+			/**
+			 * Set the maximum number of hits to be returned.
+			 * @param hits
+			 * @return
+			 */
+			public Builder setMaxHits(int hits) {
+				_maxHits = hits;
+				return this;
+			}
+			
+			/**
+			 * Set the main query for this search.
+			 * @param query
+			 * @return
+			 */
+			public Builder setMainQuery(Query query) {
+				_query = query;
+				return this;
+			}
+			
+			/**
+			 * Set the main query for this search to be the result of a QueryParser of the given string.
+			 * @param search
+			 * @return
+			 * @throws ParseException
+			 */
+			public Builder setMainQuery(String search) throws ParseException {
+				_query = queryParser().parse(search);
+				return this;
+			}
+			
+			/**
+			 * Add additional mandatory queries (logical AND) to the main query.
+			 * @param queries
+			 * @return
+			 */
+			public Builder and(Query... queries) {
+				BooleanQuery.Builder bqBuilder = new BooleanQuery.Builder();
+				bqBuilder.add(_query, Occur.MUST);
+				for (Query q : queries) {
+					bqBuilder.add(q, Occur.MUST);
+				}
+				_query = bqBuilder.build();
+				return this;
+			}
+			
+			/**
+			 * Add additional queries (logical OR) to the main query.
+			 * @param queries
+			 * @return
+			 */
+			public Builder or(Query...queries) {
+				BooleanQuery.Builder bqBuilder = new BooleanQuery.Builder();
+				bqBuilder.add(_query, Occur.MUST);
+				for (Query q : queries) {
+					bqBuilder.add(q, Occur.SHOULD);
+				}
+				bqBuilder.setMinimumNumberShouldMatch(1);
+				_query = bqBuilder.build();
+				return this;			
+			}
+			
+			/**
+			 * Filter only for concepts with the specified (recursive) parents.
+			 * @param parents
+			 * @return
+			 */
+			public Builder withParents(long[] parents) {
+				withFilters(Search.filterForParentConcepts(parents));
+				return this;
+			}
+			
+			public Builder withParent(long parent) {
+				withFilters(Search.filterForParentConcept(parent));
+				return this;
+			}
+			
+			/**
+			 * Filter only for concepts with the specified direct parents.
+			 * @param isA
+			 * @return
+			 */
+			public Builder withIsA(long[] isA) {
+				withFilters(Search.filterForIsAConcepts(isA));
+				return this;
+			}
+			
+			/**
+			 * Filter for concepts with the specified queries.
+			 * @param queries
+			 * @return
+			 */
+			public Builder withFilters(Query...queries) {
+				BooleanQuery.Builder bqBuilder = new BooleanQuery.Builder();
+				bqBuilder.add(_query, Occur.MUST);
+				for (Query q : queries) {
+					bqBuilder.add(q, Occur.FILTER);
+				}
+				_query = bqBuilder.build();				return this;
+			}
+			
+			/**
+			 * Create the search request.
+			 * @return
+			 */
+			public Request build() {
+				if (_query == null) {
+					throw new NullPointerException("Must specify a query to create a request");
+				}
+				return new Request(_query, _maxHits);
+			}
+		}
+	}
+
+
+
+	public TopDocs query(Query query, int n) throws CorruptIndexException, IOException {
+		return searcher().search(query, n);
+	}
 	public TopDocs query(Query query, Query filter, int n) throws CorruptIndexException, IOException {
 		Builder builder = new BooleanQuery.Builder();
 		builder.add(query, Occur.MUST);
@@ -191,18 +382,6 @@ public class Search {
 		return query(searchText, n, new long[] { parentConceptId });
 	}
 
-	public List<ResultItem> queryForVtmOrTf(String searchText, int n) throws CorruptIndexException, ParseException, IOException {
-		Query query = queryParser().parse(searchText);
-		TopDocs docs = query(query, dmdVtmOrTfFilter, n);
-		return resultsFromTopDocs(docs);
-	}
-
-	public List<ResultItem> queryForVmpOrAmp(String searchText, int n) throws CorruptIndexException, ParseException, IOException {
-		Query query = queryParser().parse(searchText);
-		TopDocs docs = query(query, dmdVmpOrAmpFilter, n);
-		return resultsFromTopDocs(docs);
-	}
-	
 	/**
 	 * Returns the single shortest named concept matching the searchtext.
 	 * We first run a full term search.
@@ -350,27 +529,39 @@ public class Search {
 	 * @param parentConceptIds
 	 * @return
 	 */
-	protected static Query filterForParentConcepts(long[] parentConceptIds) {
-		Builder builder = new BooleanQuery.Builder(); 
-		for (long conceptId: parentConceptIds) {
-			Query q = LongPoint.newExactQuery(FIELD_PARENT_CONCEPT_ID, conceptId);
-			builder.add(q, Occur.SHOULD);
-		}
-		return builder.setMinimumNumberShouldMatch(1).build();
+	public static Query filterForParentConcepts(long[] parentConceptIds) {
+		return LongPoint.newSetQuery(FIELD_PARENT_CONCEPT_ID, parentConceptIds);
+	}
+	
+	/**
+	 * Return a filter for descriptions with the given parent concept.
+	 * @param parentConceptId
+	 * @return
+	 */
+	public static Query filterForParentConcept(long parentConceptId) {
+		return LongPoint.newExactQuery(FIELD_PARENT_CONCEPT_ID, parentConceptId);
 	}
 
 	/**
 	 * Returns a filter for descriptions with one the given direct parents.
 	 */
-	protected static Query filterForIsAConcepts(long [] isAParentConceptIds) {
-		Builder builder = new BooleanQuery.Builder(); 
-		for (long conceptId: isAParentConceptIds) {
-			Query q = LongPoint.newExactQuery(FIELD_ISA_PARENT_CONCEPT_ID, conceptId);
-			builder.add(q, Occur.SHOULD);
-		}
-		return builder.setMinimumNumberShouldMatch(1).build();
+	public static Query filterForIsAConcepts(long [] isAParentConceptIds) {
+		return LongPoint.newSetQuery(FIELD_ISA_PARENT_CONCEPT_ID, isAParentConceptIds);
 	}
-	
+
+	/**
+	 * Return a query with a logical AND of the specified queries.
+	 * @param queries
+	 * @return
+	 */
+	protected static Query and(Query... queries) {
+		Builder builder = new BooleanQuery.Builder();
+		for (Query q : queries ) {
+			builder.add(q, Occur.MUST);
+		}
+		return builder.build();
+	}
+
 	/**
 	 * This is for debugging.
 	 * @param rs

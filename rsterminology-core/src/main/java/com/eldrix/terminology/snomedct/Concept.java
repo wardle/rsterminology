@@ -1,16 +1,17 @@
 package com.eldrix.terminology.snomedct;
 
 import java.util.Collections;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import org.apache.cayenne.exp.Expression;
 import org.apache.cayenne.validation.BeanValidationFailure;
 import org.apache.cayenne.validation.ValidationResult;
+import org.apache.commons.lang3.ArrayUtils;
 
 import com.eldrix.terminology.snomedct.Semantic.RelationType;
 import com.eldrix.terminology.snomedct.auto._Concept;
@@ -55,24 +56,33 @@ public class Concept extends _Concept {
 		MOVED_ELSEWHERE(10, "Moved elsewhere", false),
 		PENDING_MOVE(11, "Pending move", true);
 
-		static final Map<Integer, Status> _lookup = new HashMap<Integer, Status>();
+		private static final Map<Integer, Status> _lookup;
+		private static int[] activeCodes;
 		static {
-			for (Status st : EnumSet.allOf(Status.class)) {
+			_lookup = new HashMap<Integer, Status>();
+			activeCodes = new int[0];
+			for (Status st : Status.values()) {
 				_lookup.put(st.code, st);
+				if (st.isActive) {
+					activeCodes = ArrayUtils.add(activeCodes, st.code);
+				}
 			}
 		};
 		int code;
 		String title;
-		boolean active;
-		Status(int code, String title, boolean active) {
+		boolean isActive;
+		Status(int code, String title, boolean isActive) {
 			this.code = code;
 			this.title = title;
-			this.active = active;
+			this.isActive = isActive;
+		}		
+		public static int[] activeCodes() {
+			return activeCodes;
 		}
 	}
 	
-	public Status getStatus() {
-		return Status._lookup.get(super.getConceptStatusCode());
+	public Optional<Status> getStatus() {
+		return Optional.ofNullable(Status._lookup.get(super.getConceptStatusCode()));
 	}
 
 	/**
@@ -80,7 +90,7 @@ public class Concept extends _Concept {
 	 * @return
 	 */
 	public boolean isActive() {
-		return getStatus().active;
+		return getStatus().orElse(Status.ERRONEOUS).isActive;
 	}
 
 	/**

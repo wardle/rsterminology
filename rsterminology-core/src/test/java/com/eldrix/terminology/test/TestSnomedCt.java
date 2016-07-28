@@ -166,15 +166,32 @@ public class TestSnomedCt {
 	public void testSearchMedications() throws CorruptIndexException, ParseException, IOException {
 		ObjectContext context = getRuntime().newContext();
 		Search search = Search.getInstance();
-		List<ResultItem> sAmlodipine = search.queryForVtmOrTf("amlodip*", 1);
+		List<ResultItem> sAmlodipine = new Search.Request.Builder().setMainQuery("amlodip*").setMaxHits(1).withFilters(Search.Filter.dmdVtmOrTf).build().search(search);
 		assertEquals(1, sAmlodipine.size());
 		Concept amlodipine = ObjectSelect.query(Concept.class, Concept.CONCEPT_ID.eq(sAmlodipine.get(0).getConceptId())).selectOne(context);
 		assertNotNull(amlodipine);
 		assertTrue(Semantic.Vtm.isA(amlodipine));		// this should be a VTM
 		
-		List<ResultItem> aMadopar = search.queryForVtmOrTf("madopar", 1);
+		List<ResultItem> aMadopar = new Search.Request.Builder().setMainQuery("madopar").setMaxHits(1).withFilters(Search.Filter.dmdVtmOrTf).build().search(search);
 		Concept madopar = ObjectSelect.query(Concept.class, Concept.CONCEPT_ID.eq(aMadopar.get(0).getConceptId())).selectOne(context);
 		assertTrue(Semantic.Tf.isA(madopar));
+	}
+	
+	@Test
+	public void testRequest() throws CorruptIndexException, IOException, ParseException {
+		ObjectContext context = getRuntime().newContext();
+		Search search = Search.getInstance();
+		int[] a = Concept.Status.activeCodes();
+		List<ResultItem> sAmlodipine = new Search.Request.Builder().setMainQuery("amlodip*").withFilters(Search.Filter.dmdVtmOrTf, Search.Filter.active).setMaxHits(1).build().search(search);
+		assertEquals(1, sAmlodipine.size());
+		Concept amlodipine = ObjectSelect.query(Concept.class, Concept.CONCEPT_ID.eq(sAmlodipine.get(0).getConceptId())).selectOne(context);
+		assertTrue(Vtm.isA(amlodipine));
+		
+		List<ResultItem> sMultipleSclerosisInDrugs = new Search.Request.Builder().setMainQuery("multiple sclerosis").withFilters(Search.Filter.dmdVtmOrTf).build().search(search);
+		assertEquals(0, sMultipleSclerosisInDrugs.size());
+		
+		List<ResultItem> sMultipleSclerosis = new Search.Request.Builder().setMainQuery("multiple sclerosis").withParent(Semantic.Category.DISEASE.conceptId).setMaxHits(1).build().search(search);
+		assertEquals(1, sMultipleSclerosis.size());
 	}
 	
 	@Test
