@@ -180,14 +180,15 @@ public class Search {
 	 * @throws IOException
 	 */
 	protected void processDescription(IndexWriter writer, Description d) throws CorruptIndexException, IOException {
-		writer.deleteDocuments(new Term("descriptionId", d.getDescriptionId().toString()));
+		writer.deleteDocuments(LongPoint.newExactQuery(FIELD_DESCRIPTION_ID_INDEX, d.getDescriptionId()));
 		Document doc = new Document();
 		doc.add(new TextField(FIELD_TERM, d.getTerm(), Store.YES));
 		doc.add(new StoredField(FIELD_PREFERRED_TERM, d.getConcept().getPreferredDescription().getTerm()));
 		doc.add(new TextField(FIELD_LANGUAGE, d.getLanguageCode(), Store.YES));
 		doc.add(new IntPoint(FIELD_DESCRIPTION_STATUS, d.getDescriptionStatusCode()));
 		doc.add(new IntPoint(FIELD_CONCEPT_STATUS, d.getConcept().getConceptStatusCode()));
-		doc.add(new StoredField(FIELD_DESCRIPTION_ID, d.getDescriptionId()));
+		doc.add(new StoredField(FIELD_DESCRIPTION_ID, d.getDescriptionId()));		// for storage and retrieval
+		doc.add(new LongPoint(FIELD_DESCRIPTION_ID_INDEX, d.getDescriptionId()));	// for indexing and search
 		doc.add(new StoredField(FIELD_CONCEPT_ID, d.getConcept().getConceptId()));
 		for (long parent : d.getConcept().getCachedRecursiveParents()) {
 			doc.add(new LongPoint(FIELD_PARENT_CONCEPT_ID, parent));
