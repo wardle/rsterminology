@@ -12,6 +12,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.cayenne.ObjectContext;
 import org.apache.cayenne.ResultBatchIterator;
 import org.apache.cayenne.query.SelectQuery;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
@@ -37,6 +39,7 @@ import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -58,7 +61,9 @@ import com.eldrix.terminology.snomedct.Semantic.DmdProduct;
 public class Search {
 	final static Logger log = LoggerFactory.getLogger(Search.class);
 	final static ConcurrentHashMap<String, Search> factory = new ConcurrentHashMap<>();
-
+	
+	private static final int BATCH_ITERATOR_COUNT = 500;		// number of descriptions to process in a single batch.
+	private static final int DEFAULT_MAXIMUM_HITS = 200;		// default maximum of hits to return.
 	private static final String INDEX_LOCATION_PROPERTY_KEY="com.eldrix.snomedct.search.lucene.IndexLocation";
 	private static final String DEFAULT_INDEX_LOCATION="/var/rsdb/sct_lucene6/";
 	private static final String FIELD_TERM="term";
@@ -71,7 +76,7 @@ public class Search {
 	private static final String FIELD_CONCEPT_STATUS="conceptStatus";
 	private static final String FIELD_DESCRIPTION_ID="descriptionId";
 
-	private StandardAnalyzer _analyzer = new StandardAnalyzer();
+	private Analyzer _analyzer = new WhitespaceAnalyzer();
 	private IndexSearcher _searcher;
 	private String _indexLocation; 
 
@@ -83,17 +88,17 @@ public class Search {
 		/**
 		 * Return concepts that are a type of VTM or TF.
 		 */
-		public static Query dmdVtmOrTf = filterForIsAConcepts(dmdVtmOrTfIds);
+		public static Query DMD_VTM_OR_VF = filterForIsAConcepts(dmdVtmOrTfIds);
 		
 		/**
 		 * Return concepts that are a type of VMP or AMP.
 		 */
-		public static Query dmdVmpOrAmp = filterForIsAConcepts(dmdVmpOrAmpIds);
+		public static Query DMD_VMP_OR_AMP = filterForIsAConcepts(dmdVmpOrAmpIds);
 		
 		/**
 		 * Return concepts that are active.
 		 */
-		public static Query active = IntPoint.newSetQuery(FIELD_CONCEPT_STATUS, Concept.Status.activeCodes());
+		public static Query CONCEPT_ACTIVE = IntPoint.newSetQuery(FIELD_CONCEPT_STATUS, Concept.Status.activeCodes());
 		
 	}
 	
@@ -152,7 +157,7 @@ public class Search {
 		IndexWriter writer = createOrLoadIndexWriter(indexFile(), analyser());
 		SelectQuery<Description> query = SelectQuery.query(Description.class);
 		long i = 0;
-		try (ResultBatchIterator<Description> iterator = query.batchIterator(context, 500)) {
+		try (ResultBatchIterator<Description> iterator = query.batchIterator(context, BATCH_ITERATOR_COUNT)) {
 			for(List<Description> batch : iterator) {
 				System.out.println("Processing batch:" + (++i));
 				for (Description d : batch) {
@@ -222,7 +227,7 @@ public class Search {
 		 *
 		 */
 		public static class Builder {
-			int _maxHits = 200;
+			int _maxHits = DEFAULT_MAXIMUM_HITS;
 			Query _query;
 			QueryParser _queryParser;
 			private StandardAnalyzer _analyzer = new StandardAnalyzer();
@@ -274,6 +279,27 @@ public class Search {
 			 */
 			public Builder setMainQuery(String search) throws ParseException {
 				_query = queryParser().parse(search);
+				return this;
+			}
+			
+			
+			public Builder search(String search) throws ParseException {
+				BooleanQuery.Builder b = new BooleanQuery.Builder();
+				Query qp = queryParser().parse(search);
+				b.add(qp, Occur.SHOULD);
+				for (String s: search.split(" ")) {
+					TermQuery tq = new TermQuery(new Term("term", s));
+					if (s.length() > 3) {
+						PrefixQuery pq = new PrefixQuery(new Term("term", s));
+						pq.setRewriteMethod(PrefixQuery.SCORING_BOOLEAN_REWRITE);
+						BooleanQuery bq = new BooleanQuery.Builder().add(tq, Occur.SHOULD).add(pq, Occur.SHOULD).build();
+						b.add(bq, Occur.SHOULD);
+					}
+					else {
+						b.add(tq,Occur.SHOULD);
+					}
+				}
+				_query = b.build();
 				return this;
 			}
 			
@@ -591,7 +617,7 @@ public class Search {
 	 * @throws CorruptIndexException
 	 * @throws IOException
 	 */
-	protected static IndexReader createOrLoadIndexReader(URI index, StandardAnalyzer analyser) throws CorruptIndexException, IOException {
+	protected static IndexReader createOrLoadIndexReader(URI index, Analyzer analyser) throws CorruptIndexException, IOException {
 		Directory directory = FSDirectory.open(Paths.get(index));
 		if (DirectoryReader.indexExists(directory) == false) {
 			IndexWriter writer = createOrLoadIndexWriter(index, analyser);
@@ -601,7 +627,7 @@ public class Search {
 		return reader;
 	}
 
-	protected static IndexWriter createOrLoadIndexWriter(URI index, StandardAnalyzer analyser) throws CorruptIndexException, LockObtainFailedException, IOException  {
+	protected static IndexWriter createOrLoadIndexWriter(URI index, Analyzer analyser) throws CorruptIndexException, LockObtainFailedException, IOException  {
 		Directory directory = FSDirectory.open(Paths.get(index));
 		IndexWriterConfig iwc = new IndexWriterConfig(analyser);
 		iwc.setOpenMode(OpenMode.CREATE_OR_APPEND);
@@ -613,7 +639,7 @@ public class Search {
 		return new File(_indexLocation).toURI();
 	}
 
-	protected StandardAnalyzer analyser() {
+	protected Analyzer analyser() {
 		return _analyzer;
 	}
 

@@ -166,13 +166,13 @@ public class TestSnomedCt {
 	public void testSearchMedications() throws CorruptIndexException, ParseException, IOException {
 		ObjectContext context = getRuntime().newContext();
 		Search search = Search.getInstance();
-		List<ResultItem> sAmlodipine = new Search.Request.Builder().setMainQuery("amlodip*").setMaxHits(1).withFilters(Search.Filter.dmdVtmOrTf).build().search(search);
+		List<ResultItem> sAmlodipine = new Search.Request.Builder().setMainQuery("amlodip*").setMaxHits(1).withFilters(Search.Filter.DMD_VTM_OR_VF).build().search(search);
 		assertEquals(1, sAmlodipine.size());
 		Concept amlodipine = ObjectSelect.query(Concept.class, Concept.CONCEPT_ID.eq(sAmlodipine.get(0).getConceptId())).selectOne(context);
 		assertNotNull(amlodipine);
 		assertTrue(Semantic.Vtm.isA(amlodipine));		// this should be a VTM
 		
-		List<ResultItem> aMadopar = new Search.Request.Builder().setMainQuery("madopar").setMaxHits(1).withFilters(Search.Filter.dmdVtmOrTf).build().search(search);
+		List<ResultItem> aMadopar = new Search.Request.Builder().setMainQuery("madopar").setMaxHits(1).withFilters(Search.Filter.DMD_VTM_OR_VF).build().search(search);
 		Concept madopar = ObjectSelect.query(Concept.class, Concept.CONCEPT_ID.eq(aMadopar.get(0).getConceptId())).selectOne(context);
 		assertTrue(Semantic.Tf.isA(madopar));
 	}
@@ -182,16 +182,21 @@ public class TestSnomedCt {
 		ObjectContext context = getRuntime().newContext();
 		Search search = Search.getInstance();
 		int[] a = Concept.Status.activeCodes();
-		List<ResultItem> sAmlodipine = new Search.Request.Builder().setMainQuery("amlodip*").withFilters(Search.Filter.dmdVtmOrTf, Search.Filter.active).setMaxHits(1).build().search(search);
+		List<ResultItem> sAmlodipine = new Search.Request.Builder().setMainQuery("amlodip*").withFilters(Search.Filter.DMD_VTM_OR_VF, Search.Filter.CONCEPT_ACTIVE).setMaxHits(1).build().search(search);
 		assertEquals(1, sAmlodipine.size());
 		Concept amlodipine = ObjectSelect.query(Concept.class, Concept.CONCEPT_ID.eq(sAmlodipine.get(0).getConceptId())).selectOne(context);
 		assertTrue(Vtm.isA(amlodipine));
 		
-		List<ResultItem> sMultipleSclerosisInDrugs = new Search.Request.Builder().setMainQuery("multiple sclerosis").withFilters(Search.Filter.dmdVtmOrTf).build().search(search);
+		List<ResultItem> sMultipleSclerosisInDrugs = new Search.Request.Builder().setMainQuery("multiple sclerosis").withFilters(Search.Filter.DMD_VTM_OR_VF).build().search(search);
 		assertEquals(0, sMultipleSclerosisInDrugs.size());
 		
 		List<ResultItem> sMultipleSclerosis = new Search.Request.Builder().setMainQuery("multiple sclerosis").withParent(Semantic.Category.DISEASE.conceptId).setMaxHits(1).build().search(search);
 		assertEquals(1, sMultipleSclerosis.size());
+		
+		List<ResultItem> sMs = new Search.Request.Builder().search("ms").withParent(Semantic.Category.DISEASE.conceptId).withFilters(Search.Filter.CONCEPT_ACTIVE).setMaxHits(200).build().search(search);
+		//sMs.forEach(ri -> System.out.println(ri));
+		assertTrue(sMs.stream().anyMatch(ri -> ri.getConceptId()==24700007L));	// multiple sclerosis
+		assertTrue(sMs.stream().anyMatch(ri -> ri.getConceptId()==79619009L));		// mitral stenosis
 	}
 	
 	@Test
