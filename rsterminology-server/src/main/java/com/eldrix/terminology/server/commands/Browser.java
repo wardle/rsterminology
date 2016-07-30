@@ -188,7 +188,7 @@ public class Browser extends CommandWithMetadata {
 						rootConceptIds = r;
 					}
 				}
-				List<ResultItem> results = Search.getInstance().query(search, hits, rootConceptIds);
+				List<ResultItem> results = new Search.Request.Builder().search(search).setMaxHits(hits).withParents(rootConceptIds).build().search(Search.getInstance());
 				if (results.size() > 0) {
 					results.forEach(ri -> {
 						System.out.println(ri.getTerm() + " -- " + ri.getPreferredTerm() + " -- " + ri.getConceptId());
