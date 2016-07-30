@@ -13,7 +13,6 @@ import org.apache.cayenne.ObjectContext;
 import org.apache.cayenne.ResultBatchIterator;
 import org.apache.cayenne.query.SelectQuery;
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
@@ -61,7 +60,7 @@ import com.eldrix.terminology.snomedct.Semantic.DmdProduct;
 public class Search {
 	final static Logger log = LoggerFactory.getLogger(Search.class);
 	final static ConcurrentHashMap<String, Search> factory = new ConcurrentHashMap<>();
-	
+
 	private static final int BATCH_ITERATOR_COUNT = 500;		// number of descriptions to process in a single batch.
 	private static final int DEFAULT_MAXIMUM_HITS = 200;		// default maximum of hits to return.
 	private static final String INDEX_LOCATION_PROPERTY_KEY="com.eldrix.snomedct.search.lucene.IndexLocation";
@@ -75,12 +74,13 @@ public class Search {
 	private static final String FIELD_DESCRIPTION_STATUS="descriptionStatus";
 	private static final String FIELD_CONCEPT_STATUS="conceptStatus";
 	private static final String FIELD_DESCRIPTION_ID="descriptionId";
+	private static final String FIELD_DESCRIPTION_ID_INDEX="descriptionIdIndex";
 
-	private Analyzer _analyzer = new WhitespaceAnalyzer();
+	private Analyzer _analyzer = new StandardAnalyzer();
 	private IndexSearcher _searcher;
 	private String _indexLocation; 
 
-	
+
 	public static class Filter {
 		private static long[] dmdVtmOrTfIds = new long[] { DmdProduct.VIRTUAL_THERAPEUTIC_MOIETY.conceptId, DmdProduct.TRADE_FAMILY.conceptId};
 		private static long[] dmdVmpOrAmpIds = new long[] { DmdProduct.ACTUAL_MEDICINAL_PRODUCT.conceptId, DmdProduct.VIRTUAL_MEDICINAL_PRODUCT.conceptId};
@@ -89,17 +89,17 @@ public class Search {
 		 * Return concepts that are a type of VTM or TF.
 		 */
 		public static Query DMD_VTM_OR_VF = filterForIsAConcepts(dmdVtmOrTfIds);
-		
+
 		/**
 		 * Return concepts that are a type of VMP or AMP.
 		 */
 		public static Query DMD_VMP_OR_AMP = filterForIsAConcepts(dmdVmpOrAmpIds);
-		
+
 		/**
 		 * Return concepts that are active.
 		 */
 		public static Query CONCEPT_ACTIVE = IntPoint.newSetQuery(FIELD_CONCEPT_STATUS, Concept.Status.activeCodes());
-		
+
 	}
 	
 	/**
@@ -213,7 +213,7 @@ public class Search {
 			_query = query;
 			_maxHits = maxHits;
 		}
-		
+
 		public TopDocs searchForTopDocs(Search searcher) throws CorruptIndexException, IOException {
 			return searcher.query(_query, _maxHits);
 		}
@@ -241,7 +241,7 @@ public class Search {
 				}
 				return _queryParser;
 			}
-			
+
 			/**
 			 * Optional method to customise the query parser used in parsing string queries.
 			 * @param parser
@@ -251,7 +251,7 @@ public class Search {
 				_queryParser = parser;
 				return this;
 			}
-			
+
 			/**
 			 * Set the maximum number of hits to be returned.
 			 * @param hits
@@ -261,7 +261,7 @@ public class Search {
 				_maxHits = hits;
 				return this;
 			}
-			
+
 			/**
 			 * Set the main query for this search.
 			 * @param query
@@ -271,7 +271,7 @@ public class Search {
 				_query = query;
 				return this;
 			}
-			
+
 			/**
 			 * Set the main query for this search to be the result of a QueryParser of the given string.
 			 * @param search
@@ -282,11 +282,11 @@ public class Search {
 				_query = queryParser().parse(search);
 				return this;
 			}
-			
-			
+
+
 			public Builder search(String search) throws ParseException {
 				BooleanQuery.Builder b = new BooleanQuery.Builder();
-				Query qp = queryParser().parse(search);
+				Query qp = queryParser().parse(QueryParser.escape(search));
 				b.add(qp, Occur.SHOULD);
 				for (String s: search.split(" ")) {
 					TermQuery tq = new TermQuery(new Term("term", s));
@@ -300,10 +300,10 @@ public class Search {
 						b.add(tq,Occur.SHOULD);
 					}
 				}
-				_query = b.build();
+				_query = b.setMinimumNumberShouldMatch(1).build();
 				return this;
 			}
-			
+
 			/**
 			 * Add additional mandatory queries (logical AND) to the main query.
 			 * @param queries
@@ -318,7 +318,7 @@ public class Search {
 				_query = bqBuilder.build();
 				return this;
 			}
-			
+
 			/**
 			 * Add additional queries (logical OR) to the main query.
 			 * @param queries
@@ -334,7 +334,7 @@ public class Search {
 				_query = bqBuilder.build();
 				return this;			
 			}
-			
+
 			/**
 			 * Filter only for concepts with the specified (recursive) parents.
 			 * @param parents
@@ -344,12 +344,12 @@ public class Search {
 				withFilters(Search.filterForParentConcepts(parents));
 				return this;
 			}
-			
+
 			public Builder withParent(long parent) {
 				withFilters(Search.filterForParentConcept(parent));
 				return this;
 			}
-			
+
 			/**
 			 * Filter only for concepts with the specified direct parents.
 			 * @param isA
@@ -359,7 +359,7 @@ public class Search {
 				withFilters(Search.filterForIsAConcepts(isA));
 				return this;
 			}
-			
+
 			/**
 			 * Filter for concepts with the specified queries.
 			 * @param queries
@@ -373,7 +373,7 @@ public class Search {
 				}
 				_query = bqBuilder.build();				return this;
 			}
-			
+
 			/**
 			 * Create the search request.
 			 * @return
@@ -559,7 +559,7 @@ public class Search {
 	public static Query filterForParentConcepts(long[] parentConceptIds) {
 		return LongPoint.newSetQuery(FIELD_PARENT_CONCEPT_ID, parentConceptIds);
 	}
-	
+
 	/**
 	 * Return a filter for descriptions with the given parent concept.
 	 * @param parentConceptId

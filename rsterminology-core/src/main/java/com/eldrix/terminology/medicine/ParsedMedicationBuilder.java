@@ -10,7 +10,6 @@ import org.apache.commons.lang3.text.StrMatcher;
 import org.apache.commons.lang3.text.StrTokenizer;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.queryparser.classic.ParseException;
-import org.apache.lucene.queryparser.classic.QueryParser;
 
 import com.eldrix.terminology.medicine.Medication.Frequency;
 import com.eldrix.terminology.medicine.Medication.Route;
@@ -307,7 +306,7 @@ public class ParsedMedicationBuilder {
 	}
 
 	protected static ResultItem _search(Search search, String searchText, long[] parentConceptIds) throws CorruptIndexException, IOException, ParseException {
-		List<ResultItem> ris = new Search.Request.Builder().search(QueryParser.escape(searchText)).withParents(parentConceptIds).setMaxHits(1).build().search(search);
+		List<ResultItem> ris = new Search.Request.Builder().search(searchText).withParents(parentConceptIds).setMaxHits(1).build().search(search);
 		return ris.isEmpty() ? null : ris.get(0);
 	}
 
