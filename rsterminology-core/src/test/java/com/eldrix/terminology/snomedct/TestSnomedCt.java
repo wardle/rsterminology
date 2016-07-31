@@ -2,6 +2,7 @@ package com.eldrix.terminology.snomedct;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -23,12 +24,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.eldrix.terminology.snomedct.Concept;
-import com.eldrix.terminology.snomedct.Description;
-import com.eldrix.terminology.snomedct.ParentCache;
-import com.eldrix.terminology.snomedct.Search;
 import com.eldrix.terminology.snomedct.Search.ResultItem;
-import com.eldrix.terminology.snomedct.Semantic;
 import com.eldrix.terminology.snomedct.Semantic.Amp;
 import com.eldrix.terminology.snomedct.Semantic.Ampp;
 import com.eldrix.terminology.snomedct.Semantic.DmdProduct;
@@ -74,15 +70,16 @@ public class TestSnomedCt {
 	public void testSearch() {
 		try {
 			ObjectContext context = getRuntime().newContext();
-			List<Long> results = Search.getInstance().queryForConcepts(Search.fixSearchString("mult sclerosis"), 100, 64572001L);
+			Search search = Search.getInstance();
+			Search.Request.Builder builder = new Search.Request.Builder();
+			List<Long> results = builder.search("mult sclerosis").setMaxHits(200).withParent(64572001L).build().searchForConcepts(search);
 			Expression qual = ExpressionFactory.inExp(Concept.CONCEPT_ID.getName(), results);
 			List<Concept> concepts = ObjectSelect.query(Concept.class, qual).select(context);
 			assertTrue(concepts.size() > 0);
 			
-			assertTrue(Search.getInstance().query("mult* sclerosis", 200, 64572001L).size() > 0);
-			assertTrue(Search.getInstance().query("parkin*", 200, 64572001L).size() > 0);
-			assertEquals(0, Search.getInstance().query("mult scler", 200, 64572001L).size());
-			assertEquals(0, Search.getInstance().query("parkin", 200, 64572001L).size());
+			assertTrue(builder.search("parkin").build().search(Search.getInstance()).size() > 0);
+			assertNotEquals(0, builder.search("mult scler").build().search(search).size());
+			assertNotEquals(0, builder.search("parkin").build().search(search).size());
 			
 			
 		} catch (CorruptIndexException e) {

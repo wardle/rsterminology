@@ -23,6 +23,7 @@ import com.eldrix.terminology.snomedct.Concept;
 import com.eldrix.terminology.snomedct.Description;
 import com.eldrix.terminology.snomedct.Search;
 import com.eldrix.terminology.snomedct.Search.ResultItem;
+import com.eldrix.terminology.snomedct.Semantic;
 import com.nhl.link.rest.DataResponse;
 import com.nhl.link.rest.LinkRest;
 import com.nhl.link.rest.LinkRestException;
@@ -61,8 +62,11 @@ public class ConceptResource {
 	@Path("search")
 	public DataResponse<ResultItem> search(@QueryParam("s") String search, @QueryParam("rootIds") String rootIds, @Context UriInfo uriInfo) {
 		long[] rootConceptIds = Search.parseLongArray(rootIds);
+		if (rootConceptIds.length == 0) {
+			rootConceptIds = new long[] { Semantic.Category.SNOMED_CT_ROOT.conceptId };
+		}
 		try {
-			List<ResultItem> result = Search.getInstance().query(search, 200, rootConceptIds);
+			List<ResultItem> result = new Search.Request.Builder().search(search).setMaxHits(200).withParents(rootConceptIds).build().search(Search.getInstance());
 			return DataResponse.forObjects(result);
 		} catch (IOException e) {
 			e.printStackTrace();			
@@ -76,8 +80,11 @@ public class ConceptResource {
 	@Path("synonyms")
 	public DataResponse<String> synonyms(@QueryParam("s") String search, @QueryParam("rootIds") String rootIds, @Context UriInfo uriInfo) {
 		long[] rootConceptIds = Search.parseLongArray(rootIds);
+		if (rootConceptIds.length == 0) {
+			rootConceptIds = new long[] { Semantic.Category.SNOMED_CT_ROOT.conceptId };
+		}
 		try {
-			List<Long> conceptIds = Search.getInstance().queryForConcepts(search, 5, rootConceptIds);
+			List<Long> conceptIds = new Search.Request.Builder().search(search).setMaxHits(5).withParents(rootConceptIds).build().searchForConcepts(Search.getInstance());
 			ICayennePersister cayenne = LinkRestRuntime.service(ICayennePersister.class, config);
 			ObjectContext context = cayenne.newContext();
 			SelectQuery<DataRow> select = SelectQuery.dataRowQuery(Description.class, Description.CONCEPT_ID.in(conceptIds));

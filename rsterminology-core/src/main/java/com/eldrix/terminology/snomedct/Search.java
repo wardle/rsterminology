@@ -6,6 +6,7 @@ import java.net.URI;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -32,7 +33,6 @@ import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.BooleanQuery.Builder;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.PrefixQuery;
@@ -215,14 +215,18 @@ public class Search {
 		}
 
 		public TopDocs searchForTopDocs(Search searcher) throws CorruptIndexException, IOException {
-			return searcher.query(_query, _maxHits);
+			return searcher.searcher().search(_query, _maxHits);
 		}
 		public List<ResultItem> search(Search searcher) throws CorruptIndexException, IOException {
 			System.out.println(_query);
-			TopDocs docs = searcher.query(_query, _maxHits);
-			return searcher.resultsFromTopDocs(docs);
+			TopDocs docs = searchForTopDocs(searcher);
+			return resultsFromTopDocs(searcher.searcher(), docs);
 		}
-
+		public List<Long> searchForConcepts(Search searcher) throws CorruptIndexException, IOException {
+			TopDocs docs = searchForTopDocs(searcher);
+			return Search.conceptsFromTopDocs(searcher.searcher(), docs);
+		}
+		
 		/**
 		 * A search request builder.
 		 *
@@ -283,7 +287,13 @@ public class Search {
 				return this;
 			}
 
-
+			/**
+			 * Search for a SNOMED-CT term using a combination of a query parser and for each token, a term query and prefix query.
+			 * This is usually a good default for most SNOMED-CT searches.
+			 * @param search
+			 * @return
+			 * @throws ParseException
+			 */
 			public Builder search(String search) throws ParseException {
 				BooleanQuery.Builder b = new BooleanQuery.Builder();
 				Query qp = queryParser().parse(QueryParser.escape(search));
@@ -371,7 +381,8 @@ public class Search {
 				for (Query q : queries) {
 					bqBuilder.add(q, Occur.FILTER);
 				}
-				_query = bqBuilder.build();				return this;
+				_query = bqBuilder.build();	
+				return this;
 			}
 
 			/**
@@ -386,169 +397,63 @@ public class Search {
 			}
 		}
 	}
-
-
-
-	public TopDocs query(Query query, int n) throws CorruptIndexException, IOException {
-		return searcher().search(query, n);
-	}
-	public TopDocs query(Query query, Query filter, int n) throws CorruptIndexException, IOException {
-		Builder builder = new BooleanQuery.Builder();
-		builder.add(query, Occur.MUST);
-		if (filter != null) {
-			builder.add(filter, Occur.FILTER);
-		}
-		return searcher().search(builder.build(), n);
-	}
-
-	public List<ResultItem> query(String searchText, int n, long[] parentConceptIds) throws CorruptIndexException, ParseException, IOException {
-		TopDocs docs = queryForTopHitsWithFilter(searchText, n, parentConceptIds);
-		return resultsFromTopDocs(docs);
-	}
-	public List<ResultItem> query(String searchText, int n, long parentConceptId) throws CorruptIndexException, ParseException, IOException {
-		return query(searchText, n, new long[] { parentConceptId });
-	}
-
+	
 	/**
-	 * Returns the single shortest named concept matching the searchtext.
-	 * We first run a full term search.
-	 *
-	 * If there is no exact match, then we need a prefix search.
-	 * Unfortunately, the prefix search does not give the shortest first
-	 * so we need to iterate through the results to find the shortest term that matches our prefix.
-	 * @param searchText
-	 * @param parentConceptIds
+	 * Helper method to return an array from the search result.
+	 * @param searcher
+	 * @param docs
 	 * @return
 	 * @throws CorruptIndexException
-	 * @throws ParseException
 	 * @throws IOException
 	 */
-	@Deprecated
-	public ResultItem queryForSingle(String searchText, long[] parentConceptIds) throws CorruptIndexException, ParseException, IOException {
-		String search = QueryParser.escape(searchText.trim());
-		Query q1 = new BooleanQuery.Builder()
-				.add(queryParser().parse("\"" + search + "\""), Occur.MUST)
-				.add(filterForParentConcepts(parentConceptIds), Occur.FILTER)
-				.build();
-		TopDocs docs = searcher().search(q1, 500);
-		//printDocuments(docs);
+	protected static List<ResultItem> resultsFromTopDocs(IndexSearcher searcher, TopDocs docs) throws CorruptIndexException, IOException {
+		ArrayList<ResultItem> results = new ArrayList<ResultItem>(docs.totalHits);
 		ScoreDoc[] sds = docs.scoreDocs;
-		Document top = null;
-		if (sds.length > 0) {
-			top = searcher().doc(sds[0].doc);
+		for (ScoreDoc sd : sds) {
+			Document doc = searcher.doc(sd.doc);
+			results.add(new _ResultItem(doc));
 		}
-		else {
-			Query q2 = new BooleanQuery.Builder()
-					.add(new PrefixQuery(new Term(FIELD_TERM, search)), Occur.MUST)
-					.add(filterForParentConcepts(parentConceptIds), Occur.FILTER)
-					.build();
-			docs = searcher().search(q2, 500);
-			sds = docs.scoreDocs;
-			int topLength = 0;
-			for (ScoreDoc sd : sds) {
-				Document doc = searcher().doc(sd.doc);
-				IndexableField termField = doc.getField(FIELD_TERM);
-				String term = termField.stringValue();
-				int termLength = term.length();
-				if (top == null || topLength > termLength) {
-					top = doc;
-					topLength = termLength;
-				}
-			}
-		}
-		if (top != null) {
-			return new _ResultItem(top);
-		}
-		return null;
+		return results;
 	}
-
-	public List<Long> queryForConcepts(String searchText, int n, long parentConceptId) throws CorruptIndexException, IOException, ParseException {
-		TopDocs docs = queryForTopHitsWithFilter(searchText, n, parentConceptId);
-		return conceptsFromTopDocs(docs);
-	}
-
-	public List<Long> queryForConcepts(String searchText, int n, long[] parentConceptIds) throws CorruptIndexException, ParseException, IOException {
-		TopDocs docs = queryForTopHitsWithFilter(searchText, n, parentConceptIds);
-		return conceptsFromTopDocs(docs);
-	}
-
-	public List<String> queryForDescriptions(String searchText, int n, long[] parentConceptIds) throws CorruptIndexException, ParseException, IOException {
-		TopDocs docs = queryForTopHitsWithFilter(searchText, n, parentConceptIds);
-		return descriptionsFromTopDocs(docs);
-	}
-
-	protected List<String> descriptionsFromTopDocs(TopDocs docs) throws CorruptIndexException, IOException {
+	
+	/**
+	 * Helper method to return an array of the text from the descriptions from the search result.
+	 * @param searcher
+	 * @param docs
+	 * @return
+	 * @throws CorruptIndexException
+	 * @throws IOException
+	 */
+	protected static List<String> descriptionsFromTopDocs(IndexSearcher searcher, TopDocs docs) throws CorruptIndexException, IOException {
 		ArrayList<String> descs = new ArrayList<String>(docs.totalHits);
 		ScoreDoc[] sds = docs.scoreDocs;
 		for (ScoreDoc sd : sds) {
-			Document doc = searcher().doc(sd.doc);
+			Document doc = searcher.doc(sd.doc);
 			IndexableField term = doc.getField(FIELD_TERM);
 			descs.add(term.stringValue());
 		}
 		return Collections.unmodifiableList(descs);
 	}
 
-	protected List<Long> conceptsFromTopDocs(TopDocs docs) throws CorruptIndexException, IOException {
-		ArrayList<Long> concepts = new ArrayList<Long>(docs.totalHits);
+	/**
+	 * Helper method to return an array of the concept identifiers matching the search result.
+	 * @param searcher
+	 * @param docs
+	 * @return
+	 * @throws CorruptIndexException
+	 * @throws IOException
+	 */
+	protected static List<Long> conceptsFromTopDocs(IndexSearcher searcher, TopDocs docs) throws CorruptIndexException, IOException {
+		LinkedHashSet<Long> concepts = new LinkedHashSet<>(docs.totalHits);
 		ScoreDoc[] sds = docs.scoreDocs;
 		for (ScoreDoc sd : sds) {
-			Document doc = searcher().doc(sd.doc);
+			Document doc = searcher.doc(sd.doc);
 			IndexableField conceptField = doc.getField(FIELD_CONCEPT_ID);
 			Long conceptId = conceptField.numericValue().longValue();
 			concepts.add(conceptId);
 		}
-		return Collections.unmodifiableList(concepts);
+		return new ArrayList<>(concepts);
 	}
-
-
-	/**
-	 * Perform specified query limiting results to those that are a descendent of the
-	 * given concept.
-	 *
-	 * @param searchText
-	 * @param n
-	 * @param parentConceptId
-	 * @return
-	 * @throws ParseException
-	 * @throws CorruptIndexException
-	 * @throws IOException
-	 */
-	public TopDocs queryForTopHitsWithFilter(String searchText, int n, long parentConceptId) throws ParseException, CorruptIndexException, IOException {
-		Query q1 = queryParser().parse(searchText);
-		Query q = new BooleanQuery.Builder().add(q1, Occur.MUST).add(filterForParentConcepts(new long[] { parentConceptId}), Occur.FILTER).build();
-		return searcher().search(q, n);
-	}
-
-	/**
-	 * Perform specified query limiting results to those that are descendents of the one of given concepts.
-	 * @param searchText
-	 * @param n
-	 * @param parentConceptIds
-	 * @return
-	 * @throws ParseException
-	 * @throws CorruptIndexException
-	 * @throws IOException
-	 */
-	public TopDocs queryForTopHitsWithFilter(String searchText, int n, long[] parentConceptIds) throws ParseException, CorruptIndexException, IOException {
-		Query q1 = queryParser().parse(searchText);
-		Query q = parentConceptIds.length == 0 ? q1 : new BooleanQuery.Builder().add(q1, Occur.MUST).add(filterForParentConcepts(parentConceptIds), Occur.FILTER).build();
-		return searcher().search(q, n);
-	}
-
-
-	public static String fixSearchString(String s) {
-		String[] tokens = stripNonAlphanumeric(s).split(" ");
-		StringBuilder sb = new StringBuilder();
-		for(String token: tokens) {
-			sb.append(token);
-			sb.append("* ");
-		}
-		return (sb.toString());
-	}
-
-	protected static String stripNonAlphanumeric(String s) { 
-		return s.replaceAll("[^a-zA-Z0-9]", " "); 
-	} 
 
 	/**
 	 * Returns a filter for descriptions with one of the given parent concepts.
@@ -574,19 +479,6 @@ public class Search {
 	 */
 	public static Query filterForIsAConcepts(long [] isAParentConceptIds) {
 		return LongPoint.newSetQuery(FIELD_ISA_PARENT_CONCEPT_ID, isAParentConceptIds);
-	}
-
-	/**
-	 * Return a query with a logical AND of the specified queries.
-	 * @param queries
-	 * @return
-	 */
-	protected static Query and(Query... queries) {
-		Builder builder = new BooleanQuery.Builder();
-		for (Query q : queries ) {
-			builder.add(q, Occur.MUST);
-		}
-		return builder.build();
 	}
 
 	/**
@@ -655,15 +547,7 @@ public class Search {
 		return qp;
 	}
 
-	protected List<ResultItem> resultsFromTopDocs(TopDocs docs) throws CorruptIndexException, IOException {
-		ArrayList<ResultItem> results = new ArrayList<ResultItem>(docs.totalHits);
-		ScoreDoc[] sds = docs.scoreDocs;
-		for (ScoreDoc sd : sds) {
-			Document doc = searcher().doc(sd.doc);
-			results.add(new _ResultItem(doc));
-		}
-		return results;
-	}
+
 
 	/**
 	 * Generates a fake Lucene full-text search result containing a single result of the concept specified.
