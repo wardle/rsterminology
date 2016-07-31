@@ -19,6 +19,8 @@ import org.junit.Test;
 import com.eldrix.terminology.medicine.Medication.Frequency;
 import com.eldrix.terminology.medicine.Medication.Route;
 import com.eldrix.terminology.medicine.Medication.Units;
+import com.eldrix.terminology.medicine.ParsedMedication;
+import com.eldrix.terminology.medicine.ParsedMedicationBuilder;
 
 public class MedicationParserTest {
 	

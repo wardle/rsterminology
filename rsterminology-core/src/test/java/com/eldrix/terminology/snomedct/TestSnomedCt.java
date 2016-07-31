@@ -1,4 +1,4 @@
-package com.eldrix.terminology.test;
+package com.eldrix.terminology.snomedct;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
