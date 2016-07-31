@@ -15,7 +15,7 @@ The SNOMED-CT international releases are now made in RF2 file format. At the tim
 
 ## Getting started
 
-Soon, I will make a runnable jar file available so that you can experiment without having to compile the source code.
+A runnable jar file is available so that you can experiment without having to compile the source code. If you download this from the RELEASES tab on github, you can skip directly to running the runnable jar section.
 
 ### Download the source-code from github.
 
@@ -107,6 +107,115 @@ You can now run a fully-functional SNOMED-CT server providing a very fast (usual
 java -jar rsterminology-server-1.0-SNAPSHOT.jar --config run.yml --server
 ```
 
+## Guide to the web-service
+
+You may now use the web-service from your code. 
+
+### Obtaining information about a SNOMED-CT concept
+
+```
+HTTP GET http://localhost:8080/concept/24700007
+```
+
+will return JSON:
+
+```
+{
+  "data": [
+    {
+      "id": 24700007,
+      "conceptId": 24700007,
+      "conceptStatusCode": 0,
+      "ctvId": "F20..",
+      "fullySpecifiedName": "Multiple sclerosis (disorder)",
+      "isPrimitive": 1,
+      "snomedId": "DA-25010"
+    }
+  ],
+  "total": 1
+}
+```
+
+### Searching for a concept
+
+```
+HTTP GET http://localhost:8080/concept/search?s=multiple scler&rootIds=64572001
+```
+
+will search for the term "multiple scler" using a root concept of 64572001 (which is the concept representing a Disease). You can specify multiple roots using a list of identifiers delimited by commas.
+
+Example result:
+```
+{
+  "data": [
+    {
+      "conceptId": 24700007,
+      "term": "Multiple sclerosis",
+      "preferredTerm": "Multiple sclerosis"
+    },
+  ]
+}
+```
+
+### Get synonyms for a search term
+
+You may wish to search clinic letters for a specific term. Find the synonyms for the entered search term using this service
+```
+HTTP GET http://localhost:8080/concept/synonyms?s=heart attack
+```
+or
+```
+HTTP GET http://localhost:8080/concept/synonyms?s=mi
+```
+
+will result in:
+
+```
+{
+  "data": [
+    "MI - Myocardial infarction",
+    "Myocardial infarct",
+    "Myocardial infarction",
+    "Myocardial infarction, NOS",
+    "Infarction of heart, NOS",
+    "Cardiac infarction, NOS",
+    "Heart attack, NOS",
+    "Infarction of heart",
+    "Cardiac infarction",
+    "Heart attack",
+    "Myocardial infarction (disorder)",
+    "MR - Mitral regurgitation",
+    "Mitral insufficiency",
+    "Mitral valve regurgitation (disorder)",
+    "Mitral valve regurgitation",
+    "Mitral valve regurgitation, NOS",
+    "Mitral valve incompetence, NOS",
+    "Mitral valve insufficiency, NOS",
+    "Mitral regurgitation, NOS",
+    "Mitral valve incompetence",
+    "Mitral valve insufficiency",
+    "Mitral regurgitation",
+    "AMI - Acute myocardial infarction",
+    "Acute myocardial infarction (disorder)",
+    "Acute myocardial infarction",
+    "Acute myocardial infarction, NOS",
+    "Aborted myocardial infarction",
+    "MI - Myocardial infarction aborted",
+    "Coronary thrombosis not resulting in myocardial infarction",
+    "Coronary thrombosis not resulting in myocardial infarction (disorder)",
+    "Silent myocardial infarction",
+    "MI - Silent myocardial infarction",
+    "Silent myocardial infarction (disorder)",
+    "Attack - heart",
+    "MI - acute myocardial infarction",
+    "MI - Mitral incompetence"
+  ]
+}
+```
+
+which allows you to fetch documents matching the synonyms for MI (which could represent myocardial infarction or mitral incompetence).
+
+There are additional service features - documentation forthcoming.
 
 Mark Wardle
-12th July 2016
+31st July 2016
