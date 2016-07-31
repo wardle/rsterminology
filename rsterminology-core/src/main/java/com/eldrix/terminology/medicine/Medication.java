@@ -8,120 +8,121 @@ import java.util.HashMap;
 public class Medication {
 
 	public enum Frequency {
-		PER_HOUR("/hour", "/hr", "/h","every-hour") {
+		PER_HOUR(286551008L, "/hour", "/hr", "/h","every-hour") {
 			@Override
 			BigDecimal equivalentDailyDose(BigDecimal dose) {
 				return dose.multiply(new BigDecimal(24));
 			}
 		},
-		TWELVE_TIMES_DAILY("12/day", "12/d","twelve-times-daily") {
+		TWELVE_TIMES_DAILY(396106003L, "12/day", "12/d","twelve-times-daily") {
 			@Override
 			BigDecimal equivalentDailyDose(BigDecimal dose) {
 				return dose.multiply(new BigDecimal(12));
 			}
 		},
-		TEN_TIMES_DAILY("10/day", "10/d","ten-times-daily") {
+		TEN_TIMES_DAILY(396105004L, "10/day", "10/d","ten-times-daily") {
 			@Override
 			BigDecimal equivalentDailyDose(BigDecimal dose) {
 				return dose.multiply(new BigDecimal(10));
 			}
 		},
-		NINE_TIMES_DAILY("9/day", "9/d","nine-times-daily") {
+		NINE_TIMES_DAILY(396115005L, "9/day", "9/d","nine-times-daily") {
 			@Override
 			BigDecimal equivalentDailyDose(BigDecimal dose) {
 				return dose.multiply(new BigDecimal(9));
 			}
 		},
-		EIGHT_TIMES_DAILY("8/day", "8/d","eight-times-daily") {
+		EIGHT_TIMES_DAILY(307443002L, "8/day", "8/d","eight-times-daily") {
 			@Override
 			BigDecimal equivalentDailyDose(BigDecimal dose) {
 				return dose.multiply(new BigDecimal(8));
 			}
 		},
-		SEVEN_TIMES_DAILY("7/day", "7/d","seven-times-daily") {
+		SEVEN_TIMES_DAILY(307442007L, "7/day", "7/d","seven-times-daily") {
 			@Override
 			BigDecimal equivalentDailyDose(BigDecimal dose) {
 				return dose.multiply(new BigDecimal(7));
 			}
 		},
-		SIX_TIMES_DAILY("6/day", "6/d","six-times-daily") {
+		SIX_TIMES_DAILY(307441000L, "6/day", "6/d","six-times-daily") {
 			@Override
 			BigDecimal equivalentDailyDose(BigDecimal dose) {
 				return dose.multiply(new BigDecimal(6));
 			}
 		},
-		FIVE_TIMES_DAILY("5/day", "5/d","five-times-daily") {
+		FIVE_TIMES_DAILY(307440004L, "5/day", "5/d","five-times-daily") {
 			@Override
 			BigDecimal equivalentDailyDose(BigDecimal dose) {
 				return dose.multiply(new BigDecimal(5));
 			}
 		},
-		FOUR_TIMES_DAILY("qds", "4/day", "4/d", "four-times-daily") {
+		FOUR_TIMES_DAILY(307439001L, "qds", "4/day", "4/d", "four-times-daily") {
 			@Override
 			BigDecimal equivalentDailyDose(BigDecimal dose) {
 				return dose.multiply(new BigDecimal(4));
 			}
 		},
-		THREE_TIMES_DAILY("tds", "tid", "3/day", "3/d", "three-times-daily") {
+		THREE_TIMES_DAILY(229798009L, "tds", "tid", "3/day", "3/d", "three-times-daily") {
 			@Override
 			BigDecimal equivalentDailyDose(BigDecimal dose) {
 				return dose.multiply(new BigDecimal(3));
 			}
 		},
-		TWICE_DAILY("bd", "bid", "2/day", "2/d","two-times-daily") {
+		TWICE_DAILY(229799001L, "bd", "bid", "2/day", "2/d","two-times-daily") {
 			@Override
 			BigDecimal equivalentDailyDose(BigDecimal dose) {
 				return dose.multiply(new BigDecimal(2));
 			}
 		},
-		ONCE_DAILY("od", "1/day", "1/d","one-time-daily") {
+		ONCE_DAILY(229797004L, "od", "1/day", "1/d","one-time-daily") {
 			@Override
 			BigDecimal equivalentDailyDose(BigDecimal dose) {
 				return dose;
 			}
 		},
-		ALTERNATE_DAYS("altdays", "alt", "alternate-days") {
+		ALTERNATE_DAYS(225760004L, "altdays", "alt", "alternate-days") {
 			@Override
 			BigDecimal equivalentDailyDose(BigDecimal dose) {
 				return dose.divide(new BigDecimal(2), 4, RoundingMode.UP);
 			}
 		},
-		ONCE_WEEKLY("/week", "/w", "/wk", "1/w", "once-every-week") {
+		ONCE_WEEKLY(225769003L, "/week", "/w", "/wk", "1/w", "once-every-week") {
 			@Override
 			BigDecimal equivalentDailyDose(BigDecimal dose) {
 				return dose.divide(new BigDecimal(7), 4, RoundingMode.UP);
 			}
 		},
-		ONCE_TWO_WEEKLY("/2weeks", "/2w", "/2wk", "once-every-two-weeks") {
+		ONCE_TWO_WEEKLY(20050000L, "/2weeks", "/2w", "/2wk", "once-every-two-weeks") {
 			@Override
 			BigDecimal equivalentDailyDose(BigDecimal dose) {
 				return dose.divide(new BigDecimal(14), 4, RoundingMode.UP);
 			}
 		},
-		ONCE_MONTHLY("/month", "/m", "/mo", "1/m", "once-every-month") {
+		ONCE_MONTHLY(307450003L, "/month", "/m", "/mo", "1/m", "once-every-month") {
 			@Override
 			BigDecimal equivalentDailyDose(BigDecimal dose) {
 				return dose.divide(new BigDecimal(30), 1, RoundingMode.UP);
 			}
 		},
-		ONCE_TWO_MONTHLY("/2months", "/2m", "/2mo", "once-every-two-months") {
+		ONCE_TWO_MONTHLY(445547001L, "/2months", "/2m", "/2mo", "once-every-two-months") {
 			@Override
 			BigDecimal equivalentDailyDose(BigDecimal dose) {
 				return dose.divide(new BigDecimal(60), 1, RoundingMode.UP);
 			}
 		},
-		ONCE_THREE_MONTHLY("/3months", "/3m", "/3mo", "once-every-three-months") {
+		ONCE_THREE_MONTHLY(396129006L, "/3months", "/3m", "/3mo", "once-every-three-months") {
 			@Override
 			BigDecimal equivalentDailyDose(BigDecimal dose) {
 				return dose.divide(new BigDecimal(90), 1, RoundingMode.UP);
 			}
 		},
-		ONCE_YEARLY("/year", "/y", "/yr", "once-every-year") {
+		ONCE_YEARLY(307455008L, "/year", "/y", "/yr", "once-every-year") {
 			@Override
 			BigDecimal equivalentDailyDose(BigDecimal dose) {
 				return dose.divide(new BigDecimal(365), 1, RoundingMode.UP);
 			}
 		};
+		private final long _conceptId;
 		private final String[] _names;
 		@SuppressWarnings("serial")
 		private static final HashMap<String, Medication.Frequency> _frequencies = new HashMap<String, Medication.Frequency>() {
@@ -134,11 +135,12 @@ public class Medication {
 			}
 		};
 
-		Frequency(String... names) {
+		Frequency(long conceptId, String... names) {
 			if (names.length == 0) {
 				throw new IllegalStateException(
 						"Each medication frequency must have at least one name");
 			}
+			_conceptId = conceptId;
 			_names = names;
 		}
 
@@ -146,6 +148,10 @@ public class Medication {
 			return _names[0];
 		}
 
+		public long conceptId() {
+			return _conceptId;
+		}
+		
 		public String[] names() {
 			return _names;
 		}
@@ -158,16 +164,19 @@ public class Medication {
 	}
 
 	public enum Units {
-		MICROGRAM(new String[] { "mcg" }, new BigDecimal("0.00001")),
-		MILLIGRAM(new String[] { "mg" }, new BigDecimal("0.001")),
-		MILLILITRES(new String[] { "ml" }, new BigDecimal("0.001")),
-		GRAM(new String[] { "g", "gram" }, BigDecimal.ONE),
-		UNITS(new String[] { "units", "u" }, BigDecimal.ONE),
-		TABLETS(new String[] { "tablets", "tab", "t" }, BigDecimal.ONE),
-		PUFFS(new String[] { "puffs", "puff", "p" }, BigDecimal.ONE),
-		NONE(new String[] { "" }, BigDecimal.ONE);
-		public final BigDecimal conversion;
+		MICROGRAM(258685003L, new String[] { "mcg" }, new BigDecimal("0.00001")),
+		MILLIGRAM(258684004L, new String[] { "mg" }, new BigDecimal("0.001")),
+		MILLILITRES(258773002L, new String[] { "ml" }, new BigDecimal("0.001")),
+		GRAM(258682000L, new String[] { "g", "gram" }, BigDecimal.ONE),
+		UNITS(408102007L, new String[] { "units", "u" }, BigDecimal.ONE),
+		TABLETS(385055001L, new String[] { "tablets", "tab", "t" }, BigDecimal.ONE),
+		PUFFS(415215001L, new String[] { "puffs", "puff", "p" }, BigDecimal.ONE),
+		NONE(408102007L, new String[] { "" }, BigDecimal.ONE);
+		
+
+		private final long _conceptId;
 		private final String[] _abbreviations;
+		public final BigDecimal conversion;
 		private static final HashMap<String, Units> _lookup = new HashMap<String, Units>() {
 			{
 				for (Units unit : Units.values()) {
@@ -180,11 +189,16 @@ public class Medication {
 			}
 		};
 
-		Units(String[] abbrev, BigDecimal convert) {
+		Units(long conceptId, String[] abbrev, BigDecimal convert) {
+			_conceptId = conceptId;
 			_abbreviations = abbrev;
 			conversion = convert;
 		}
 
+		public long conceptId() {
+			return _conceptId;
+		}
+		
 		public String abbreviation() {
 			return _abbreviations[0];
 		}
@@ -207,8 +221,14 @@ public class Medication {
 	}
 
 	public enum Route {
-		ORAL("PO"), INTRAVENOUS("iv"), SUBCUTANEOUS("sc"), INTRAMUSCULAR("im"), INTRATHECAL(
-				"intrathecal"), INHALED("inh"), TOPICAL("top");
+		ORAL(26643006L, "PO"), 
+		INTRAVENOUS(47625008L, "iv"), 
+		SUBCUTANEOUS(34206005L, "sc"), 
+		INTRAMUSCULAR(78421000L, "im"), 
+		INTRATHECAL(72607000L, "intrathecal"), 
+		INHALED(2764101000001108L, "inh"),
+		TOPICAL(2762601000001108L, "top");
+		final long _conceptId;
 		final String _abbreviation;
 		final static HashMap<String, Route> _routes = new HashMap<String, Route>() {
 			{
@@ -218,12 +238,16 @@ public class Medication {
 			}
 		};
 
-		Route(String abbreviation) {
+		Route(long conceptId, String abbreviation) {
+			_conceptId = conceptId;
 			_abbreviation = abbreviation;
 		}
 
 		public static Route routeForAbbreviation(String abbreviation) {
 			return _routes.get(abbreviation.toUpperCase());
+		}
+		public long conceptId() {
+			return _conceptId;
 		}
 		public String abbreviation() {
 			return _abbreviation;
