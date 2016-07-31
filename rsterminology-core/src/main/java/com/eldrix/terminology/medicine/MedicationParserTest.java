@@ -139,6 +139,9 @@ public class MedicationParserTest {
 		assertEquals(med8.dose(), new BigDecimal(2.5));
 		assertEquals(med8.units(), Units.MILLIGRAM);
 		assertEquals(med8.frequency(), Frequency.PER_HOUR);
+		
+		ParsedMedication med9 = pmb.parseString("Sinemet-CR 0.5tab od").build();;
+		assertTrue(med9.conceptId() == 9341401000001101L);		// sinemet CR (product)
 	}
 
 	@Test
