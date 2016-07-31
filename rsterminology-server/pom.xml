@@ -11,7 +11,7 @@
 
 	<groupId>com.eldrix.rsterminology.server</groupId>
 	<artifactId>rsterminology-server</artifactId>
-	<version>0.1-SNAPSHOT</version>
+	<version>0.2-SNAPSHOT</version>
 
 	<name>RSTerminology server</name>
 	<description>A SNOMED-CT terminology server.</description>
