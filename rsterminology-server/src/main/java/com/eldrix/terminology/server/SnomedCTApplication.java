@@ -20,7 +20,7 @@ public class SnomedCTApplication implements Module {
 	public static void main(String[] args) throws Exception {
 
 		Module jersey = JerseyModule.builder()
-				.packageRoot(ConceptResource.class)
+				.packageRoot(SnomedCTResource.class)
 				.build();
 		Bootique.app(args)
 		.module(SnomedCTApplication.class)

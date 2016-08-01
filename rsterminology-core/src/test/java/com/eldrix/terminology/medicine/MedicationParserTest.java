@@ -92,58 +92,58 @@ public class MedicationParserTest {
 
 		ParsedMedicationBuilder pmb = new ParsedMedicationBuilder();
 		ParsedMedication med1 = pmb.parseString("amlodipine 5mg od").build();
-		assertEquals(med1.drugName(), "amlodipine");
-		assertEquals(Long.valueOf(108537001L), med1.conceptId());
-		assertEquals(med1.dose(), new BigDecimal(5));
-		assertEquals(med1.units(), Units.MILLIGRAM);
-		assertEquals(med1.frequency(), Frequency.ONCE_DAILY);
+		assertEquals(med1.getDrugName(), "amlodipine");
+		assertEquals(Long.valueOf(108537001L), med1.getConceptId());
+		assertEquals(med1.getDose(), new BigDecimal(5));
+		assertEquals(med1.getUnits(), Units.MILLIGRAM);
+		assertEquals(med1.getFrequency(), Frequency.ONCE_DAILY);
 
 		
 		ParsedMedication med2 = pmb.parseString("co-careldopa 25mg/250mg 1tab qds").build();
-		assertEquals(med2.drugName(), "co-careldopa 25mg/250mg");
-		assertNotNull(med2.conceptId());
-		assertEquals(377270003, med2.conceptId() != null ? med2.conceptId().longValue() : 0 );
-		assertEquals(med2.dose(), new BigDecimal(1));
-		assertEquals(med2.units(), Units.TABLETS);
-		assertEquals(med2.frequency(), Frequency.FOUR_TIMES_DAILY);
+		assertEquals(med2.getDrugName(), "co-careldopa 25mg/250mg");
+		assertNotNull(med2.getConceptId());
+		assertEquals(377270003, med2.getConceptId() != null ? med2.getConceptId().longValue() : 0 );
+		assertEquals(med2.getDose(), new BigDecimal(1));
+		assertEquals(med2.getUnits(), Units.TABLETS);
+		assertEquals(med2.getFrequency(), Frequency.FOUR_TIMES_DAILY);
 		
 		ParsedMedication med3 = pmb.parseString("bendroflumethiazide 2.5mg od").build();
-		assertEquals(med3.drugName(), "bendroflumethiazide");
-		assertEquals(med3.dose(), new BigDecimal(2.5));
-		assertEquals(med3.units(), Units.MILLIGRAM);
-		assertEquals(med3.frequency(), Frequency.ONCE_DAILY);
-		assertTrue(med3.conceptId() == 91135008L);
+		assertEquals(med3.getDrugName(), "bendroflumethiazide");
+		assertEquals(med3.getDose(), new BigDecimal(2.5));
+		assertEquals(med3.getUnits(), Units.MILLIGRAM);
+		assertEquals(med3.getFrequency(), Frequency.ONCE_DAILY);
+		assertTrue(med3.getConceptId() == 91135008L);
 
 		ParsedMedication med4 = pmb.parseString("Sinemet CR 1tab od").build();
-		assertTrue(med4.conceptId() == 9341401000001101L);		// sinemet CR (product)
-		assertEquals(med4.dose(), new BigDecimal(1));
-		assertEquals(med4.units(), Units.TABLETS);
+		assertTrue(med4.getConceptId() == 9341401000001101L);		// sinemet CR (product)
+		assertEquals(med4.getDose(), new BigDecimal(1));
+		assertEquals(med4.getUnits(), Units.TABLETS);
 
 		ParsedMedication med5 = pmb.parseString("Sinemet CR 0.5tab od").build();;
-		assertTrue(med5.conceptId() == 9341401000001101L);		// sinemet CR (product)
-		assertEquals(med5.dose(), new BigDecimal(0.5));
-		assertEquals(med5.units(), Units.TABLETS);
+		assertTrue(med5.getConceptId() == 9341401000001101L);		// sinemet CR (product)
+		assertEquals(med5.getDose(), new BigDecimal(0.5));
+		assertEquals(med5.getUnits(), Units.TABLETS);
 
 		ParsedMedication med6 = pmb.parseString("bendroflumethiazide 2.5mg od").build();
-		assertTrue(med6.conceptId() == 91135008L);
+		assertTrue(med6.getConceptId() == 91135008L);
 
-		assertNotNull(pmb.parseString("co-careldopa 1t od").build().conceptId());
+		assertNotNull(pmb.parseString("co-careldopa 1t od").build().getConceptId());
 		
 		ParsedMedication med7 = pmb.parseString("co-careldopa 25mg/250mg 0.5tab qds").build();
 		//assertEquals(med7.drugName(), "co-careldopa 25mg/250mg");
-		assertEquals(Long.valueOf(377270003L), med7.conceptId());
-		assertEquals(med7.dose(), new BigDecimal(0.5));
-		assertEquals(med7.units(), Units.TABLETS);
-		assertEquals(med7.frequency(), Frequency.FOUR_TIMES_DAILY);
+		assertEquals(Long.valueOf(377270003L), med7.getConceptId());
+		assertEquals(med7.getDose(), new BigDecimal(0.5));
+		assertEquals(med7.getUnits(), Units.TABLETS);
+		assertEquals(med7.getFrequency(), Frequency.FOUR_TIMES_DAILY);
 		
 		ParsedMedication med8 = pmb.parseString("apomorphine 2.5mg /h").build();
-		assertEquals(med8.drugName(), "apomorphine");
-		assertEquals(med8.dose(), new BigDecimal(2.5));
-		assertEquals(med8.units(), Units.MILLIGRAM);
-		assertEquals(med8.frequency(), Frequency.PER_HOUR);
+		assertEquals(med8.getDrugName(), "apomorphine");
+		assertEquals(med8.getDose(), new BigDecimal(2.5));
+		assertEquals(med8.getUnits(), Units.MILLIGRAM);
+		assertEquals(med8.getFrequency(), Frequency.PER_HOUR);
 		
 		ParsedMedication med9 = pmb.parseString("Sinemet-CR 0.5tab od").build();;
-		assertTrue(med9.conceptId() == 9341401000001101L);		// sinemet CR (product)
+		assertTrue(med9.getConceptId() == 9341401000001101L);		// sinemet CR (product)
 	}
 
 	@Test
@@ -187,11 +187,11 @@ public class MedicationParserTest {
 		assertFalse(med6.equals(med1));
 		assertFalse(med7.equals(med1));
 		assertFalse(med8.equals(med9));
-		assertEquals(med8.route(), Route.ORAL);
-		assertNull(med8.dose());
+		assertEquals(med8.getRoute(), Route.ORAL);
+		assertNull(med8.getDose());
 		assertFalse(med9.equals(med10));
 		assertTrue(med11.equals(med9));
-		assertEquals(med12.conceptId(), med13.conceptId());
+		assertEquals(med12.getConceptId(), med13.getConceptId());
 		assertFalse(med12.equals(med14));
 		assertFalse(med1.equals(null));
 		assertTrue(med1.equals(med1));
@@ -298,13 +298,13 @@ public class MedicationParserTest {
 	public void testPartialNames() throws CorruptIndexException, IOException, ParseException {
 		ParsedMedicationBuilder pmb = new ParsedMedicationBuilder();
 		ParsedMedication med1 = pmb.parseString("amlodipin").build();
-		assertEquals(Long.valueOf(108537001L), med1.conceptId());		// amlodipine
+		assertEquals(Long.valueOf(108537001L), med1.getConceptId());		// amlodipine
 
 		ParsedMedication med2 = pmb.parseString("levetir").build();
-		assertTrue(116076009L == med2.conceptId());
+		assertTrue(116076009L == med2.getConceptId());
 		
 		ParsedMedication med3 = pmb.parseString("sine CR").build();
-		assertEquals(Long.valueOf(9341401000001101L), med3.conceptId());
+		assertEquals(Long.valueOf(9341401000001101L), med3.getConceptId());
 	}
 
 
@@ -317,7 +317,7 @@ public class MedicationParserTest {
 	
 	private void _printParsed(String title, List<ParsedMedication> parsed) {
 		for (ParsedMedication med : parsed) {
-			System.out.println(title + ": " + med + " " + med.conceptId());
+			System.out.println(title + ": " + med + " " + med.getConceptId());
 		}
 	}
 

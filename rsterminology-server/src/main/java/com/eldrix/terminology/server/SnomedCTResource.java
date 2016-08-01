@@ -17,8 +17,11 @@ import javax.ws.rs.core.UriInfo;
 import org.apache.cayenne.DataRow;
 import org.apache.cayenne.ObjectContext;
 import org.apache.cayenne.query.SelectQuery;
+import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.queryparser.classic.ParseException;
 
+import com.eldrix.terminology.medicine.ParsedMedication;
+import com.eldrix.terminology.medicine.ParsedMedicationBuilder;
 import com.eldrix.terminology.snomedct.Concept;
 import com.eldrix.terminology.snomedct.Description;
 import com.eldrix.terminology.snomedct.Search;
@@ -30,9 +33,9 @@ import com.nhl.link.rest.LinkRestException;
 import com.nhl.link.rest.runtime.LinkRestRuntime;
 import com.nhl.link.rest.runtime.cayenne.ICayennePersister;
 
-@Path("concept")
+@Path("snomedct")
 @Produces(MediaType.APPLICATION_JSON)
-public class ConceptResource {
+public class SnomedCTResource {
 
 	@Context
 	private Configuration config;
@@ -44,13 +47,13 @@ public class ConceptResource {
 	 * @return
 	 */
 	@GET
-	@Path("{conceptId}")
+	@Path("concepts/{conceptId}")
 	public DataResponse<Concept> getOne(@PathParam("conceptId") int id, @Context UriInfo uriInfo) {
 		return LinkRest.select(Concept.class, config)
 				.byId(id).uri(uriInfo)
 				.selectOne();
 	}
-
+	
 	/**
 	 * Search for a concept using the search terms provided.
 	 * @param search
@@ -74,6 +77,13 @@ public class ConceptResource {
 		} catch (ParseException e) {
 			throw new LinkRestException(Status.BAD_REQUEST, e.getLocalizedMessage(), e);
 		}
+	}
+	
+	@GET
+	@Path("dmd/parse")
+	public DataResponse<ParsedMedication> parseMedication(@QueryParam("s") String search, @Context UriInfo uriInfo) throws CorruptIndexException, IOException, ParseException {
+		ParsedMedication pm = new ParsedMedicationBuilder().parseString(search).build(Search.getInstance());
+		return DataResponse.forObject(pm);
 	}
 
 	@GET

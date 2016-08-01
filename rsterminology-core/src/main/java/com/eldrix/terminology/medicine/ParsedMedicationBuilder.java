@@ -92,14 +92,14 @@ public class ParsedMedicationBuilder {
 
 	public ParsedMedicationBuilder fromParsedMedication(ParsedMedication pm) {
 		_reset();
-		_conceptId = pm.conceptId();
-		_drugName = pm.drugName();
-		_dose = pm.dose();
-		_units = pm.units();
-		_frequency = pm.frequency();
-		_route = pm.route();
-		_asRequired = pm.asRequired();
-		_notes = pm.notes();
+		_conceptId = pm.getConceptId();
+		_drugName = pm.getDrugName();
+		_dose = pm.getDose();
+		_units = pm.getUnits();
+		_frequency = pm.getFrequency();
+		_route = pm.getRoute();
+		_asRequired = pm.getAsRequired();
+		_notes = pm.getNotes();
 		return this;
 	}
 

@@ -46,35 +46,35 @@ public class ParsedMedication implements Comparable<ParsedMedication> {
 		_notes = notes;
 	}
 
-	public String drugName() {
+	public String getDrugName() {
 		return _drugName;
 	}
 
-	public BigDecimal dose() {
+	public BigDecimal getDose() {
 		return _dose;
 	}
 
-	public Units units() {
+	public Units getUnits() {
 		return _units;
 	}
 
-	public Frequency frequency() {
+	public Frequency getFrequency() {
 		return _frequency;
 	}
 
-	public Route route() {
+	public Route getRoute() {
 		return _route;
 	}
 
-	public boolean asRequired() {
+	public boolean getAsRequired() {
 		return _asRequired;
 	}
 
-	public String notes() {
+	public String getNotes() {
 		return _notes;
 	}
 
-	public Long conceptId() {
+	public Long getConceptId() {
 		return _conceptId;
 	}
 
@@ -155,9 +155,9 @@ public class ParsedMedication implements Comparable<ParsedMedication> {
 		sb.append(getClass().getName());
 		sb.append("-");
 		sb.append(userPresentableDescription());
-		if (notes() != null) {
+		if (getNotes() != null) {
 			sb.append(" ");
-			sb.append(notes());
+			sb.append(getNotes());
 		}
 		return sb.toString().trim();
 	}
