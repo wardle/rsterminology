@@ -49,6 +49,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.eldrix.terminology.snomedct.Semantic.DmdProduct;
+import com.eldrix.terminology.snomedct.Semantic.RelationType;
 
 
 /*
@@ -90,12 +91,12 @@ public class Search {
 		/**
 		 * Return concepts that are a type of VTM or TF.
 		 */
-		public static Query DMD_VTM_OR_VF = filterForIsAConcepts(dmdVtmOrTfIds);
+		public static Query DMD_VTM_OR_TF = filterForIsAConcept(dmdVtmOrTfIds);
 
 		/**
 		 * Return concepts that are a type of VMP or AMP.
 		 */
-		public static Query DMD_VMP_OR_AMP = filterForIsAConcepts(dmdVmpOrAmpIds);
+		public static Query DMD_VMP_OR_AMP = filterForIsAConcept(dmdVmpOrAmpIds);
 
 		/**
 		 * Return concepts that are active.
@@ -195,8 +196,8 @@ public class Search {
 		for (long parent : d.getConcept().getCachedRecursiveParents()) {
 			doc.add(new LongPoint(FIELD_PARENT_CONCEPT_ID, parent));
 		}
-		for (Concept parent : d.getConcept().getParentConcepts()) {
-			doc.add(new LongPoint(FIELD_ISA_PARENT_CONCEPT_ID, parent.getConceptId()));
+		for (Relationship parent : d.getConcept().getParentRelationshipsOfType(RelationType.IS_A)) {
+			doc.add(new LongPoint(FIELD_ISA_PARENT_CONCEPT_ID, parent.getTargetConceptId()));
 		}
 		writer.addDocument(doc);
 	}
@@ -237,6 +238,7 @@ public class Search {
 			private static final int MINIMUM_CHARS_FOR_PREFIX_SEARCH = 3;
 			int _maxHits = DEFAULT_MAXIMUM_HITS;
 			Query _query;
+			ArrayList<Query> _filters;
 			QueryParser _queryParser;
 			private StandardAnalyzer _analyzer = new StandardAnalyzer();
 
@@ -274,7 +276,7 @@ public class Search {
 			 * @param query
 			 * @return
 			 */
-			public Builder setMainQuery(Query query) {
+			public Builder setQuery(Query query) {
 				_query = query;
 				return this;
 			}
@@ -285,7 +287,7 @@ public class Search {
 			 * @return
 			 * @throws ParseException
 			 */
-			public Builder setMainQuery(String search) throws ParseException {
+			public Builder parseQuery(String search) throws ParseException {
 				_query = queryParser().parse(search);
 				return this;
 			}
@@ -321,41 +323,8 @@ public class Search {
 				} finally {
 					stream.close();
 				}
-
-
 				_query = b.build();
 				return this;
-			}
-
-			/**
-			 * Add additional mandatory queries (logical AND) to the main query.
-			 * @param queries
-			 * @return
-			 */
-			public Builder and(Query... queries) {
-				BooleanQuery.Builder bqBuilder = new BooleanQuery.Builder();
-				bqBuilder.add(_query, Occur.MUST);
-				for (Query q : queries) {
-					bqBuilder.add(q, Occur.MUST);
-				}
-				_query = bqBuilder.build();
-				return this;
-			}
-
-			/**
-			 * Add additional queries (logical OR) to the main query.
-			 * @param queries
-			 * @return
-			 */
-			public Builder or(Query...queries) {
-				BooleanQuery.Builder bqBuilder = new BooleanQuery.Builder();
-				bqBuilder.add(_query, Occur.MUST);
-				for (Query q : queries) {
-					bqBuilder.add(q, Occur.SHOULD);
-				}
-				bqBuilder.setMinimumNumberShouldMatch(1);
-				_query = bqBuilder.build();
-				return this;			
 			}
 
 			/**
@@ -379,7 +348,17 @@ public class Search {
 			 * @return
 			 */
 			public Builder withIsA(long[] isA) {
-				withFilters(Search.filterForIsAConcepts(isA));
+				withFilters(Search.filterForIsAConcept(isA));
+				return this;
+			}
+			
+			public Builder withIsA(long isA) {
+				withFilters(Search.filterForIsAConcept(isA));
+				return this;
+			}
+			
+			public Builder withActive() {
+				withFilters(Search.Filter.CONCEPT_ACTIVE);
 				return this;
 			}
 
@@ -389,12 +368,17 @@ public class Search {
 			 * @return
 			 */
 			public Builder withFilters(Query...queries) {
-				BooleanQuery.Builder bqBuilder = new BooleanQuery.Builder();
-				bqBuilder.add(_query, Occur.MUST);
-				for (Query q : queries) {
-					bqBuilder.add(q, Occur.FILTER);
+				if (_filters == null) {
+					_filters = new ArrayList<>(queries.length);
 				}
-				_query = bqBuilder.build();	
+				for (Query q : queries) {
+					_filters.add(q);
+				}
+				return this;
+			}
+			
+			public Builder clearFilters() {
+				_filters.clear();
 				return this;
 			}
 
@@ -406,7 +390,16 @@ public class Search {
 				if (_query == null) {
 					throw new NullPointerException("Must specify a query to create a request");
 				}
-				return new Request(_query, _maxHits);
+				Query query = _query;
+				if (_filters != null && _filters.size() > 0) {
+					BooleanQuery.Builder bqBuilder = new BooleanQuery.Builder();
+					bqBuilder.add(_query, Occur.MUST);		// add the basic query
+					for (Query q : _filters) {
+						bqBuilder.add(q, Occur.FILTER);		// and add each filter as a filter.
+					}
+					query = bqBuilder.build();	
+				}
+				return new Request(query, _maxHits);
 			}
 		}
 	}
@@ -490,9 +483,14 @@ public class Search {
 	/**
 	 * Returns a filter for descriptions with one the given direct parents.
 	 */
-	public static Query filterForIsAConcepts(long [] isAParentConceptIds) {
+	public static Query filterForIsAConcept(long[] isAParentConceptIds) {
 		return LongPoint.newSetQuery(FIELD_ISA_PARENT_CONCEPT_ID, isAParentConceptIds);
 	}
+	
+	public static Query filterForIsAConcept(long isAParentConceptId) {
+		return LongPoint.newExactQuery(FIELD_ISA_PARENT_CONCEPT_ID, isAParentConceptId);
+	}
+
 
 	/**
 	 * This is for debugging.
