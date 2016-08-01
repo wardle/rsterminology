@@ -50,6 +50,10 @@ public class ParsedMedication implements Comparable<ParsedMedication> {
 		return _drugName;
 	}
 
+	public String getMappedDrugName() {
+		return _mappedDrugName;
+	}
+	
 	public BigDecimal getDose() {
 		return _dose;
 	}
