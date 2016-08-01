@@ -68,13 +68,13 @@ public class Medication {
 				return dose.multiply(new BigDecimal(3));
 			}
 		},
-		TWICE_DAILY(229799001L, "bd", "bid", "2/day", "2/d","two-times-daily") {
+		TWICE_DAILY(229799001L, "bd", "bid", "2/day", "2/d","twice-daily", "two-times-daily") {
 			@Override
 			BigDecimal equivalentDailyDose(BigDecimal dose) {
 				return dose.multiply(new BigDecimal(2));
 			}
 		},
-		ONCE_DAILY(229797004L, "od", "1/day", "1/d","one-time-daily") {
+		ONCE_DAILY(229797004L, "od", "1/day", "1/d","once-daily", "one-time-daily") {
 			@Override
 			BigDecimal equivalentDailyDose(BigDecimal dose) {
 				return dose;
