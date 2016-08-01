@@ -39,7 +39,7 @@ public class SnomedCTResource {
 
 	@Context
 	private Configuration config;
-	
+
 	/**
 	 * Return information about a specified concept.
 	 * @param id
@@ -53,7 +53,7 @@ public class SnomedCTResource {
 				.byId(id).uri(uriInfo)
 				.selectOne();
 	}
-	
+
 	/**
 	 * Search for a concept using the search terms provided.
 	 * @param search
@@ -63,13 +63,18 @@ public class SnomedCTResource {
 	 */
 	@GET
 	@Path("search")
-	public DataResponse<ResultItem> search(@QueryParam("s") String search, @QueryParam("rootIds") String rootIds, @Context UriInfo uriInfo) {
+	public DataResponse<ResultItem> search(@QueryParam("s") String search, @QueryParam("rootIds") String rootIds, @QueryParam("isA") String isA, @Context UriInfo uriInfo) {
 		long[] rootConceptIds = Search.parseLongArray(rootIds);
+		long[] isAConceptIds = Search.parseLongArray(isA);
 		if (rootConceptIds.length == 0) {
 			rootConceptIds = new long[] { Semantic.Category.SNOMED_CT_ROOT.conceptId };
 		}
 		try {
-			List<ResultItem> result = new Search.Request.Builder().search(search).setMaxHits(200).withParents(rootConceptIds).build().search(Search.getInstance());
+			Search.Request.Builder b = new Search.Request.Builder().search(search).setMaxHits(200).withParents(rootConceptIds);
+			if (isAConceptIds.length > 0) {
+				b.withIsA(isAConceptIds);
+			}
+			List<ResultItem> result = b.build().search(Search.getInstance()); 
 			return DataResponse.forObjects(result);
 		} catch (IOException e) {
 			e.printStackTrace();			
@@ -78,7 +83,7 @@ public class SnomedCTResource {
 			throw new LinkRestException(Status.BAD_REQUEST, e.getLocalizedMessage(), e);
 		}
 	}
-	
+
 	@GET
 	@Path("dmd/parse")
 	public DataResponse<ParsedMedication> parseMedication(@QueryParam("s") String search, @Context UriInfo uriInfo) throws CorruptIndexException, IOException, ParseException {
@@ -94,7 +99,7 @@ public class SnomedCTResource {
 			rootConceptIds = new long[] { Semantic.Category.SNOMED_CT_ROOT.conceptId };
 		}
 		try {
-			List<Long> conceptIds = new Search.Request.Builder().search(search).setMaxHits(5).withParents(rootConceptIds).build().searchForConcepts(Search.getInstance());
+			List<Long> conceptIds = new Search.Request.Builder().search(search).setMaxHits(200).withParents(rootConceptIds).build().searchForConcepts(Search.getInstance());
 			ICayennePersister cayenne = LinkRestRuntime.service(ICayennePersister.class, config);
 			ObjectContext context = cayenne.newContext();
 			SelectQuery<DataRow> select = SelectQuery.dataRowQuery(Description.class, Description.CONCEPT_ID.in(conceptIds));
