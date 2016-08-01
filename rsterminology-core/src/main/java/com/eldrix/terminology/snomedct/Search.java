@@ -14,7 +14,9 @@ import org.apache.cayenne.ObjectContext;
 import org.apache.cayenne.ResultBatchIterator;
 import org.apache.cayenne.query.SelectQuery;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.IntPoint;
@@ -101,7 +103,7 @@ public class Search {
 		public static Query CONCEPT_ACTIVE = IntPoint.newSetQuery(FIELD_CONCEPT_STATUS, Concept.Status.activeCodes());
 
 	}
-	
+
 	/**
 	 * Get a shared instance at the default location.
 	 * @return
@@ -226,12 +228,13 @@ public class Search {
 			TopDocs docs = searchForTopDocs(searcher);
 			return Search.conceptsFromTopDocs(searcher.searcher(), docs);
 		}
-		
+
 		/**
 		 * A search request builder.
 		 *
 		 */
 		public static class Builder {
+			private static final int MINIMUM_CHARS_FOR_PREFIX_SEARCH = 3;
 			int _maxHits = DEFAULT_MAXIMUM_HITS;
 			Query _query;
 			QueryParser _queryParser;
@@ -293,24 +296,34 @@ public class Search {
 			 * @param search
 			 * @return
 			 * @throws ParseException
+			 * @throws IOException 
 			 */
-			public Builder search(String search) throws ParseException {
+			public Builder search(String search) throws ParseException, IOException {
 				BooleanQuery.Builder b = new BooleanQuery.Builder();
-				Query qp = queryParser().parse(QueryParser.escape(search));
-				b.add(qp, Occur.SHOULD);
-				for (String s: search.split(" ")) {
-					TermQuery tq = new TermQuery(new Term("term", s));
-					if (s.length() > 3) {
-						PrefixQuery pq = new PrefixQuery(new Term("term", s));
-						pq.setRewriteMethod(PrefixQuery.SCORING_BOOLEAN_REWRITE);
-						BooleanQuery bq = new BooleanQuery.Builder().add(tq, Occur.SHOULD).add(pq, Occur.SHOULD).build();
-						b.add(bq, Occur.SHOULD);
-					}
-					else {
-						b.add(tq,Occur.SHOULD);
-					}
+				TokenStream stream = _analyzer.tokenStream(FIELD_TERM, search);
+				CharTermAttribute termAtt = stream.addAttribute(CharTermAttribute.class);
+				try {
+					stream.reset();
+					while (stream.incrementToken()) {
+						String s = termAtt.toString();
+						TermQuery tq = new TermQuery(new Term("term", s));
+						if (s.length() > MINIMUM_CHARS_FOR_PREFIX_SEARCH) {
+							PrefixQuery pq = new PrefixQuery(new Term("term", s));
+							pq.setRewriteMethod(PrefixQuery.SCORING_BOOLEAN_REWRITE);
+							BooleanQuery bq = new BooleanQuery.Builder().add(tq, Occur.SHOULD).add(pq, Occur.SHOULD).build();
+							b.add(bq, Occur.MUST);
+						}
+						else {
+							b.add(tq,Occur.MUST);
+						}
+					}			     
+					stream.end();
+				} finally {
+					stream.close();
 				}
-				_query = b.setMinimumNumberShouldMatch(1).build();
+
+
+				_query = b.build();
 				return this;
 			}
 
@@ -397,7 +410,7 @@ public class Search {
 			}
 		}
 	}
-	
+
 	/**
 	 * Helper method to return an array from the search result.
 	 * @param searcher
@@ -415,7 +428,7 @@ public class Search {
 		}
 		return results;
 	}
-	
+
 	/**
 	 * Helper method to return an array of the text from the descriptions from the search result.
 	 * @param searcher

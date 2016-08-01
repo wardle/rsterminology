@@ -73,9 +73,21 @@ public class TestSnomedCt {
 			Search search = Search.getInstance();
 			Search.Request.Builder builder = new Search.Request.Builder();
 			List<Long> results = builder.search("mult sclerosis").setMaxHits(200).withParent(64572001L).build().searchForConcepts(search);
+			System.out.println(builder._query);
 			Expression qual = ExpressionFactory.inExp(Concept.CONCEPT_ID.getName(), results);
-			List<Concept> concepts = ObjectSelect.query(Concept.class, qual).select(context);
+			List<Concept> concepts = ObjectSelect.query(Concept.class, qual).prefetch(Concept.DESCRIPTIONS.joint()).select(context);
 			assertTrue(concepts.size() > 0);
+			
+			for (Concept c : concepts) {
+				boolean matched = c.getDescriptions().stream().anyMatch(d -> {
+					String t = d.getTerm().toLowerCase();
+					return t.contains("mult") && t.contains("sclerosis");
+				});
+				if (matched == false) {
+					System.out.println("Concept doesn't match appropriately: " + c.getFullySpecifiedName() + " " + c.getConceptId());
+					assertTrue(false);
+				}
+			}
 			
 			assertTrue(builder.search("parkin").build().search(Search.getInstance()).size() > 0);
 			assertNotEquals(0, builder.search("mult scler").build().search(search).size());
