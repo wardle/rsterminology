@@ -124,8 +124,8 @@ public class Semantic {
 		 * @return
 		 */
 		public boolean isAConcept(Concept c) {
-			for (Concept p : c.getParentConcepts()) {
-				if (conceptId == p.getConceptId()) {
+			for (Relationship r : c.getParentRelationships()) {
+				if (r.getRelationshipTypeConceptId() == RelationType.IS_A.conceptId && conceptId == r.getTargetConceptId()) {
 					return true;
 				}
 			}
@@ -156,6 +156,20 @@ public class Semantic {
 			HashSet<Concept> doseForms = new HashSet<Concept>();
 			getVmps(vtm).forEach(vmp -> doseForms.addAll(Vmp.getDispensedDoseForms(vmp)));
 			return new ArrayList<Concept>(doseForms);
+		}
+		
+		public static List<Concept> getAmps(Concept vtm) {
+			return getVmps(vtm).stream()
+				.flatMap(c -> Vmp.getAmps(c).stream())
+				.collect(Collectors.toList());
+		}
+		
+		public static List<Concept> getTfs(Concept vtm) {
+			return getVmps(vtm).stream()
+					.flatMap(vmp -> Vmp.getAmps(vmp).stream())
+					.map(amp -> Amp.getTf(amp))
+					.distinct()
+					.collect(Collectors.toList());
 		}
 	}
 
@@ -190,6 +204,13 @@ public class Semantic {
 		public static List<Concept> getAmps(Concept vmp) {
 			return vmp.getChildConcepts().stream()
 					.filter(child -> DmdProduct.ACTUAL_MEDICINAL_PRODUCT.isAConcept(child))
+					.collect(Collectors.toList());
+		}
+		
+		public static List<Concept> getTfs(Concept vmp) {
+			return getAmps(vmp).stream()
+					.map(amp -> Amp.getTf(amp))
+					.distinct()
 					.collect(Collectors.toList());
 		}
 

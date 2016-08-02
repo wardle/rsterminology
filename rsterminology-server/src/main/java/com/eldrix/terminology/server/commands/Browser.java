@@ -154,7 +154,7 @@ public class Browser extends CommandWithMetadata {
 		}
 		if (includeRelations) {
 			sb.append("\n  |-Recursive parents:");
-			c.getParentConcepts().forEach(parent -> 
+			c.getRecursiveParentConcepts().forEach(parent -> 
 			sb.append("\n  |    |-" + parent.getConceptId() + " " + parent.getFullySpecifiedName()));
 			sb.append("\n  |-Parent relationships:");
 			c.getParentRelationships().forEach(r -> {
@@ -188,7 +188,7 @@ public class Browser extends CommandWithMetadata {
 						rootConceptIds = r;
 					}
 				}
-				List<ResultItem> results = new Search.Request.Builder().search(search).setMaxHits(hits).withParents(rootConceptIds).build().search(Search.getInstance());
+				List<ResultItem> results = new Search.Request.Builder().search(search).setMaxHits(hits).withRecursiveParent(rootConceptIds).build().search(Search.getInstance());
 				if (results.size() > 0) {
 					results.forEach(ri -> {
 						System.out.println(ri.getTerm() + " -- " + ri.getPreferredTerm() + " -- " + ri.getConceptId());

@@ -27,11 +27,11 @@ public abstract class _Concept extends CayenneDataObject {
     public static final Property<String> FULLY_SPECIFIED_NAME = new Property<String>("fullySpecifiedName");
     public static final Property<Integer> IS_PRIMITIVE = new Property<Integer>("isPrimitive");
     public static final Property<String> SNOMED_ID = new Property<String>("snomedId");
-    public static final Property<List<Concept>> CHILD_CONCEPTS = new Property<List<Concept>>("childConcepts");
     public static final Property<List<Relationship>> CHILD_RELATIONSHIPS = new Property<List<Relationship>>("childRelationships");
     public static final Property<List<Description>> DESCRIPTIONS = new Property<List<Description>>("descriptions");
-    public static final Property<List<Concept>> PARENT_CONCEPTS = new Property<List<Concept>>("parentConcepts");
     public static final Property<List<Relationship>> PARENT_RELATIONSHIPS = new Property<List<Relationship>>("parentRelationships");
+    public static final Property<List<Concept>> RECURSIVE_CHILD_CONCEPTS = new Property<List<Concept>>("recursiveChildConcepts");
+    public static final Property<List<Concept>> RECURSIVE_PARENT_CONCEPTS = new Property<List<Concept>>("recursiveParentConcepts");
 
     public void setConceptId(Long conceptId) {
         writeProperty("conceptId", conceptId);
@@ -75,18 +75,6 @@ public abstract class _Concept extends CayenneDataObject {
         return (String)readProperty("snomedId");
     }
 
-    public void addToChildConcepts(Concept obj) {
-        addToManyTarget("childConcepts", obj, true);
-    }
-    public void removeFromChildConcepts(Concept obj) {
-        removeToManyTarget("childConcepts", obj, true);
-    }
-    @SuppressWarnings("unchecked")
-    public List<Concept> getChildConcepts() {
-        return (List<Concept>)readProperty("childConcepts");
-    }
-
-
     public void addToChildRelationships(Relationship obj) {
         addToManyTarget("childRelationships", obj, true);
     }
@@ -111,18 +99,6 @@ public abstract class _Concept extends CayenneDataObject {
     }
 
 
-    public void addToParentConcepts(Concept obj) {
-        addToManyTarget("parentConcepts", obj, true);
-    }
-    public void removeFromParentConcepts(Concept obj) {
-        removeToManyTarget("parentConcepts", obj, true);
-    }
-    @SuppressWarnings("unchecked")
-    public List<Concept> getParentConcepts() {
-        return (List<Concept>)readProperty("parentConcepts");
-    }
-
-
     public void addToParentRelationships(Relationship obj) {
         addToManyTarget("parentRelationships", obj, true);
     }
@@ -132,6 +108,30 @@ public abstract class _Concept extends CayenneDataObject {
     @SuppressWarnings("unchecked")
     public List<Relationship> getParentRelationships() {
         return (List<Relationship>)readProperty("parentRelationships");
+    }
+
+
+    public void addToRecursiveChildConcepts(Concept obj) {
+        addToManyTarget("recursiveChildConcepts", obj, true);
+    }
+    public void removeFromRecursiveChildConcepts(Concept obj) {
+        removeToManyTarget("recursiveChildConcepts", obj, true);
+    }
+    @SuppressWarnings("unchecked")
+    public List<Concept> getRecursiveChildConcepts() {
+        return (List<Concept>)readProperty("recursiveChildConcepts");
+    }
+
+
+    public void addToRecursiveParentConcepts(Concept obj) {
+        addToManyTarget("recursiveParentConcepts", obj, true);
+    }
+    public void removeFromRecursiveParentConcepts(Concept obj) {
+        removeToManyTarget("recursiveParentConcepts", obj, true);
+    }
+    @SuppressWarnings("unchecked")
+    public List<Concept> getRecursiveParentConcepts() {
+        return (List<Concept>)readProperty("recursiveParentConcepts");
     }
 
 

@@ -71,8 +71,8 @@ public class Search {
 	private static final String FIELD_TERM="term";
 	private static final String FIELD_PREFERRED_TERM="preferredTerm";
 	private static final String FIELD_CONCEPT_ID="conceptId";
-	private static final String FIELD_PARENT_CONCEPT_ID="parentConceptId";
-	private static final String FIELD_ISA_PARENT_CONCEPT_ID="isA";
+	private static final String FIELD_RECURSIVE_PARENT_CONCEPT_ID="parentConceptId";
+	private static final String FIELD_DIRECT_PARENT_CONCEPT_ID="isA";
 	private static final String FIELD_LANGUAGE="language";
 	private static final String FIELD_DESCRIPTION_STATUS="descriptionStatus";
 	private static final String FIELD_CONCEPT_STATUS="conceptStatus";
@@ -89,14 +89,45 @@ public class Search {
 		private static long[] dmdVmpOrAmpIds = new long[] { DmdProduct.ACTUAL_MEDICINAL_PRODUCT.conceptId, DmdProduct.VIRTUAL_MEDICINAL_PRODUCT.conceptId};
 
 		/**
+		 * Returns a filter for descriptions with one of the given parent concepts.
+		 *
+		 * @param parentConceptIds
+		 * @return
+		 */
+		public static Query filterForRecursiveParent(long[] parentConceptIds) {
+			return LongPoint.newSetQuery(FIELD_RECURSIVE_PARENT_CONCEPT_ID, parentConceptIds);
+		}
+
+		/**
+		 * Return a filter for descriptions with the given parent concept.
+		 * @param parentConceptId
+		 * @return
+		 */
+		public static Query filterForRecursiveParent(long parentConceptId) {
+			return LongPoint.newExactQuery(FIELD_RECURSIVE_PARENT_CONCEPT_ID, parentConceptId);
+		}
+
+		/**
+		 * Returns a filter for descriptions with one the given direct parents.
+		 */
+		public static Query filterForDirectParent(long[] isAParentConceptIds) {
+			return LongPoint.newSetQuery(FIELD_DIRECT_PARENT_CONCEPT_ID, isAParentConceptIds);
+		}
+		
+		public static Query filterForDirectParent(long isAParentConceptId) {
+			return LongPoint.newExactQuery(FIELD_DIRECT_PARENT_CONCEPT_ID, isAParentConceptId);
+		}
+
+		
+		/**
 		 * Return concepts that are a type of VTM or TF.
 		 */
-		public static Query DMD_VTM_OR_TF = filterForIsAConcept(dmdVtmOrTfIds);
+		public static Query DMD_VTM_OR_TF = filterForDirectParent(dmdVtmOrTfIds);
 
 		/**
 		 * Return concepts that are a type of VMP or AMP.
 		 */
-		public static Query DMD_VMP_OR_AMP = filterForIsAConcept(dmdVmpOrAmpIds);
+		public static Query DMD_VMP_OR_AMP = filterForDirectParent(dmdVmpOrAmpIds);
 
 		/**
 		 * Return concepts that are active.
@@ -194,10 +225,10 @@ public class Search {
 		doc.add(new LongPoint(FIELD_DESCRIPTION_ID_INDEX, d.getDescriptionId()));	// for indexing and search
 		doc.add(new StoredField(FIELD_CONCEPT_ID, d.getConcept().getConceptId()));
 		for (long parent : d.getConcept().getCachedRecursiveParents()) {
-			doc.add(new LongPoint(FIELD_PARENT_CONCEPT_ID, parent));
+			doc.add(new LongPoint(FIELD_RECURSIVE_PARENT_CONCEPT_ID, parent));
 		}
 		for (Relationship parent : d.getConcept().getParentRelationshipsOfType(RelationType.IS_A)) {
-			doc.add(new LongPoint(FIELD_ISA_PARENT_CONCEPT_ID, parent.getTargetConceptId()));
+			doc.add(new LongPoint(FIELD_DIRECT_PARENT_CONCEPT_ID, parent.getTargetConceptId()));
 		}
 		writer.addDocument(doc);
 	}
@@ -332,13 +363,13 @@ public class Search {
 			 * @param parents
 			 * @return
 			 */
-			public Builder withParents(long[] parents) {
-				withFilters(Search.filterForParentConcepts(parents));
+			public Builder withRecursiveParent(long[] parents) {
+				withFilters(Search.Filter.filterForRecursiveParent(parents));
 				return this;
 			}
 
-			public Builder withParent(long parent) {
-				withFilters(Search.filterForParentConcept(parent));
+			public Builder withRecursiveParent(long parent) {
+				withFilters(Search.Filter.filterForRecursiveParent(parent));
 				return this;
 			}
 
@@ -347,13 +378,13 @@ public class Search {
 			 * @param isA
 			 * @return
 			 */
-			public Builder withIsA(long[] isA) {
-				withFilters(Search.filterForIsAConcept(isA));
+			public Builder withDirectParent(long[] isA) {
+				withFilters(Search.Filter.filterForDirectParent(isA));
 				return this;
 			}
 			
-			public Builder withIsA(long isA) {
-				withFilters(Search.filterForIsAConcept(isA));
+			public Builder withDirectParent(long isA) {
+				withFilters(Search.Filter.filterForDirectParent(isA));
 				return this;
 			}
 			
@@ -460,37 +491,6 @@ public class Search {
 		}
 		return new ArrayList<>(concepts);
 	}
-
-	/**
-	 * Returns a filter for descriptions with one of the given parent concepts.
-	 *
-	 * @param parentConceptIds
-	 * @return
-	 */
-	public static Query filterForParentConcepts(long[] parentConceptIds) {
-		return LongPoint.newSetQuery(FIELD_PARENT_CONCEPT_ID, parentConceptIds);
-	}
-
-	/**
-	 * Return a filter for descriptions with the given parent concept.
-	 * @param parentConceptId
-	 * @return
-	 */
-	public static Query filterForParentConcept(long parentConceptId) {
-		return LongPoint.newExactQuery(FIELD_PARENT_CONCEPT_ID, parentConceptId);
-	}
-
-	/**
-	 * Returns a filter for descriptions with one the given direct parents.
-	 */
-	public static Query filterForIsAConcept(long[] isAParentConceptIds) {
-		return LongPoint.newSetQuery(FIELD_ISA_PARENT_CONCEPT_ID, isAParentConceptIds);
-	}
-	
-	public static Query filterForIsAConcept(long isAParentConceptId) {
-		return LongPoint.newExactQuery(FIELD_ISA_PARENT_CONCEPT_ID, isAParentConceptId);
-	}
-
 
 	/**
 	 * This is for debugging.

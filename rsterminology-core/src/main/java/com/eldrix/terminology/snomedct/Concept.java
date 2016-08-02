@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.cayenne.exp.Expression;
 import org.apache.cayenne.validation.BeanValidationFailure;
@@ -183,6 +184,28 @@ public class Concept extends _Concept {
 	}
 
 	/**
+	 * Return parent concepts using IS-A relationships
+	 * @return
+	 */
+	public List<Concept> getParentConcepts() {
+		return getParentRelationships().stream()
+				.filter(r -> r.getRelationshipTypeConcept().getConceptId() == RelationType.IS_A.conceptId)
+				.map(Relationship::getTargetConcept)
+				.collect(Collectors.toList());
+	}
+	
+	/**
+	 * Return child concepts using IS-A relationships.
+	 * @return
+	 */
+	public List<Concept> getChildConcepts() {
+		return getChildRelationships().stream()
+				.filter(r -> r.getRelationshipTypeConcept().getConceptId() == RelationType.IS_A.conceptId)
+				.map(Relationship::getSourceConcept)
+				.collect(Collectors.toList());
+	}
+	
+	/**
 	 * This determines a list of concept identifiers that are the recursive parents
 	 * of this concept.
 	 * @return
@@ -220,15 +243,11 @@ public class Concept extends _Concept {
 
 	/**
 	 * Determine recursive parents from the database table that acts as a cache.
-	 * This is the legacy method for determining parents, and will be used in some profiling
-	 * tests to see whether it is better to use that an in-memory per-concept cache.
-	 * The benefit of this method is that prefetching means that a concept and its parents
-	 * can be pulled in using one fetch.
 	 * @return
 	 */
 	private Set<Long> _getRecursiveParentsFromDatabaseCache() {
 		HashSet<Long> parents = new HashSet<Long>();
-		getParentConcepts().forEach(c -> {
+		getRecursiveParentConcepts().forEach(c -> {
 			parents.add(c.getConceptId());
 		});
 		return Collections.unmodifiableSet(parents);

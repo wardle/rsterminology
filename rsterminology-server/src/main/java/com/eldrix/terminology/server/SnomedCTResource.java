@@ -70,9 +70,9 @@ public class SnomedCTResource {
 			rootConceptIds = new long[] { Semantic.Category.SNOMED_CT_ROOT.conceptId };
 		}
 		try {
-			Search.Request.Builder b = new Search.Request.Builder().search(search).setMaxHits(200).withParents(rootConceptIds);
+			Search.Request.Builder b = new Search.Request.Builder().search(search).setMaxHits(200).withRecursiveParent(rootConceptIds);
 			if (isAConceptIds.length > 0) {
-				b.withIsA(isAConceptIds);
+				b.withDirectParent(isAConceptIds);
 			}
 			List<ResultItem> result = b.build().search(Search.getInstance()); 
 			return DataResponse.forObjects(result);
@@ -99,7 +99,7 @@ public class SnomedCTResource {
 			rootConceptIds = new long[] { Semantic.Category.SNOMED_CT_ROOT.conceptId };
 		}
 		try {
-			List<Long> conceptIds = new Search.Request.Builder().search(search).setMaxHits(200).withParents(rootConceptIds).build().searchForConcepts(Search.getInstance());
+			List<Long> conceptIds = new Search.Request.Builder().search(search).setMaxHits(200).withRecursiveParent(rootConceptIds).build().searchForConcepts(Search.getInstance());
 			ICayennePersister cayenne = LinkRestRuntime.service(ICayennePersister.class, config);
 			ObjectContext context = cayenne.newContext();
 			SelectQuery<DataRow> select = SelectQuery.dataRowQuery(Description.class, Description.CONCEPT_ID.in(conceptIds));

@@ -61,7 +61,7 @@
 		<obj-attribute name="sourceConceptId" type="java.lang.Long" db-attribute-path="source_concept_id"/>
 		<obj-attribute name="targetConceptId" type="java.lang.Long" db-attribute-path="target_concept_id"/>
 	</obj-entity>
-	<db-relationship name="childConcept" source="t_cached_parent_concepts" target="t_concept" toMany="false">
+	<db-relationship name="childConcept" source="t_cached_parent_concepts" target="t_concept" toDependentPK="true" toMany="false">
 		<db-attribute-pair source="child_concept_id" target="concept_id"/>
 	</db-relationship>
 	<db-relationship name="parentConcept" source="t_cached_parent_concepts" target="t_concept" toDependentPK="true" toMany="false">
@@ -94,11 +94,11 @@
 	<db-relationship name="targetConcept" source="t_relationship" target="t_concept" toMany="false">
 		<db-attribute-pair source="target_concept_id" target="concept_id"/>
 	</db-relationship>
-	<obj-relationship name="childConcepts" source="Concept" target="Concept" deleteRule="Deny" db-relationship-path="cachedChildConcepts.childConcept"/>
 	<obj-relationship name="childRelationships" source="Concept" target="Relationship" deleteRule="Deny" db-relationship-path="childRelationships"/>
 	<obj-relationship name="descriptions" source="Concept" target="Description" deleteRule="Deny" db-relationship-path="descriptions"/>
-	<obj-relationship name="parentConcepts" source="Concept" target="Concept" deleteRule="Deny" db-relationship-path="cachedParentConcepts.parentConcept"/>
 	<obj-relationship name="parentRelationships" source="Concept" target="Relationship" deleteRule="Deny" db-relationship-path="parentRelationships"/>
+	<obj-relationship name="recursiveChildConcepts" source="Concept" target="Concept" deleteRule="Deny" db-relationship-path="cachedChildConcepts.childConcept"/>
+	<obj-relationship name="recursiveParentConcepts" source="Concept" target="Concept" deleteRule="Deny" db-relationship-path="cachedParentConcepts.parentConcept"/>
 	<obj-relationship name="concept" source="Description" target="Concept" deleteRule="Nullify" db-relationship-path="concept"/>
 	<obj-relationship name="relationshipTypeConcept" source="Relationship" target="Concept" deleteRule="Nullify" db-relationship-path="relationshipTypeConcept"/>
 	<obj-relationship name="sourceConcept" source="Relationship" target="Concept" deleteRule="Nullify" db-relationship-path="sourceConcept"/>
