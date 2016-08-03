@@ -79,8 +79,6 @@ public class SnomedCTResource {
 		} catch (IOException e) {
 			e.printStackTrace();			
 			throw new LinkRestException(Status.INTERNAL_SERVER_ERROR, e.getLocalizedMessage(), e);
-		} catch (ParseException e) {
-			throw new LinkRestException(Status.BAD_REQUEST, e.getLocalizedMessage(), e);
 		}
 	}
 
@@ -106,8 +104,6 @@ public class SnomedCTResource {
 			List<DataRow> data = select.select(context);
 			List<String> result = data.stream().map(row -> (String) row.get(Description.TERM.getName())).collect(Collectors.toList());
 			return DataResponse.forObjects(result);
-		} catch (ParseException e) {
-			throw new LinkRestException(Status.BAD_REQUEST, e.getLocalizedMessage(), e);
 		} catch (IOException e) {
 			e.printStackTrace();	
 			throw new LinkRestException(Status.INTERNAL_SERVER_ERROR, e.getLocalizedMessage(), e);

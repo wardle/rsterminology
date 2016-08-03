@@ -10,7 +10,6 @@ import java.util.regex.Pattern;
 import org.apache.cayenne.ObjectContext;
 import org.apache.cayenne.configuration.server.ServerRuntime;
 import org.apache.cayenne.query.ObjectSelect;
-import org.apache.lucene.queryparser.classic.ParseException;
 
 import com.eldrix.terminology.snomedct.Concept;
 import com.eldrix.terminology.snomedct.Search;
@@ -198,7 +197,7 @@ public class Browser extends CommandWithMetadata {
 					System.out.println("No results found");
 				}
 				
-			} catch (ParseException | IOException e) {
+			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}			
