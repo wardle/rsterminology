@@ -48,7 +48,7 @@ import org.apache.lucene.store.LockObtainFailedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.eldrix.terminology.snomedct.Semantic.DmdProduct;
+import com.eldrix.terminology.snomedct.Semantic.Dmd;
 import com.eldrix.terminology.snomedct.Semantic.RelationType;
 
 
@@ -85,8 +85,8 @@ public class Search {
 
 
 	public static class Filter {
-		private static long[] dmdVtmOrTfIds = new long[] { DmdProduct.VIRTUAL_THERAPEUTIC_MOIETY.conceptId, DmdProduct.TRADE_FAMILY.conceptId};
-		private static long[] dmdVmpOrAmpIds = new long[] { DmdProduct.ACTUAL_MEDICINAL_PRODUCT.conceptId, DmdProduct.VIRTUAL_MEDICINAL_PRODUCT.conceptId};
+		private static final long[] dmdVtmOrTfIds = new long[] { Dmd.Product.VIRTUAL_THERAPEUTIC_MOIETY.conceptId, Dmd.Product.TRADE_FAMILY.conceptId};
+		private static final long[] dmdVmpOrAmpIds = new long[] { Dmd.Product.ACTUAL_MEDICINAL_PRODUCT.conceptId, Dmd.Product.VIRTUAL_MEDICINAL_PRODUCT.conceptId};
 
 		/**
 		 * Returns a filter for descriptions with one of the given parent concepts.
@@ -122,17 +122,17 @@ public class Search {
 		/**
 		 * Return concepts that are a type of VTM or TF.
 		 */
-		public static Query DMD_VTM_OR_TF = filterForDirectParent(dmdVtmOrTfIds);
+		public static final Query DMD_VTM_OR_TF = filterForDirectParent(dmdVtmOrTfIds);
 
 		/**
 		 * Return concepts that are a type of VMP or AMP.
 		 */
-		public static Query DMD_VMP_OR_AMP = filterForDirectParent(dmdVmpOrAmpIds);
+		public static final Query DMD_VMP_OR_AMP = filterForDirectParent(dmdVmpOrAmpIds);
 
 		/**
 		 * Return concepts that are active.
 		 */
-		public static Query CONCEPT_ACTIVE = IntPoint.newSetQuery(FIELD_CONCEPT_STATUS, Concept.Status.activeCodes());
+		public static final Query CONCEPT_ACTIVE = IntPoint.newSetQuery(FIELD_CONCEPT_STATUS, Concept.Status.activeCodes());
 
 	}
 

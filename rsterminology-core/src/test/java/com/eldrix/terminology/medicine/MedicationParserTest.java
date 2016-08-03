@@ -19,8 +19,6 @@ import org.junit.Test;
 import com.eldrix.terminology.medicine.Medication.Frequency;
 import com.eldrix.terminology.medicine.Medication.Route;
 import com.eldrix.terminology.medicine.Medication.Units;
-import com.eldrix.terminology.medicine.ParsedMedication;
-import com.eldrix.terminology.medicine.ParsedMedicationBuilder;
 
 public class MedicationParserTest {
 	
@@ -262,6 +260,7 @@ public class MedicationParserTest {
 		ParsedMedication med5 = pmb.fromParsedMedication(med1).build();
 		ParsedMedication med6 = pmb.fromParsedMedication(med3).build();
 		ParsedMedication med7 = pmb.fromParsedMedication(med4).build();
+		assertEquals(med1, med2);
 		assertEquals(med1, med5);
 		assertEquals(med3, med6);
 		assertEquals(med4, med7);

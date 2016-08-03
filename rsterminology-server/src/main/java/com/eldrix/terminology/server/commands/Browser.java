@@ -14,7 +14,8 @@ import org.apache.cayenne.query.ObjectSelect;
 import com.eldrix.terminology.snomedct.Concept;
 import com.eldrix.terminology.snomedct.Search;
 import com.eldrix.terminology.snomedct.Search.ResultItem;
-import com.eldrix.terminology.snomedct.Semantic.DmdProduct;
+import com.eldrix.terminology.snomedct.Semantic.Dmd;
+import com.eldrix.terminology.snomedct.Semantic.Dmd.Product;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.nhl.bootique.cli.Cli;
@@ -148,8 +149,8 @@ public class Browser extends CommandWithMetadata {
 	private static void printConcept(Concept c, boolean includeRelations) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("Concept : " + c.getConceptId() + " : " + c.getFullySpecifiedName());
-		if (DmdProduct.productForConcept(c) != null) {
-			sb.append("  DM&D concept: " + DmdProduct.productForConcept(c));
+		if (Dmd.Product.productForConcept(c) != null) {
+			sb.append("  DM&D concept: " + Dmd.Product.productForConcept(c));
 		}
 		if (includeRelations) {
 			sb.append("\n  |-Recursive parents:");

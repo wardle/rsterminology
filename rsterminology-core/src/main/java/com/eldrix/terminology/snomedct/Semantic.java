@@ -1,6 +1,8 @@
 package com.eldrix.terminology.snomedct;
 
+import java.math.BigDecimal;
 import java.util.HashMap;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.StringUtils;
@@ -55,90 +57,91 @@ public class Semantic {
 		}
 	}
 
-	/**
-	 * The DM&D consists of the following structure:
-	 * VTM - Virtual therapeutic moiety
-	 * VMP - Virtual medicinal product
-	 * VMPP - Virtual medicinal product pack
-	 * AMP - Actual medicinal product
-	 * AMPP - Actual medicinal product pack
-	 * TF - Trade family
-	 *
-	 * TF <-->> AMP
-	 * AMP <-->> AMPP
-	 * VMPP <-->> AMPP
-	 * VMP <-->> AMP
-	 * VMP <-->> VMPP
-	 * VTM <-->> VMP
-	 * 
-	 * @see http://www.nhsbsa.nhs.uk/PrescriptionServices/Documents/PrescriptionServices/dmd_Implementation_Guide_Secondary_Care.pdf
-	 * @author mark
-	 *
-	 */
-	public enum DmdProduct {
-		TRADE_FAMILY("TF", 9191801000001103L),
-		VIRTUAL_MEDICINAL_PRODUCT("VMP", 10363801000001108L),
-		VIRTUAL_MEDICINAL_PRODUCT_PACK("VMPP",8653601000001108L),
-		VIRTUAL_THERAPEUTIC_MOIETY("VTM",10363701000001104L),
-		ACTUAL_MEDICINAL_PRODUCT("AMP", 10363901000001102L),
-		ACTUAL_MEDICINAL_PRODUCT_PACK("AMPP", 10364001000001104L);
-
-		private String _abbreviation;
-		public long conceptId;
-
-		DmdProduct(String abbreviation, long conceptId) {
-			_abbreviation = abbreviation;
-			this.conceptId = conceptId;
-		}
-
-		public String abbreviation() {
-			return _abbreviation;
-		}
-
-		/**
-		 * Determine the type of pharmaceutical product of this concept
-		 * @param c
-		 * @return
-		 */
-		public static DmdProduct productForConcept(Concept c) {
-			for (Concept p : c.getParentConcepts()) {
-				for (DmdProduct med : DmdProduct.values()) {
-					if (p.getConceptId() == med.conceptId) {
-						return med;
-					}
-				}
-			}
-			return null;
-		}
-
-		/**
-		 * Is this concept a type of this product?
-		 * Note: This is different to the usual SNOMED-CT understanding as the DM&D has slightly
-		 * broken semantics as IS-A relationships should result in a grandchild concept being equal
-		 * to a parent AND the grandparent, but this isn't the case for the DM&D structures.
-		 * As such, we check only DIRECT relationships for equality within DM&D concepts.
-		 * @param c
-		 * @return
-		 */
-		public boolean isAConcept(Concept c) {
-			if (c != null) {
-				for (Relationship r : c.getParentRelationships()) {
-					if (r.getRelationshipTypeConceptId() == RelationType.IS_A.conceptId && conceptId == r.getTargetConceptId()) {
-						return true;
-					}
-				}
-			}
-			else {
-				throw new NullPointerException("Concept null.");
-			}
-			return false;
-		}
-	}
-	
 	public abstract static class Dmd {
+
+		/**
+		 * The DM&D consists of the following structure:
+		 * VTM - Virtual therapeutic moiety
+		 * VMP - Virtual medicinal product
+		 * VMPP - Virtual medicinal product pack
+		 * AMP - Actual medicinal product
+		 * AMPP - Actual medicinal product pack
+		 * TF - Trade family
+		 *
+		 * TF <-->> AMP
+		 * AMP <-->> AMPP
+		 * VMPP <-->> AMPP
+		 * VMP <-->> AMP
+		 * VMP <-->> VMPP
+		 * VTM <-->> VMP
+		 * 
+		 * @see http://www.nhsbsa.nhs.uk/PrescriptionServices/Documents/PrescriptionServices/dmd_Implementation_Guide_Secondary_Care.pdf
+		 * @author mark
+		 *
+		 */
+		public enum Product {
+			TRADE_FAMILY("TF", 9191801000001103L),
+			VIRTUAL_MEDICINAL_PRODUCT("VMP", 10363801000001108L),
+			VIRTUAL_MEDICINAL_PRODUCT_PACK("VMPP",8653601000001108L),
+			VIRTUAL_THERAPEUTIC_MOIETY("VTM",10363701000001104L),
+			ACTUAL_MEDICINAL_PRODUCT("AMP", 10363901000001102L),
+			ACTUAL_MEDICINAL_PRODUCT_PACK("AMPP", 10364001000001104L);
+		
+			private final String _abbreviation;
+			public final long conceptId;
+		
+			Product(String abbreviation, long conceptId) {
+				_abbreviation = abbreviation;
+				this.conceptId = conceptId;
+			}
+		
+			public String abbreviation() {
+				return _abbreviation;
+			}
+		
+			/**
+			 * Determine the type of pharmaceutical product of this concept
+			 * @param c
+			 * @return
+			 */
+			public static Product productForConcept(Concept c) {
+				for (Concept p : c.getParentConcepts()) {
+					for (Product med : Product.values()) {
+						if (p.getConceptId() == med.conceptId) {
+							return med;
+						}
+					}
+				}
+				return null;
+			}
+		
+			/**
+			 * Is this concept a type of this product?
+			 * Note: This is different to the usual SNOMED-CT understanding as the DM&D has slightly
+			 * broken semantics as IS-A relationships should result in a grandchild concept being equal
+			 * to a parent AND the grandparent, but this isn't the case for the DM&D structures.
+			 * As such, we check only DIRECT relationships for equality within DM&D concepts.
+			 * @param c
+			 * @return
+			 */
+			public boolean isAConcept(Concept c) {
+				if (c != null) {
+					for (Relationship r : c.getParentRelationships()) {
+						if (r.getRelationshipTypeConceptId() == Semantic.RelationType.IS_A.conceptId && conceptId == r.getTargetConceptId()) {
+							return true;
+						}
+					}
+				}
+				else {
+					throw new NullPointerException("Concept null.");
+				}
+				return false;
+			}
+		}
+
 		protected final Concept _concept;
 
-		public Dmd(DmdProduct product, Concept c) {
+		Dmd(Product product, Concept c) {
 			if (product == null || c == null) {
 				throw new NullPointerException("Product and concept mandatory.");
 			}
@@ -164,14 +167,18 @@ public class Semantic {
 		}
 	}
 
+	/**
+	 * A virtual therapeutic moiety (VTM).
+	 *
+	 */
 	public static class Vtm extends Dmd {
 
 		public Vtm(Concept c) {
-			super(DmdProduct.VIRTUAL_THERAPEUTIC_MOIETY, c);
+			super(Product.VIRTUAL_THERAPEUTIC_MOIETY, c);
 		}
 
 		public static boolean isA(Concept c) {
-			return DmdProduct.VIRTUAL_THERAPEUTIC_MOIETY.isAConcept(c);
+			return Product.VIRTUAL_THERAPEUTIC_MOIETY.isAConcept(c);
 		}
 
 		/**
@@ -182,7 +189,7 @@ public class Semantic {
 		 */
 		public static Stream<Concept> getVmps(Concept vtm) {
 			return vtm.getChildConcepts().stream()
-					.filter(child -> DmdProduct.VIRTUAL_MEDICINAL_PRODUCT.isAConcept(child));
+					.filter(child -> Product.VIRTUAL_MEDICINAL_PRODUCT.isAConcept(child));
 		}
 		
 
@@ -219,7 +226,8 @@ public class Semantic {
 			return getVmps(vtm)
 					.flatMap(vmp -> Vmp.getAmps(vmp))
 					.map(amp -> Amp.getTf(amp))
-					.filter(c -> c != null)
+					.filter(Optional::isPresent)
+					.map(Optional::get)
 					.distinct();
 		}
 
@@ -228,6 +236,10 @@ public class Semantic {
 		}
 	}
 
+	/**
+	 * A virtual medicinal product (VMP).
+	 *
+	 */
 	public static class Vmp extends Dmd {
 
 		public static long VMP_VALID_AS_A_PRESCRIBABLE_PRODUCT=8940201000001104L;
@@ -236,11 +248,11 @@ public class Semantic {
 		public static long VMP_NOT_RECOMMENDED_TO_PRESCRIBE__PATIENT_TRAINING=9900101000001103L;
 
 		public Vmp(Concept c) {
-			super(DmdProduct.VIRTUAL_MEDICINAL_PRODUCT, c);
+			super(Product.VIRTUAL_MEDICINAL_PRODUCT, c);
 		}
 		
 		public static boolean isA(Concept c) {
-			return DmdProduct.VIRTUAL_MEDICINAL_PRODUCT.isAConcept(c);
+			return Product.VIRTUAL_MEDICINAL_PRODUCT.isAConcept(c);
 		}
 
 		/**
@@ -249,14 +261,14 @@ public class Semantic {
 		 * @param vmp
 		 * @return
 		 */
-		public static Concept getVtm(Concept vmp) {
+		public static Optional<Concept> getVtm(Concept vmp) {
 			return vmp.getParentConcepts().stream()
-					.filter(parent -> DmdProduct.VIRTUAL_THERAPEUTIC_MOIETY.isAConcept(parent))
-					.findFirst().orElse(null);
+					.filter(parent -> Product.VIRTUAL_THERAPEUTIC_MOIETY.isAConcept(parent))
+					.findFirst();
 		}
 
-		public Vtm getVtm() {
-			return new Vtm(getVtm(_concept));
+		public Optional<Vtm> getVtm() {
+			return getVtm(_concept).map(Vtm::new);
 		}
 
 		/**
@@ -267,7 +279,7 @@ public class Semantic {
 		 */
 		public static Stream<Concept> getAmps(Concept vmp) {
 			return vmp.getChildConcepts().stream()
-					.filter(child -> DmdProduct.ACTUAL_MEDICINAL_PRODUCT.isAConcept(child));
+					.filter(child -> Product.ACTUAL_MEDICINAL_PRODUCT.isAConcept(child));
 		}
 
 		public Stream<Amp> getAmps() {
@@ -283,7 +295,8 @@ public class Semantic {
 		public static Stream<Concept> getTfs(Concept vmp) {
 			return getAmps(vmp)
 					.map(amp -> Amp.getTf(amp))
-					.filter(tf -> tf != null)
+					.filter(Optional::isPresent)
+					.map(Optional::get)
 					.distinct();
 		}
 
@@ -334,7 +347,7 @@ public class Semantic {
 		 * @return
 		 */
 		public static boolean hasNoVtm(Concept vmp) {
-			return getVtm(vmp) == null;
+			return !getVtm(vmp).isPresent();
 		}
 		public boolean hasNoVtm() {
 			return hasNoVtm(_concept);
@@ -399,17 +412,29 @@ public class Semantic {
 		public Stream<Concept> getActiveIngredients() {
 			return getActiveIngredients(_concept);
 		}
+		
+		/**
+		 * Parse the dose and units for a given VMP.
+		 */
+		public static BigDecimal getDose(Concept vmp) {
+			String term = vmp.getPreferredDescription().getTerm();
+			return null;
+		}
 	}
 
 
+	/**
+	 * An actual medicinal product (AMP).
+	 *
+	 */
 	public static class Amp extends Dmd {
 
 		public Amp(Concept c) {
-			super(DmdProduct.ACTUAL_MEDICINAL_PRODUCT, c);
+			super(Product.ACTUAL_MEDICINAL_PRODUCT, c);
 		}
 
 		public static boolean isA(Concept c) {
-			return DmdProduct.ACTUAL_MEDICINAL_PRODUCT.isAConcept(c);
+			return Product.ACTUAL_MEDICINAL_PRODUCT.isAConcept(c);
 		}
 
 		/**
@@ -418,14 +443,14 @@ public class Semantic {
 		 * @param amp
 		 * @return
 		 */
-		public static Concept getTf(Concept amp) {
+		public static Optional<Concept> getTf(Concept amp) {
 			return amp.getParentConcepts().stream()
-					.filter(parent -> DmdProduct.TRADE_FAMILY.isAConcept(parent))
-					.findFirst().orElse(null);
+					.filter(parent -> Product.TRADE_FAMILY.isAConcept(parent))
+					.findFirst();
 		}
 
-		public Tf getTf() {
-			return new Tf(getTf(_concept));
+		public Optional<Tf> getTf() {
+			return getTf(_concept).map(Tf::new);
 		}
 
 		/**
@@ -449,13 +474,13 @@ public class Semantic {
 		 * @param amp
 		 * @return
 		 */
-		public static Concept getVmp(Concept amp) {
+		public static Optional<Concept> getVmp(Concept amp) {
 			return amp.getParentConcepts().stream()
-					.filter(parent -> DmdProduct.VIRTUAL_MEDICINAL_PRODUCT.isAConcept(parent))
-					.findFirst().orElse(null);
+					.filter(parent -> Product.VIRTUAL_MEDICINAL_PRODUCT.isAConcept(parent))
+					.findFirst();
 		}
-		public Vmp getVmp() {
-			return new Vmp(getVmp(_concept));
+		public Optional<Vmp> getVmp() {
+			return getVmp(_concept).map(Vmp::new);
 		}
 
 		/**
@@ -472,15 +497,18 @@ public class Semantic {
 		}
 	}
 
+	/**
+	 * A trade family (TF).
+	 *
+	 */
 	public static class Tf extends Dmd {
-
 		
 		public Tf(Concept c) {
-			super(DmdProduct.TRADE_FAMILY, c);
+			super(Product.TRADE_FAMILY, c);
 		}
 
 		public static boolean isA(Concept c) {
-			return DmdProduct.TRADE_FAMILY.isAConcept(c);
+			return Product.TRADE_FAMILY.isAConcept(c);
 		}
 
 		/**
@@ -491,7 +519,7 @@ public class Semantic {
 		 */
 		public static Stream<Concept> getAmps(Concept tf) {
 			return tf.getChildConcepts().stream()
-					.filter(child -> DmdProduct.ACTUAL_MEDICINAL_PRODUCT.isAConcept(child));
+					.filter(child -> Product.ACTUAL_MEDICINAL_PRODUCT.isAConcept(child));
 		}
 
 		public Stream<Amp> getAmps() {
@@ -510,14 +538,18 @@ public class Semantic {
 		}
 	}
 
+	/**
+	 * A virtual medicine product pack (VMPP).
+	 *
+	 */
 	public static class Vmpp extends Dmd {
 
 		public Vmpp(Concept c) {
-			super(DmdProduct.VIRTUAL_MEDICINAL_PRODUCT_PACK, c);
+			super(Product.VIRTUAL_MEDICINAL_PRODUCT_PACK, c);
 		}
 
 		public static boolean isA(Concept c) {
-			return DmdProduct.VIRTUAL_MEDICINAL_PRODUCT_PACK.isAConcept(c);
+			return Product.VIRTUAL_MEDICINAL_PRODUCT_PACK.isAConcept(c);
 		}
 
 		/**
@@ -526,15 +558,15 @@ public class Semantic {
 		 * @param vmpp
 		 * @return
 		 */
-		public static Concept getVmp(Concept vmpp) {
-			Relationship vmpRelationship = vmpp.getParentRelationships().stream()
+		public static Optional<Concept> getVmp(Concept vmpp) {
+			return vmpp.getParentRelationships().stream()
 					.filter(r -> r.getRelationshipTypeConcept().getConceptId() == RelationType.HAS_VMP.conceptId)
-					.findFirst().orElse(null);
-			return vmpRelationship != null ? vmpRelationship.getTargetConcept() : null;
+					.findFirst()
+					.map(Relationship::getTargetConcept);
 		}
 
-		public Vmp getVmp() {
-			return new Vmp(getVmp(_concept));
+		public Optional<Vmp> getVmp() {
+			return getVmp(_concept).map(Vmp::new);
 		}
 
 		/**
@@ -543,21 +575,25 @@ public class Semantic {
 		 */
 		public static Stream<Concept>getAmpps(Concept vmpp) {
 			return vmpp.getChildConcepts().stream()
-					.filter(child -> DmdProduct.ACTUAL_MEDICINAL_PRODUCT_PACK.isAConcept(child));
+					.filter(child -> Product.ACTUAL_MEDICINAL_PRODUCT_PACK.isAConcept(child));
 		}	
 		public Stream<Ampp> getAmpps() {
 			return getAmpps(_concept).map(Ampp::new);
 		}
 	}
 
+	/**
+	 * An actual medicinal product pack (AMPP).
+	 *
+	 */
 	public static class Ampp extends Dmd{
 
 		public Ampp(Concept c) {
-			super(DmdProduct.ACTUAL_MEDICINAL_PRODUCT_PACK, c);
+			super(Product.ACTUAL_MEDICINAL_PRODUCT_PACK, c);
 		}
 
 		public static boolean isA(Concept c) {
-			return DmdProduct.ACTUAL_MEDICINAL_PRODUCT_PACK.isAConcept(c);
+			return Product.ACTUAL_MEDICINAL_PRODUCT_PACK.isAConcept(c);
 		}
 
 		/**
@@ -566,15 +602,15 @@ public class Semantic {
 		 * @param ampp
 		 * @return
 		 */
-		public static Concept getAmp(Concept ampp) {
-			Relationship ampRelationship = ampp.getParentRelationships().stream()
+		public static Optional<Concept> getAmp(Concept ampp) {
+			return ampp.getParentRelationships().stream()
 					.filter(r -> r.getRelationshipTypeConcept().getConceptId() == RelationType.HAS_AMP.conceptId)
-					.findFirst().orElse(null);
-			return ampRelationship != null ? ampRelationship.getTargetConcept() : null;
+					.findFirst()
+					.map(Relationship::getTargetConcept);
 		}
 
-		public Amp getAmp() {
-			return new Amp(getAmp(_concept));
+		public Optional<Amp> getAmp() {
+			return getAmp(_concept).map(Amp::new);
 		}
 
 		/**
@@ -583,15 +619,14 @@ public class Semantic {
 		 * @param ampp
 		 * @return
 		 */
-		public static Concept getVmpp(Concept ampp) {
+		public static Optional<Concept> getVmpp(Concept ampp) {
 			return ampp.getParentConcepts().stream()
-					.filter(parent -> DmdProduct.VIRTUAL_MEDICINAL_PRODUCT_PACK.isAConcept(parent))
-					.findFirst().orElse(null);
+					.filter(parent -> Product.VIRTUAL_MEDICINAL_PRODUCT_PACK.isAConcept(parent))
+					.findFirst();
 		}
 
-		public Vmpp getVmpp() {
-			return new Vmpp(getVmpp(_concept));
+		public Optional<Vmpp> getVmpp() {
+			return getVmpp(_concept).map(Vmpp::new);
 		}
 	}
-
 }
