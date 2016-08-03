@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.cayenne.ObjectContext;
 import org.apache.cayenne.configuration.server.ServerRuntime;
@@ -222,12 +223,27 @@ public class TestSnomedCt {
 		// madopar CR is a trade family product
 		Concept madoparTf = ObjectSelect.query(Concept.class, Concept.CONCEPT_ID.eq(9491001000001109L)).prefetch(Concept.PARENT_RELATIONSHIPS.joint()).selectOne(context);
 		assertDrugType(madoparTf, DmdProduct.TRADE_FAMILY);
-		Concept madoparVmp = Amp.getVmp(Tf.getAmps(madoparTf).get(0));
+		Concept madoparVmp = Amp.getVmp(Tf.getAmps(madoparTf).findFirst().get());
 		assertDrugType(madoparVmp, DmdProduct.VIRTUAL_MEDICINAL_PRODUCT);
-		assertEquals(2, Vmp.activeIngredients(madoparVmp).size());
+		assertEquals(2, Vmp.getActiveIngredients(madoparVmp).count());
 		
 		testTradeFamily(madoparTf);
 	}
+	
+	@Test
+	public void testEqualityDmd() {
+		ObjectContext context = getRuntime().newContext();
+		Concept amlodipineVtm= ObjectSelect.query(Concept.class, Concept.CONCEPT_ID.eq(108537001L)).selectOne(context);
+		Vtm amlodipine1 = new Vtm(amlodipineVtm);
+		Vtm amlodipine2 = new Vtm(amlodipineVtm);
+		Vmp amlodipineVmp = amlodipine1.getVmps().findAny().get();
+		Vtm amlodipine3 = amlodipineVmp.getVtm();
+		assertEquals(amlodipine1, amlodipine2);
+		assertEquals(amlodipine2, amlodipine3);
+		assertEquals(amlodipine1, amlodipine3);
+		amlodipine1.getVmps().forEach(vmp -> assertFalse(vmp.equals(amlodipine1)));
+	}
+	
 	
 	@Test
 	public void testVirtualTherapeuticMoieties() throws CorruptIndexException, IOException, ParseException {
@@ -238,36 +254,44 @@ public class TestSnomedCt {
 		
 		List<Long> amlodipineTfIds = new Search.Request.Builder().search("istin").withDirectParent(DmdProduct.TRADE_FAMILY.conceptId).withActive().build().searchForConcepts(Search.getInstance());
 		List<Concept> amlodipineTfs1 = SelectQuery.query(Concept.class, Concept.CONCEPT_ID.in(amlodipineTfIds)).select(context);
-		List<Concept> amlodipineTfs2 = Vtm.getTfs(amlodipineVtm);
+		List<Concept> amlodipineTfs2 = Vtm.getTfs(amlodipineVtm).collect(Collectors.toList());
+		for (Concept aTf : amlodipineTfs2) {
+			assertNotNull(aTf);
+		}
 		for (Concept aTf : amlodipineTfs1) {
 			assertTrue(amlodipineTfs2.contains(aTf));
 		}
 		
-		Concept amlodipineVmp = Vtm.getVmps(amlodipineVtm).get(0);
-		List<Concept> amlodipineTfs3 = Vmp.getTfs(amlodipineVmp);
+		Concept amlodipineVmp = Vtm.getVmps(amlodipineVtm).findAny().get();
+		List<Concept> amlodipineTfs3 = Vmp.getTfs(amlodipineVmp).collect(Collectors.toList());
 		for (Concept aTf : amlodipineTfs3) {
 			assertTrue(amlodipineTfs2.contains(aTf));
 		}
-		Concept amlodipineAmp = Vmp.getAmps(amlodipineVmp).get(0);
+		Concept amlodipineAmp = Vmp.getAmps(amlodipineVmp).findFirst().get();
 		
-		assertTrue(Vtm.getAmps(amlodipineVtm).contains(amlodipineAmp));
+		assertTrue(Vtm.getAmps(amlodipineVtm).anyMatch(amp -> amp == amlodipineAmp));
 		assertDrugType(amlodipineAmp, DmdProduct.ACTUAL_MEDICINAL_PRODUCT);
 		assertFalse(Vmp.hasMultipleActiveIngredientsInName(amlodipineVmp));
-		assertEquals(1, Vmp.activeIngredients(amlodipineVmp).size());
+		assertEquals(1, Vmp.getActiveIngredients(amlodipineVmp).count());
 		assertFalse(Vmp.isInvalidToPrescribe(amlodipineVmp));
-		Amp.getDispensedDoseForms(amlodipineAmp).stream()
+		Amp.getDispensedDoseForms(amlodipineAmp)
 			.forEach(c -> System.out.println(c.getFullySpecifiedName()));
-		Vmp.getDispensedDoseForms(amlodipineVmp).stream()
+		Vmp.getDispensedDoseForms(amlodipineVmp)
 			.forEach(c -> System.out.println(c.getFullySpecifiedName()));
 		printConcept(Vmp.getVtm(amlodipineVmp));
-		Vtm.getDispensedDoseForms(Vmp.getVtm(amlodipineVmp)).stream()
+		Vtm.getDispensedDoseForms(Vmp.getVtm(amlodipineVmp))
 			.forEach(c -> System.out.println(c.getFullySpecifiedName()));
 		
 		Concept amlodipineSuspensionVmp = ObjectSelect.query(Concept.class, Concept.CONCEPT_ID.eq(8278311000001107L)).selectOne(context);
-		assertTrue(Vtm.getVmps(amlodipineVtm).contains(amlodipineSuspensionVmp));
+		assertTrue(Vtm.getVmps(amlodipineVtm).anyMatch(vmp -> vmp == amlodipineSuspensionVmp));
+		
+		/**
+		 * new style DM&D processing using DM&D instances for convenience.
+		 */
+		Vtm amlodipine = new Vtm(amlodipineVtm);
+		assertNotEquals(0, amlodipine.getTfs().count());
 	}
-	
-	
+
 	public static void assertDrugType(Concept concept, DmdProduct product) {
 		for (DmdProduct dp : DmdProduct.values()) {
 			if (dp == product) {
@@ -294,12 +318,14 @@ public class TestSnomedCt {
 		assertEquals(tf, DmdProduct.TRADE_FAMILY);
 		
 		// now let's get its AMPs.
-		Tf.getAmps(tradeFamily).forEach(c -> {
+		List<Concept> amps = Tf.getAmps(tradeFamily).collect(Collectors.toList());
+		assertNoNullsInList(amps);
+		amps.forEach(c -> {
 			assertDrugType(c, DmdProduct.ACTUAL_MEDICINAL_PRODUCT);
 		});
 		
 		// choose one AMP and interrogate it
-		Concept amp = Tf.getAmps(tradeFamily).get(0);		// get the first AMP
+		Concept amp = Tf.getAmps(tradeFamily).findFirst().get();		// get the first AMP
 		assertEquals(DmdProduct.ACTUAL_MEDICINAL_PRODUCT, DmdProduct.productForConcept(amp));
 		assertDrugType(amp, DmdProduct.ACTUAL_MEDICINAL_PRODUCT);
 		assertEquals(tradeFamily, Amp.getTf(amp));
@@ -309,16 +335,17 @@ public class TestSnomedCt {
 		assertNotNull(vmp);
 		assertDrugType(vmp, DmdProduct.VIRTUAL_MEDICINAL_PRODUCT);
 		assertEquals(DmdProduct.VIRTUAL_MEDICINAL_PRODUCT, DmdProduct.productForConcept(vmp));
-		assertTrue(Vmp.getAmps(vmp).contains(amp));
+		assertTrue(Vmp.getAmps(vmp).anyMatch(a -> a == amp));
 		
 		// get the VTM
 		Concept vtm = Vmp.getVtm(vmp);
 		assertDrugType(vtm, DmdProduct.VIRTUAL_THERAPEUTIC_MOIETY);
 		assertEquals(DmdProduct.VIRTUAL_THERAPEUTIC_MOIETY, DmdProduct.productForConcept(vtm));
-		assertTrue(Vtm.getVmps(vtm).contains(vmp));
+		assertTrue(Vtm.getVmps(vtm).anyMatch(v -> v == vmp));
 		
 		// get an AMPP from our AMP
-		List<Concept> ampps = Amp.getAmpps(amp);
+		List<Concept> ampps = Amp.getAmpps(amp).collect(Collectors.toList());
+		assertNoNullsInList(ampps);
 		assertTrue(ampps.size() > 0);
 		Concept ampp = ampps.get(0);
 		assertDrugType(ampp, DmdProduct.ACTUAL_MEDICINAL_PRODUCT_PACK);
@@ -335,14 +362,20 @@ public class TestSnomedCt {
 		// and now get VMP from the VMPP and check it is what we think it should be
 		printConcept(vmpp);
 		assertEquals(vmp, Vmpp.getVmp(vmpp));
-		assertTrue(Vmpp.getAmpps(vmpp).contains(ampp));
-		assertTrue(Vmp.getVmpps(vmp).contains(vmpp));
+		assertTrue(Vmpp.getAmpps(vmpp).anyMatch(a -> a == ampp));
+		assertTrue(Vmp.getVmpps(vmp).anyMatch(v -> v == vmpp));
 		
 		// walk the dm&d structure directly to get from TF to VTM
-		Concept vtm2 = Vmp.getVtm(Amp.getVmp(Tf.getAmps(tradeFamily).get(0)));
+		Concept vtm2 = Vmp.getVtm(Amp.getVmp(Tf.getAmps(tradeFamily).findFirst().get()));
 		assertEquals(vtm2, vtm);
 		
-		assertTrue(Vtm.getVmps(vtm).contains(vmp));
+		assertTrue(Vtm.getVmps(vtm).anyMatch(v -> v == vmp));
+	}
+	
+	public <T> void assertNoNullsInList(List<T> l) {
+		for (T i : l) {
+			assertNotNull(i);
+		}
 	}
 	
 	private static void printConcept(Concept c) {
