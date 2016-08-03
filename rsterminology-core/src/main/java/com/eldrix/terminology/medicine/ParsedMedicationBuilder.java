@@ -127,7 +127,7 @@ public class ParsedMedicationBuilder {
 	 * @throws IOException
 	 * @throws ParseException
 	 */
-	public ParsedMedication build() throws CorruptIndexException, IOException, ParseException {
+	public ParsedMedication build() throws CorruptIndexException, IOException {
 		return build(Search.getInstance());
 	}
 	
@@ -139,7 +139,7 @@ public class ParsedMedicationBuilder {
 	 * @throws IOException 
 	 * @throws CorruptIndexException 
 	 */
-	public ParsedMedication build(Search search) throws CorruptIndexException, IOException, ParseException {
+	public ParsedMedication build(Search search) throws CorruptIndexException, IOException {
 		String mappedDrugName = null;
 		if (_conceptId == null) {
 			ResultItem ri = _searchForMedicationConcept(search, _drugName);
@@ -301,11 +301,11 @@ public class ParsedMedicationBuilder {
 	}
 
 
-	static ResultItem _searchForMedicationConcept(Search search, String drugName) throws CorruptIndexException, IOException, ParseException {
+	static ResultItem _searchForMedicationConcept(Search search, String drugName) throws CorruptIndexException, IOException {
 		return _search(search, drugName, new long[]{MED_PARENT_CONCEPT_ID});
 	}
 
-	protected static ResultItem _search(Search search, String searchText, long[] parentConceptIds) throws CorruptIndexException, IOException, ParseException {
+	protected static ResultItem _search(Search search, String searchText, long[] parentConceptIds) throws CorruptIndexException, IOException {
 		List<ResultItem> ris = new Search.Request.Builder().search(searchText).withRecursiveParent(parentConceptIds).setMaxHits(1).build().search(search);
 		return ris.isEmpty() ? null : ris.get(0);
 	}

@@ -331,7 +331,7 @@ public class Search {
 			 * @throws ParseException
 			 * @throws IOException 
 			 */
-			public Builder search(String search) throws ParseException, IOException {
+			public Builder search(String search) throws IOException {
 				BooleanQuery.Builder b = new BooleanQuery.Builder();
 				TokenStream stream = _analyzer.tokenStream(FIELD_TERM, search);
 				CharTermAttribute termAtt = stream.addAttribute(CharTermAttribute.class);
