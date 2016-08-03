@@ -353,7 +353,7 @@ public class Semantic {
 					.map(Concept::getConceptId)
 					.anyMatch(id -> VMP_INVALID_AS_A_PRESCRIBABLE_PRODUCT == id);
 		}
-		public boolean isInvalidToPrescrible() {
+		public boolean isInvalidToPrescribe() {
 			return isInvalidToPrescribe(_concept);
 		}
 

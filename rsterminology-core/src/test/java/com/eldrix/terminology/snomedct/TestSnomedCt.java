@@ -26,6 +26,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.eldrix.terminology.medicine.ParsedMedication;
+import com.eldrix.terminology.medicine.ParsedMedicationBuilder;
 import com.eldrix.terminology.snomedct.Search.ResultItem;
 import com.eldrix.terminology.snomedct.Semantic.Amp;
 import com.eldrix.terminology.snomedct.Semantic.Ampp;
@@ -100,9 +102,6 @@ public class TestSnomedCt {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (ParseException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
@@ -228,6 +227,30 @@ public class TestSnomedCt {
 		assertEquals(2, Vmp.getActiveIngredients(madoparVmp).count());
 		
 		testTradeFamily(madoparTf);
+	}
+	
+	@Test
+	public void testPrescribing() throws CorruptIndexException, IOException {
+		ObjectContext context = getRuntime().newContext();
+		Search.Request.Builder searchVmp = new Search.Request.Builder().setMaxHits(1).withActive().withDirectParent(DmdProduct.VIRTUAL_MEDICINAL_PRODUCT.conceptId);
+		Search search = Search.getInstance();
+
+		// co-careldopa is a prescribable VTM -- see http://dmd.medicines.org.uk/DesktopDefault.aspx?VMP=377270003&toc=nofloat
+		ParsedMedication pm1 = new ParsedMedicationBuilder().parseString("co-careldopa 25mg/250mg 1t tds").build();
+		Concept cocareldopa = ObjectSelect.query(Concept.class, 
+				Concept.CONCEPT_ID.eq(searchVmp.search("co-careldopa 25mg/250mg").build().searchForConcepts(search).get(0))).selectOne(context);
+		assertEquals(DmdProduct.VIRTUAL_MEDICINAL_PRODUCT, DmdProduct.productForConcept(cocareldopa));
+		Vmp cocareldopaVmp = new Vmp(cocareldopa);
+		assertFalse(cocareldopaVmp.isInvalidToPrescribe());
+		assertFalse(cocareldopaVmp.isNotRecommendedToPrescribe());
+		
+		// diltiazem m/r is a VTM not recommended for prescription -- see http://dmd.medicines.org.uk/DesktopDefault.aspx?VMP=319183002&toc=nofloat
+		Concept diltiazem = ObjectSelect.query(Concept.class, 
+				Concept.CONCEPT_ID.eq(searchVmp.search("diltiazem 120mg m/r").build().searchForConcepts(search).get(0))).selectOne(context);
+		Vmp diltiazemVmp = new Vmp(diltiazem);
+		assertFalse(diltiazemVmp.isInvalidToPrescribe());
+		assertTrue(diltiazemVmp.isNotRecommendedToPrescribe());
+		assertTrue(diltiazemVmp.getAmps().count() > 0);
 	}
 	
 	@Test
