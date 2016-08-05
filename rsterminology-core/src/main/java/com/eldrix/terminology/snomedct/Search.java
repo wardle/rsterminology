@@ -25,6 +25,7 @@ import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -42,6 +43,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.LockObtainFailedException;
@@ -83,6 +85,16 @@ public class Search {
 	private IndexSearcher _searcher;
 	private String _indexLocation; 
 
+	/**
+	 * Score documents with fewer terms more highly.
+	 *
+	 */
+	public static class SnomedSimilarity extends ClassicSimilarity {
+		  @Override
+		  public float lengthNorm(FieldInvertState state) {
+		    return (float) 1.0 / state.getLength();
+		  }
+	}
 
 	public static class Filter {
 		private static final long[] dmdVtmOrTfIds = new long[] { Dmd.Product.VIRTUAL_THERAPEUTIC_MOIETY.conceptId, Dmd.Product.TRADE_FAMILY.conceptId};
@@ -95,6 +107,10 @@ public class Search {
 		 * @return
 		 */
 		public static Query filterForRecursiveParent(long[] parentConceptIds) {
+			return LongPoint.newSetQuery(FIELD_RECURSIVE_PARENT_CONCEPT_ID, parentConceptIds);
+		}
+		
+		public static Query filterForRecursiveParent(List<Long> parentConceptIds) {
 			return LongPoint.newSetQuery(FIELD_RECURSIVE_PARENT_CONCEPT_ID, parentConceptIds);
 		}
 
@@ -113,6 +129,11 @@ public class Search {
 		public static Query filterForDirectParent(long[] isAParentConceptIds) {
 			return LongPoint.newSetQuery(FIELD_DIRECT_PARENT_CONCEPT_ID, isAParentConceptIds);
 		}
+		
+		public static Query filterForDirectParent(List<Long> isAParentConceptIds) {
+			return LongPoint.newSetQuery(FIELD_DIRECT_PARENT_CONCEPT_ID, isAParentConceptIds);
+		}
+		
 		
 		public static Query filterForDirectParent(long isAParentConceptId) {
 			return LongPoint.newExactQuery(FIELD_DIRECT_PARENT_CONCEPT_ID, isAParentConceptId);
@@ -168,6 +189,7 @@ public class Search {
 	private Search(String indexLocation) throws CorruptIndexException, IOException {
 		_indexLocation = indexLocation;
 		_searcher = createSearcher();
+		_searcher.setSimilarity(new SnomedSimilarity());
 	}
 
 	@Override
@@ -368,6 +390,11 @@ public class Search {
 				return this;
 			}
 
+			public Builder withRecursiveParent(List<Long> parents) {
+				withFilters(Search.Filter.filterForRecursiveParent(parents));
+				return this;
+			}
+			
 			public Builder withRecursiveParent(long parent) {
 				withFilters(Search.Filter.filterForRecursiveParent(parent));
 				return this;
@@ -379,6 +406,11 @@ public class Search {
 			 * @return
 			 */
 			public Builder withDirectParent(long[] isA) {
+				withFilters(Search.Filter.filterForDirectParent(isA));
+				return this;
+			}
+			
+			public Builder withDirectParent(List<Long> isA) {
 				withFilters(Search.Filter.filterForDirectParent(isA));
 				return this;
 			}
@@ -535,6 +567,7 @@ public class Search {
 		Directory directory = FSDirectory.open(Paths.get(index));
 		IndexWriterConfig iwc = new IndexWriterConfig(analyser);
 		iwc.setOpenMode(OpenMode.CREATE_OR_APPEND);
+		iwc.setSimilarity(new SnomedSimilarity());
 		IndexWriter writer = new IndexWriter(directory, iwc);
 		return writer;
 	}
