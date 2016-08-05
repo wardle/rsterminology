@@ -71,8 +71,8 @@ public class Search {
 	private static final String FIELD_TERM="term";
 	private static final String FIELD_PREFERRED_TERM="preferredTerm";
 	private static final String FIELD_CONCEPT_ID="conceptId";
-	private static final String FIELD_RECURSIVE_PARENT_CONCEPT_ID="parentConceptId";
-	private static final String FIELD_DIRECT_PARENT_CONCEPT_ID="isA";
+	private static final String FIELD_RECURSIVE_PARENT_CONCEPT_ID="recursiveParentConceptId";
+	private static final String FIELD_DIRECT_PARENT_CONCEPT_ID="directParentConceptId";
 	private static final String FIELD_LANGUAGE="language";
 	private static final String FIELD_DESCRIPTION_STATUS="descriptionStatus";
 	private static final String FIELD_CONCEPT_STATUS="conceptStatus";
