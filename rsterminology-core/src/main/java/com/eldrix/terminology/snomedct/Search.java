@@ -340,7 +340,7 @@ public class Search {
 					while (stream.incrementToken()) {
 						String s = termAtt.toString();
 						TermQuery tq = new TermQuery(new Term("term", s));
-						if (s.length() > MINIMUM_CHARS_FOR_PREFIX_SEARCH) {
+						if (s.length() >= MINIMUM_CHARS_FOR_PREFIX_SEARCH) {
 							PrefixQuery pq = new PrefixQuery(new Term("term", s));
 							pq.setRewriteMethod(PrefixQuery.SCORING_BOOLEAN_REWRITE);
 							BooleanQuery bq = new BooleanQuery.Builder().add(tq, Occur.SHOULD).add(pq, Occur.SHOULD).build();
