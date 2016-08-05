@@ -9,6 +9,7 @@ import static org.junit.Assert.assertTrue;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -22,8 +23,8 @@ import org.apache.cayenne.validation.ValidationException;
 import org.apache.cayenne.validation.ValidationResult;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.queryparser.classic.ParseException;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.eldrix.terminology.medicine.ParsedMedication;
@@ -39,19 +40,19 @@ import com.eldrix.terminology.snomedct.Semantic.Vmpp;
 import com.eldrix.terminology.snomedct.Semantic.Vtm;
 
 public class TestSnomedCt {
-	ServerRuntime _runtime;
+	static ServerRuntime _runtime;
 
 	public ServerRuntime getRuntime() {
 		return _runtime;
 	}
 
-	@Before
-	public void setUp() throws Exception {
+	@BeforeClass
+	public static void setUp() throws Exception {
 		_runtime = new ServerRuntime("cayenne-project.xml");        
 	}
 
-	@After
-	public void tearDown() throws Exception {
+	@AfterClass
+	public static void tearDown() throws Exception {
 		_runtime.shutdown();
 	}
 
@@ -393,6 +394,16 @@ public class TestSnomedCt {
 		assertEquals(vtm2, vtm);
 		
 		assertTrue(Vtm.getVmps(vtm).anyMatch(v -> v == vmp));
+
+		// use new streams to do the same but more safely...
+		List<Concept> vtms = Tf.getAmps(tradeFamily)
+				.map(Amp::getVmp).filter(Optional::isPresent).map(Optional::get)
+				.map(Vmp::getVtm).filter(Optional::isPresent).map(Optional::get)
+				.distinct()
+				.collect(Collectors.toList());
+		assertEquals(1, vtms.size());
+		assertEquals(vtm, vtms.get(0));
+		
 	}
 	
 	public <T> void assertNoNullsInList(List<T> l) {
