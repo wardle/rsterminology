@@ -3,6 +3,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -26,7 +27,6 @@ import com.eldrix.terminology.snomedct.Concept;
 import com.eldrix.terminology.snomedct.Description;
 import com.eldrix.terminology.snomedct.Search;
 import com.eldrix.terminology.snomedct.Search.ResultItem;
-import com.eldrix.terminology.snomedct.Semantic;
 import com.nhl.link.rest.DataResponse;
 import com.nhl.link.rest.LinkRest;
 import com.nhl.link.rest.LinkRestException;
@@ -63,16 +63,15 @@ public class SnomedCTResource {
 	 */
 	@GET
 	@Path("search")
-	public DataResponse<ResultItem> search(@QueryParam("s") String search, @QueryParam("rootIds") String rootIds, @QueryParam("isA") String isA, @Context UriInfo uriInfo) {
-		long[] rootConceptIds = Search.parseLongArray(rootIds);
-		long[] isAConceptIds = Search.parseLongArray(isA);
-		if (rootConceptIds.length == 0) {
-			rootConceptIds = new long[] { Semantic.Category.SNOMED_CT_ROOT.conceptId };
-		}
+	public DataResponse<ResultItem> search(@QueryParam("s") String search, 
+			@DefaultValue("138875005") @QueryParam("root") final List<Long> roots, 
+			@QueryParam("is") final List<Long> isA, 
+			@DefaultValue("200") @QueryParam("maxHits") int maxHits, 
+			@Context UriInfo uriInfo) {
 		try {
-			Search.Request.Builder b = new Search.Request.Builder().search(search).setMaxHits(200).withRecursiveParent(rootConceptIds);
-			if (isAConceptIds.length > 0) {
-				b.withDirectParent(isAConceptIds);
+			Search.Request.Builder b = new Search.Request.Builder().search(search).setMaxHits(maxHits).withActive().withRecursiveParent(roots);
+			if (isA.size() > 0) {
+				b.withDirectParent(isA);
 			}
 			List<ResultItem> result = b.build().search(Search.getInstance()); 
 			return DataResponse.forObjects(result);
@@ -91,13 +90,12 @@ public class SnomedCTResource {
 
 	@GET
 	@Path("synonyms")
-	public DataResponse<String> synonyms(@QueryParam("s") String search, @QueryParam("rootIds") String rootIds, @Context UriInfo uriInfo) {
-		long[] rootConceptIds = Search.parseLongArray(rootIds);
-		if (rootConceptIds.length == 0) {
-			rootConceptIds = new long[] { Semantic.Category.SNOMED_CT_ROOT.conceptId };
-		}
+	public DataResponse<String> synonyms(@QueryParam("s") String search, 
+			@DefaultValue("138875005") @QueryParam("root") List<Long> roots,
+			@DefaultValue("200") @QueryParam("maxHits") int maxHits,
+			@Context UriInfo uriInfo) {
 		try {
-			List<Long> conceptIds = new Search.Request.Builder().search(search).setMaxHits(200).withRecursiveParent(rootConceptIds).build().searchForConcepts(Search.getInstance());
+			List<Long> conceptIds = new Search.Request.Builder().search(search).setMaxHits(maxHits).withActive().withRecursiveParent(roots).build().searchForConcepts(Search.getInstance());
 			ICayennePersister cayenne = LinkRestRuntime.service(ICayennePersister.class, config);
 			ObjectContext context = cayenne.newContext();
 			SelectQuery<DataRow> select = SelectQuery.dataRowQuery(Description.class, Description.CONCEPT_ID.in(conceptIds));
