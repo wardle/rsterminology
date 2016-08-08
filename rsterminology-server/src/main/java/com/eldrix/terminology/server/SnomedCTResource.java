@@ -64,14 +64,15 @@ public class SnomedCTResource {
 	@GET
 	@Path("search")
 	public DataResponse<ResultItem> search(@QueryParam("s") String search, 
-			@DefaultValue("138875005") @QueryParam("root") final List<Long> roots, 
-			@QueryParam("is") final List<Long> isA, 
+			@DefaultValue("138875005") @QueryParam("root") final List<Long> recursiveParents, 
+			@QueryParam("is") final List<Long> directParents, 
 			@DefaultValue("200") @QueryParam("maxHits") int maxHits, 
 			@Context UriInfo uriInfo) {
 		try {
-			Search.Request.Builder b = new Search.Request.Builder().search(search).setMaxHits(maxHits).withActive().withRecursiveParent(roots);
-			if (isA.size() > 0) {
-				b.withDirectParent(isA);
+			Search.Request.Builder b = new Search.Request.Builder();
+			b.search(search).setMaxHits(maxHits).withActive().withRecursiveParent(recursiveParents);
+			if (directParents.size() > 0) {
+				b.withDirectParent(directParents);
 			}
 			List<ResultItem> result = b.build().search(Search.getInstance()); 
 			return DataResponse.forObjects(result);
