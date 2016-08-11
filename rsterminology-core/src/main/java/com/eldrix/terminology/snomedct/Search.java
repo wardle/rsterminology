@@ -386,18 +386,15 @@ public class Search {
 			 * @return
 			 */
 			public Builder withRecursiveParent(long[] parents) {
-				withFilters(Search.Filter.filterForRecursiveParent(parents));
-				return this;
+				return withFilters(Search.Filter.filterForRecursiveParent(parents));
 			}
 
 			public Builder withRecursiveParent(List<Long> parents) {
-				withFilters(Search.Filter.filterForRecursiveParent(parents));
-				return this;
+				return withFilters(Search.Filter.filterForRecursiveParent(parents));
 			}
 			
 			public Builder withRecursiveParent(long parent) {
-				withFilters(Search.Filter.filterForRecursiveParent(parent));
-				return this;
+				return withFilters(Search.Filter.filterForRecursiveParent(parent));
 			}
 
 			/**
@@ -406,23 +403,19 @@ public class Search {
 			 * @return
 			 */
 			public Builder withDirectParent(long[] isA) {
-				withFilters(Search.Filter.filterForDirectParent(isA));
-				return this;
+				return withFilters(Search.Filter.filterForDirectParent(isA));
 			}
 			
 			public Builder withDirectParent(List<Long> isA) {
-				withFilters(Search.Filter.filterForDirectParent(isA));
-				return this;
+				return withFilters(Search.Filter.filterForDirectParent(isA));
 			}
 			
 			public Builder withDirectParent(long isA) {
-				withFilters(Search.Filter.filterForDirectParent(isA));
-				return this;
+				return withFilters(Search.Filter.filterForDirectParent(isA));
 			}
 			
 			public Builder withActive() {
-				withFilters(Search.Filter.CONCEPT_ACTIVE);
-				return this;
+				return withFilters(Search.Filter.CONCEPT_ACTIVE);
 			}
 
 			/**
