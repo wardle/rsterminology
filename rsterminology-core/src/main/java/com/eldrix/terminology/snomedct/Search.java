@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.cayenne.ObjectContext;
@@ -59,7 +60,8 @@ import com.eldrix.terminology.snomedct.Semantic.RelationType;
  * This provides a thin-wrapper around Apache Lucene's full-text search facilities.
  * 
  * Objects of this class are usually singleton objects for the index location specified and are 
- * essentially immutable and thread-safe.
+ * essentially immutable and thread-safe. Build a search request using the Request.Builder API 
+ * and then submit the request to perform a search.
  *
  */
 public class Search {
@@ -80,6 +82,7 @@ public class Search {
 	private static final String FIELD_CONCEPT_STATUS="conceptStatus";
 	private static final String FIELD_DESCRIPTION_ID="descriptionId";
 	private static final String FIELD_DESCRIPTION_ID_INDEX="descriptionIdIndex";
+	private static final String FIELD_DESCRIPTION_TYPE="descriptionType";
 
 	private Analyzer _analyzer = new StandardAnalyzer();
 	private IndexSearcher _searcher;
@@ -96,6 +99,10 @@ public class Search {
 		  }
 	}
 
+	/**
+	 * Some common filters to constrain the results of searches.
+	 *
+	 */
 	public static class Filter {
 		private static final long[] dmdVtmOrTfIds = new long[] { Dmd.Product.VIRTUAL_THERAPEUTIC_MOIETY.conceptId, Dmd.Product.TRADE_FAMILY.conceptId};
 		private static final long[] dmdVmpOrAmpIds = new long[] { Dmd.Product.ACTUAL_MEDICINAL_PRODUCT.conceptId, Dmd.Product.VIRTUAL_MEDICINAL_PRODUCT.conceptId};
@@ -138,7 +145,18 @@ public class Search {
 		public static Query filterForDirectParent(long isAParentConceptId) {
 			return LongPoint.newExactQuery(FIELD_DIRECT_PARENT_CONCEPT_ID, isAParentConceptId);
 		}
+		
+		public static Query filterForDescriptionType(int... types) {
+			return IntPoint.newSetQuery(FIELD_DESCRIPTION_TYPE, types);
+		}
 
+		public static Query filterForDescriptionType(Description.Type... types) {
+			int[] t = new int[types.length];
+			for (int i=0; i<types.length; i++) {
+				t[i] = types[i].code;
+			}
+			return filterForDescriptionType(t);
+		}
 		
 		/**
 		 * Return concepts that are a type of VTM or TF.
@@ -155,6 +173,11 @@ public class Search {
 		 */
 		public static final Query CONCEPT_ACTIVE = IntPoint.newSetQuery(FIELD_CONCEPT_STATUS, Concept.Status.activeCodes());
 
+		/**
+		 * Return descriptions of any type, except fully specified names.
+		 */
+		public static final Query DESCRIPTION_NO_FSN = IntPoint.newSetQuery(FIELD_DESCRIPTION_TYPE, Description.Type.UNSPECIFIED.code, Description.Type.PREFERRED.code, Description.Type.SYNONYM.code);
+		
 	}
 
 	/**
@@ -180,8 +203,11 @@ public class Search {
 		}
 		Search search = factory.get(indexLocation);
 		if (search == null) {
-			factory.putIfAbsent(indexLocation, new Search(indexLocation));
-			search = factory.get(indexLocation);
+			Search created = new Search(indexLocation);
+			search = factory.putIfAbsent(indexLocation, created);		// will return a value if already set by another thread
+			if (search == null) {
+				search = created;
+			}
 		}
 		return search;
 	}
@@ -243,6 +269,7 @@ public class Search {
 		doc.add(new TextField(FIELD_LANGUAGE, d.getLanguageCode(), Store.YES));
 		doc.add(new IntPoint(FIELD_DESCRIPTION_STATUS, d.getDescriptionStatusCode()));
 		doc.add(new IntPoint(FIELD_CONCEPT_STATUS, d.getConcept().getConceptStatusCode()));
+		doc.add(new IntPoint(FIELD_DESCRIPTION_TYPE, d.getDescriptionTypeCode()));
 		doc.add(new StoredField(FIELD_DESCRIPTION_ID, d.getDescriptionId()));		// for storage and retrieval
 		doc.add(new LongPoint(FIELD_DESCRIPTION_ID_INDEX, d.getDescriptionId()));	// for indexing and search
 		doc.add(new StoredField(FIELD_CONCEPT_ID, d.getConcept().getConceptId()));
@@ -254,6 +281,14 @@ public class Search {
 		}
 		writer.addDocument(doc);
 	}
+	
+	/**
+	 * Create a new request builder.
+	 * @return
+	 */
+	public Request.Builder newBuilder() {
+		return new Request.Builder(this);
+	}
 
 
 	/**
@@ -262,25 +297,60 @@ public class Search {
 	 *
 	 */
 	public static class Request {
-		Query _query;
-		int _maxHits;
+		final Search _searcher;
+		final Query _query;
+		final int _maxHits;
 
-		Request(Query query, int maxHits) {
+		Request(Search search, Query query, int maxHits) {
+			_searcher = search;
 			_query = query;
 			_maxHits = maxHits;
 		}
 
-		public TopDocs searchForTopDocs(Search searcher) throws CorruptIndexException, IOException {
-			return searcher.searcher().search(_query, _maxHits);
+		/**
+		 * Search, returning the raw TopDocs results from Lucene.
+		 * @return
+		 * @throws CorruptIndexException
+		 * @throws IOException
+		 */
+		public TopDocs searchForTopDocs() throws CorruptIndexException, IOException {
+			return _searcher.searcher().search(_query, _maxHits);
 		}
-		public List<ResultItem> search(Search searcher) throws CorruptIndexException, IOException {
+
+		
+		/**
+		 * Search, returning the ordered results as a list of ResultItems.
+		 * @return
+		 * @throws CorruptIndexException
+		 * @throws IOException
+		 */
+		public List<ResultItem> search() throws CorruptIndexException, IOException {
 			System.out.println(_query);
-			TopDocs docs = searchForTopDocs(searcher);
-			return resultsFromTopDocs(searcher.searcher(), docs);
+			TopDocs docs = searchForTopDocs();
+			return resultsFromTopDocs(_searcher.searcher(), docs);
 		}
-		public List<Long> searchForConcepts(Search searcher) throws CorruptIndexException, IOException {
-			TopDocs docs = searchForTopDocs(searcher);
-			return Search.conceptsFromTopDocs(searcher.searcher(), docs);
+
+		/**
+		 * Search, returning the results as a list of concept identifiers.
+		 * There will be no duplicates in the returned results.
+		 * @return
+		 * @throws CorruptIndexException
+		 * @throws IOException
+		 */
+		public List<Long> searchForConcepts() throws CorruptIndexException, IOException {
+			TopDocs docs = searchForTopDocs();
+			return Search.conceptsFromTopDocs(_searcher.searcher(), docs);
+		}
+		
+		/**
+		 * Search, returning the results as a list of descriptions.
+		 * @return
+		 * @throws CorruptIndexException
+		 * @throws IOException
+		 */
+		public List<String> searchForDescriptions() throws CorruptIndexException, IOException {
+			TopDocs docs = searchForTopDocs();
+			return Search.descriptionsFromTopDocs(_searcher.searcher(), docs);
 		}
 
 		/**
@@ -289,12 +359,18 @@ public class Search {
 		 */
 		public static class Builder {
 			private static final int MINIMUM_CHARS_FOR_PREFIX_SEARCH = 3;
+			Search _searcher;
 			int _maxHits = DEFAULT_MAXIMUM_HITS;
 			Query _query;
 			ArrayList<Query> _filters;
 			QueryParser _queryParser;
 			private StandardAnalyzer _analyzer = new StandardAnalyzer();
 
+			Builder(Search searcher) {
+				Objects.requireNonNull(searcher);
+				_searcher = searcher;
+			}
+			
 			protected QueryParser queryParser() {
 				if (_queryParser == null) {
 					_queryParser = new QueryParser(FIELD_TERM, _analyzer);
@@ -340,20 +416,22 @@ public class Search {
 			 * @return
 			 * @throws ParseException
 			 */
-			public Builder parseQuery(String search) throws ParseException {
+			public Builder searchByParsing(String search) throws ParseException {
 				_query = queryParser().parse(search);
 				return this;
 			}
 
 			/**
-			 * Search for a SNOMED-CT term using a combination of a query parser and for each token, a term query and prefix query.
+			 * Search for a SNOMED-CT term, for each token, a term query and prefix query.
 			 * This is usually a good default for most SNOMED-CT searches.
+			 * If more control is required, either pass a string to the QueryParser using searchByParsing()
+			 * or directly set the query manually.
 			 * @param search
 			 * @return
 			 * @throws ParseException
 			 * @throws IOException 
 			 */
-			public Builder search(String search) throws IOException {
+			public Builder searchFor(String search) throws IOException {
 				BooleanQuery.Builder b = new BooleanQuery.Builder();
 				TokenStream stream = _analyzer.tokenStream(FIELD_TERM, search);
 				CharTermAttribute termAtt = stream.addAttribute(CharTermAttribute.class);
@@ -398,7 +476,7 @@ public class Search {
 			}
 
 			/**
-			 * Filter only for concepts with the specified direct parents.
+			 * Include only concepts with the specified direct parents.
 			 * @param isA
 			 * @return
 			 */
@@ -413,7 +491,19 @@ public class Search {
 			public Builder withDirectParent(long isA) {
 				return withFilters(Search.Filter.filterForDirectParent(isA));
 			}
+
+			/**
+			 * Exclude descriptions that represent the FSN (fully specified name).
+			 * @return
+			 */
+			public Builder withoutFullySpecifiedNames() {
+				return withFilters(Search.Filter.DESCRIPTION_NO_FSN);
+			}
 			
+			/**
+			 * Include only active concepts during search.
+			 * @return
+			 */
 			public Builder withActive() {
 				return withFilters(Search.Filter.CONCEPT_ACTIVE);
 			}
@@ -433,6 +523,11 @@ public class Search {
 				return this;
 			}
 			
+			/**
+			 * Clear all currently set filters.
+			 * This does not change the search term(s) however.
+			 * @return
+			 */
 			public Builder clearFilters() {
 				_filters.clear();
 				return this;
@@ -455,7 +550,7 @@ public class Search {
 					}
 					query = bqBuilder.build();	
 				}
-				return new Request(query, _maxHits);
+				return new Request(_searcher, query, _maxHits);
 			}
 		}
 	}
@@ -499,6 +594,7 @@ public class Search {
 
 	/**
 	 * Helper method to return an array of the concept identifiers matching the search result.
+	 * There will be no duplicates returned.
 	 * @param searcher
 	 * @param docs
 	 * @return
@@ -633,6 +729,22 @@ public class Search {
 		}
 
 		@Override
+		public boolean equals(Object obj) {
+			if (super.equals(obj)) {
+				return true;
+			}
+			if (obj instanceof _ResultItem) {
+				_ResultItem ri = (_ResultItem) obj;
+				return _conceptId == ri._conceptId && _preferredTerm == ri._preferredTerm && _term == ri._term;
+			}
+			return false;
+		}
+		@Override
+		public int hashCode() {
+			return Objects.hash(_conceptId, _preferredTerm, _term);
+		}
+		
+		@Override
 		public String getTerm() {
 			return _term;
 		}
@@ -646,7 +758,7 @@ public class Search {
 		}
 		@Override
 		public String toString() {
-			return super.toString() + ": " + getPreferredTerm() + " (" + getConceptId() + ")";
+			return super.toString() + ": " + getTerm() + " (" + getConceptId() + ")";
 		}
 	}
 

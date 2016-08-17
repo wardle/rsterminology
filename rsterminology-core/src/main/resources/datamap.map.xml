@@ -26,6 +26,36 @@
 		<db-attribute name="language_code" type="VARCHAR" isMandatory="true" length="10"/>
 		<db-attribute name="term" type="VARCHAR" isMandatory="true" length="255"/>
 	</db-entity>
+	<db-entity name="t_project" schema="public">
+		<db-attribute name="address1" type="VARCHAR" length="255"/>
+		<db-attribute name="address2" type="VARCHAR" length="255"/>
+		<db-attribute name="address3" type="VARCHAR" length="255"/>
+		<db-attribute name="address4" type="VARCHAR" length="255"/>
+		<db-attribute name="administrator_user_fk" type="INTEGER" length="10"/>
+		<db-attribute name="advertise_to_all" type="VARCHAR" isMandatory="true" length="5"/>
+		<db-attribute name="can_own_equipment" type="VARCHAR" isMandatory="true" length="5"/>
+		<db-attribute name="care_plan_information" type="CLOB" length="2147483647"/>
+		<db-attribute name="date_from" type="DATE" isMandatory="true" length="13"/>
+		<db-attribute name="date_to" type="DATE" length="13"/>
+		<db-attribute name="ethics" type="VARCHAR" length="255"/>
+		<db-attribute name="exclusion_criteria" type="CLOB" length="2147483647"/>
+		<db-attribute name="id" type="INTEGER" isPrimaryKey="true" isMandatory="true" length="10"/>
+		<db-attribute name="inclusion_criteria" type="CLOB" length="2147483647"/>
+		<db-attribute name="is_private" type="VARCHAR" isMandatory="true" length="5"/>
+		<db-attribute name="logo_attachment_fk" type="INTEGER" length="10"/>
+		<db-attribute name="long_description" type="VARCHAR" length="10000000"/>
+		<db-attribute name="name" type="VARCHAR" isMandatory="true" length="50"/>
+		<db-attribute name="parent_project_fk" type="INTEGER" length="10"/>
+		<db-attribute name="postcode" type="VARCHAR" length="255"/>
+		<db-attribute name="specialty_concept_fk" type="BIGINT" length="19"/>
+		<db-attribute name="title" type="VARCHAR" length="255"/>
+		<db-attribute name="type" type="VARCHAR" isMandatory="true" length="50"/>
+		<db-attribute name="virtual" type="VARCHAR" isMandatory="true" length="5"/>
+	</db-entity>
+	<db-entity name="t_project_concept" schema="public">
+		<db-attribute name="conceptconceptid" type="BIGINT" isPrimaryKey="true" isMandatory="true" length="19"/>
+		<db-attribute name="projectid" type="INTEGER" isPrimaryKey="true" isMandatory="true" length="10"/>
+	</db-entity>
 	<db-entity name="t_relationship" schema="public">
 		<db-attribute name="characteristic_type" type="INTEGER" isMandatory="true" length="10"/>
 		<db-attribute name="refinability" type="INTEGER" isMandatory="true" length="10"/>
@@ -51,6 +81,32 @@
 		<obj-attribute name="initialCapitalStatus" type="java.lang.String" db-attribute-path="initial_capital_status"/>
 		<obj-attribute name="languageCode" type="java.lang.String" db-attribute-path="language_code"/>
 		<obj-attribute name="term" type="java.lang.String" db-attribute-path="term"/>
+	</obj-entity>
+	<obj-entity name="Project" className="com.eldrix.terminology.snomedct.Project" dbEntityName="t_project">
+		<obj-attribute name="address1" type="java.lang.String" db-attribute-path="address1"/>
+		<obj-attribute name="address2" type="java.lang.String" db-attribute-path="address2"/>
+		<obj-attribute name="address3" type="java.lang.String" db-attribute-path="address3"/>
+		<obj-attribute name="address4" type="java.lang.String" db-attribute-path="address4"/>
+		<obj-attribute name="advertiseToAll" type="java.lang.String" db-attribute-path="advertise_to_all"/>
+		<obj-attribute name="canOwnEquipment" type="java.lang.String" db-attribute-path="can_own_equipment"/>
+		<obj-attribute name="carePlanInformation" type="java.lang.String" db-attribute-path="care_plan_information"/>
+		<obj-attribute name="dateFrom" type="java.util.Date" db-attribute-path="date_from"/>
+		<obj-attribute name="dateTo" type="java.util.Date" db-attribute-path="date_to"/>
+		<obj-attribute name="ethics" type="java.lang.String" db-attribute-path="ethics"/>
+		<obj-attribute name="exclusionCriteria" type="java.lang.String" db-attribute-path="exclusion_criteria"/>
+		<obj-attribute name="id" type="int" db-attribute-path="id"/>
+		<obj-attribute name="inclusionCriteria" type="java.lang.String" db-attribute-path="inclusion_criteria"/>
+		<obj-attribute name="isPrivate" type="java.lang.String" db-attribute-path="is_private"/>
+		<obj-attribute name="logoAttachmentFk" type="java.lang.Integer" db-attribute-path="logo_attachment_fk"/>
+		<obj-attribute name="longDescription" type="java.lang.String" db-attribute-path="long_description"/>
+		<obj-attribute name="name" type="java.lang.String" db-attribute-path="name"/>
+		<obj-attribute name="postcode" type="java.lang.String" db-attribute-path="postcode"/>
+		<obj-attribute name="specialtyConceptFk" type="java.lang.Long" db-attribute-path="specialty_concept_fk"/>
+		<obj-attribute name="title" type="java.lang.String" db-attribute-path="title"/>
+		<obj-attribute name="type" type="java.lang.String" db-attribute-path="type"/>
+		<obj-attribute name="virtual" type="java.lang.String" db-attribute-path="virtual"/>
+	</obj-entity>
+	<obj-entity name="ProjectConcept" className="com.eldrix.terminology.snomedct.ProjectConcept" dbEntityName="t_project_concept">
 	</obj-entity>
 	<obj-entity name="Relationship" className="com.eldrix.terminology.snomedct.Relationship" dbEntityName="t_relationship">
 		<obj-attribute name="characteristicType" type="java.lang.Integer" db-attribute-path="characteristic_type"/>
@@ -82,8 +138,26 @@
 	<db-relationship name="parentRelationships" source="t_concept" target="t_relationship" toMany="true">
 		<db-attribute-pair source="concept_id" target="source_concept_id"/>
 	</db-relationship>
+	<db-relationship name="untitledRel" source="t_concept" target="t_project_concept" toDependentPK="true" toMany="true">
+		<db-attribute-pair source="concept_id" target="conceptconceptid"/>
+	</db-relationship>
 	<db-relationship name="concept" source="t_description" target="t_concept" toMany="false">
 		<db-attribute-pair source="concept_id" target="concept_id"/>
+	</db-relationship>
+	<db-relationship name="children" source="t_project" target="t_project" toMany="true">
+		<db-attribute-pair source="id" target="parent_project_fk"/>
+	</db-relationship>
+	<db-relationship name="commonConcepts" source="t_project" target="t_project_concept" toDependentPK="true" toMany="true">
+		<db-attribute-pair source="id" target="projectid"/>
+	</db-relationship>
+	<db-relationship name="parent" source="t_project" target="t_project" toMany="false">
+		<db-attribute-pair source="parent_project_fk" target="id"/>
+	</db-relationship>
+	<db-relationship name="concept" source="t_project_concept" target="t_concept" toMany="false">
+		<db-attribute-pair source="conceptconceptid" target="concept_id"/>
+	</db-relationship>
+	<db-relationship name="project" source="t_project_concept" target="t_project" toMany="false">
+		<db-attribute-pair source="projectid" target="id"/>
 	</db-relationship>
 	<db-relationship name="relationshipTypeConcept" source="t_relationship" target="t_concept" toMany="false">
 		<db-attribute-pair source="relationship_type_concept_id" target="concept_id"/>
@@ -100,6 +174,11 @@
 	<obj-relationship name="recursiveChildConcepts" source="Concept" target="Concept" deleteRule="Deny" db-relationship-path="cachedChildConcepts.childConcept"/>
 	<obj-relationship name="recursiveParentConcepts" source="Concept" target="Concept" deleteRule="Deny" db-relationship-path="cachedParentConcepts.parentConcept"/>
 	<obj-relationship name="concept" source="Description" target="Concept" deleteRule="Nullify" db-relationship-path="concept"/>
+	<obj-relationship name="children" source="Project" target="Project" deleteRule="Deny" db-relationship-path="children"/>
+	<obj-relationship name="commonConcepts" source="Project" target="Concept" deleteRule="Deny" db-relationship-path="commonConcepts.concept"/>
+	<obj-relationship name="parent" source="Project" target="Project" deleteRule="Nullify" db-relationship-path="parent"/>
+	<obj-relationship name="concept" source="ProjectConcept" target="Concept" deleteRule="Nullify" db-relationship-path="concept"/>
+	<obj-relationship name="project" source="ProjectConcept" target="Project" deleteRule="Nullify" db-relationship-path="project"/>
 	<obj-relationship name="relationshipTypeConcept" source="Relationship" target="Concept" deleteRule="Nullify" db-relationship-path="relationshipTypeConcept"/>
 	<obj-relationship name="sourceConcept" source="Relationship" target="Concept" deleteRule="Nullify" db-relationship-path="sourceConcept"/>
 	<obj-relationship name="targetConcept" source="Relationship" target="Concept" deleteRule="Nullify" db-relationship-path="targetConcept"/>

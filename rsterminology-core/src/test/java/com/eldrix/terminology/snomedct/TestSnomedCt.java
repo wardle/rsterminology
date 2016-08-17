@@ -29,6 +29,7 @@ import org.junit.Test;
 
 import com.eldrix.terminology.medicine.ParsedMedication;
 import com.eldrix.terminology.medicine.ParsedMedicationBuilder;
+import com.eldrix.terminology.snomedct.Search.Request.Builder;
 import com.eldrix.terminology.snomedct.Search.ResultItem;
 import com.eldrix.terminology.snomedct.Semantic.Amp;
 import com.eldrix.terminology.snomedct.Semantic.Ampp;
@@ -76,8 +77,8 @@ public class TestSnomedCt {
 		try {
 			ObjectContext context = getRuntime().newContext();
 			Search search = Search.getInstance();
-			Search.Request.Builder builder = new Search.Request.Builder();
-			List<Long> results = builder.search("mult sclerosis").setMaxHits(200).withRecursiveParent(64572001L).build().searchForConcepts(search);
+			Search.Request.Builder builder = new Search.Request.Builder(search);
+			List<Long> results = builder.searchFor("mult sclerosis").setMaxHits(200).withRecursiveParent(64572001L).build().searchForConcepts();
 			System.out.println(builder._query);
 			Expression qual = ExpressionFactory.inExp(Concept.CONCEPT_ID.getName(), results);
 			List<Concept> concepts = ObjectSelect.query(Concept.class, qual).prefetch(Concept.DESCRIPTIONS.joint()).select(context);
@@ -94,9 +95,9 @@ public class TestSnomedCt {
 				}
 			}
 			
-			assertTrue(builder.search("parkin").build().search(Search.getInstance()).size() > 0);
-			assertNotEquals(0, builder.search("mult scler").build().search(search).size());
-			assertNotEquals(0, builder.search("parkin").build().search(search).size());
+			assertTrue(builder.searchFor("parkin").build().search().size() > 0);
+			assertNotEquals(0, builder.searchFor("mult scler").build().search().size());
+			assertNotEquals(0, builder.searchFor("parkin").build().search().size());
 			
 			
 		} catch (CorruptIndexException e) {
@@ -177,22 +178,24 @@ public class TestSnomedCt {
 	public void testSearchMedications() throws CorruptIndexException, ParseException, IOException {
 		ObjectContext context = getRuntime().newContext();
 		Search search = Search.getInstance();
-		List<ResultItem> sAmlodipine = new Search.Request.Builder().parseQuery("amlodip*").setMaxHits(1).withFilters(Search.Filter.DMD_VTM_OR_TF).build().search(search);
+		Builder b = new Search.Request.Builder(search);
+		List<ResultItem> sAmlodipine = b.searchByParsing("amlodip*").setMaxHits(1).withFilters(Search.Filter.DMD_VTM_OR_TF).build().search();
 		assertEquals(1, sAmlodipine.size());
 		Concept amlodipine = ObjectSelect.query(Concept.class, Concept.CONCEPT_ID.eq(sAmlodipine.get(0).getConceptId())).selectOne(context);
 		assertNotNull(amlodipine);
 		assertTrue(Semantic.Vtm.isA(amlodipine));		// this should be a VTM
 		
-		List<ResultItem> aMadopar = new Search.Request.Builder().search("madopar").setMaxHits(1).withFilters(Search.Filter.DMD_VTM_OR_TF).build().search(search);
+		List<ResultItem> aMadopar = b.searchFor("madopar").setMaxHits(1).withFilters(Search.Filter.DMD_VTM_OR_TF).build().search();
 		Concept madopar = ObjectSelect.query(Concept.class, Concept.CONCEPT_ID.eq(aMadopar.get(0).getConceptId())).selectOne(context);
 		assertTrue(Semantic.Tf.isA(madopar));
 
-		assertEquals(0, new Search.Request.Builder().search("madopar").withDirectParent(Dmd.Product.VIRTUAL_THERAPEUTIC_MOIETY.conceptId).build().search(search).size());
-		assertEquals(0, new Search.Request.Builder().search("madopar").withDirectParent(Dmd.Product.VIRTUAL_MEDICINAL_PRODUCT.conceptId).build().search(search).size());
-		assertEquals(0, new Search.Request.Builder().search("madopar").withDirectParent(Dmd.Product.VIRTUAL_MEDICINAL_PRODUCT_PACK.conceptId).build().search(search).size());
-		assertNotEquals(0, new Search.Request.Builder().search("madopar").withDirectParent(Dmd.Product.TRADE_FAMILY.conceptId).build().search(search).size());
-		assertNotEquals(0, new Search.Request.Builder().search("madopar").withDirectParent(Dmd.Product.ACTUAL_MEDICINAL_PRODUCT.conceptId).build().search(search).size());
-		assertNotEquals(0, new Search.Request.Builder().search("madopar").withDirectParent(Dmd.Product.ACTUAL_MEDICINAL_PRODUCT_PACK.conceptId).build().search(search).size());
+		assertEquals(0, b.searchFor("madopar").clearFilters().withDirectParent(Dmd.Product.VIRTUAL_THERAPEUTIC_MOIETY.conceptId).build().search().size());
+		assertEquals(0, b.searchFor("madopar").clearFilters().withDirectParent(Dmd.Product.VIRTUAL_MEDICINAL_PRODUCT.conceptId).build().search().size());
+		assertEquals(0, b.searchFor("madopar").clearFilters().withDirectParent(Dmd.Product.VIRTUAL_MEDICINAL_PRODUCT_PACK.conceptId).build().search().size());
+		assertNotEquals(0, b.searchFor("madopar").clearFilters().withDirectParent(Dmd.Product.TRADE_FAMILY.conceptId).build().search().size());
+		assertNotEquals(0, b.searchFor("madopar").clearFilters().withDirectParent(Dmd.Product.ACTUAL_MEDICINAL_PRODUCT.conceptId).build().search().size());
+		assertNotEquals(0, b.searchFor("madopar").clearFilters().withDirectParent(Dmd.Product.ACTUAL_MEDICINAL_PRODUCT_PACK.conceptId).build().search().size());
+	
 	}
 	
 	@Test
@@ -200,18 +203,18 @@ public class TestSnomedCt {
 		ObjectContext context = getRuntime().newContext();
 		Search search = Search.getInstance();
 		int[] a = Concept.Status.activeCodes();
-		List<ResultItem> sAmlodipine = new Search.Request.Builder().parseQuery("amlodip*").withFilters(Search.Filter.DMD_VTM_OR_TF, Search.Filter.CONCEPT_ACTIVE).setMaxHits(1).build().search(search);
+		List<ResultItem> sAmlodipine = new Search.Request.Builder(search).searchByParsing("amlodip*").withFilters(Search.Filter.DMD_VTM_OR_TF, Search.Filter.CONCEPT_ACTIVE).setMaxHits(1).build().search();
 		assertEquals(1, sAmlodipine.size());
 		Concept amlodipine = ObjectSelect.query(Concept.class, Concept.CONCEPT_ID.eq(sAmlodipine.get(0).getConceptId())).selectOne(context);
 		assertTrue(Vtm.isA(amlodipine));
 		
-		List<ResultItem> sMultipleSclerosisInDrugs = new Search.Request.Builder().parseQuery("multiple sclerosis").withFilters(Search.Filter.DMD_VTM_OR_TF).build().search(search);
+		List<ResultItem> sMultipleSclerosisInDrugs = new Search.Request.Builder(search).searchByParsing("multiple sclerosis").withFilters(Search.Filter.DMD_VTM_OR_TF).build().search();
 		assertEquals(0, sMultipleSclerosisInDrugs.size());
 		
-		List<ResultItem> sMultipleSclerosis = new Search.Request.Builder().parseQuery("multiple sclerosis").withRecursiveParent(Semantic.Category.DISEASE.conceptId).setMaxHits(1).build().search(search);
+		List<ResultItem> sMultipleSclerosis = new Search.Request.Builder(search).searchByParsing("multiple sclerosis").withRecursiveParent(Semantic.Category.DISEASE.conceptId).setMaxHits(1).build().search();
 		assertEquals(1, sMultipleSclerosis.size());
 		
-		List<ResultItem> sMs = new Search.Request.Builder().search("ms").withRecursiveParent(Semantic.Category.DISEASE.conceptId).withFilters(Search.Filter.CONCEPT_ACTIVE).setMaxHits(200).build().search(search);
+		List<ResultItem> sMs = new Search.Request.Builder(search).searchFor("ms").withRecursiveParent(Semantic.Category.DISEASE.conceptId).withFilters(Search.Filter.CONCEPT_ACTIVE).setMaxHits(200).build().search();
 		//sMs.forEach(ri -> System.out.println(ri));
 		assertTrue(sMs.stream().anyMatch(ri -> ri.getConceptId()==24700007L));	// multiple sclerosis
 		assertTrue(sMs.stream().anyMatch(ri -> ri.getConceptId()==79619009L));		// mitral stenosis
@@ -233,13 +236,13 @@ public class TestSnomedCt {
 	@Test
 	public void testPrescribing() throws CorruptIndexException, IOException {
 		ObjectContext context = getRuntime().newContext();
-		Search.Request.Builder searchVmp = new Search.Request.Builder().setMaxHits(1).withActive().withDirectParent(Dmd.Product.VIRTUAL_MEDICINAL_PRODUCT.conceptId);
 		Search search = Search.getInstance();
+		Search.Request.Builder searchVmp = new Search.Request.Builder(search).setMaxHits(1).withActive().withDirectParent(Dmd.Product.VIRTUAL_MEDICINAL_PRODUCT.conceptId);
 
 		// co-careldopa is a prescribable VTM -- see http://dmd.medicines.org.uk/DesktopDefault.aspx?VMP=377270003&toc=nofloat
 		ParsedMedication pm1 = new ParsedMedicationBuilder().parseString("co-careldopa 25mg/250mg 1t tds").build();
 		Concept cocareldopa = ObjectSelect.query(Concept.class, 
-				Concept.CONCEPT_ID.eq(searchVmp.search("co-careldopa 25mg/250mg").build().searchForConcepts(search).get(0))).selectOne(context);
+				Concept.CONCEPT_ID.eq(searchVmp.searchFor("co-careldopa 25mg/250mg").build().searchForConcepts().get(0))).selectOne(context);
 		assertEquals(Dmd.Product.VIRTUAL_MEDICINAL_PRODUCT, Dmd.Product.productForConcept(cocareldopa));
 		Vmp cocareldopaVmp = new Vmp(cocareldopa);
 		assertFalse(cocareldopaVmp.isInvalidToPrescribe());
@@ -247,7 +250,7 @@ public class TestSnomedCt {
 		
 		// diltiazem m/r is a VTM not recommended for prescription -- see http://dmd.medicines.org.uk/DesktopDefault.aspx?VMP=319183002&toc=nofloat
 		Concept diltiazem = ObjectSelect.query(Concept.class, 
-				Concept.CONCEPT_ID.eq(searchVmp.search("diltiazem 120mg m/r").build().searchForConcepts(search).get(0))).selectOne(context);
+				Concept.CONCEPT_ID.eq(searchVmp.searchFor("diltiazem 120mg m/r").build().searchForConcepts().get(0))).selectOne(context);
 		Vmp diltiazemVmp = new Vmp(diltiazem);
 		assertFalse(diltiazemVmp.isInvalidToPrescribe());
 		assertTrue(diltiazemVmp.isNotRecommendedToPrescribe());
@@ -268,6 +271,21 @@ public class TestSnomedCt {
 		amlodipine1.getVmps().forEach(vmp -> assertFalse(vmp.equals(amlodipine1)));
 	}
 	
+	@Test
+	public void testHashcodesDmd() throws CorruptIndexException, IOException {
+		ObjectContext context = getRuntime().newContext();
+		Builder b = new Search.Request.Builder(Search.getInstance());
+		List<ResultItem> aMadopar = b.searchFor("madopar").setMaxHits(1).withFilters(Search.Filter.DMD_VTM_OR_TF).build().search();
+		Concept madopar = ObjectSelect.query(Concept.class, Concept.CONCEPT_ID.eq(aMadopar.get(0).getConceptId())).selectOne(context);
+		Tf madoparTf = new Tf(madopar);
+		List<Vtm> vtms = madoparTf.getAmps()
+			.map(Amp::getVmp).filter(Optional::isPresent).map(Optional::get)
+			.map(Vmp::getVtm).filter(Optional::isPresent).map(Optional::get)
+			.distinct().collect(Collectors.toList());
+		vtms.stream().forEach(vtm -> System.out.println(vtm.concept().getFullySpecifiedName()));
+		assertEquals(1, vtms.size());
+	}
+	
 	
 	@Test
 	public void testVirtualTherapeuticMoieties() throws CorruptIndexException, IOException, ParseException {
@@ -276,7 +294,7 @@ public class TestSnomedCt {
 		Concept amlodipineVtm= ObjectSelect.query(Concept.class, Concept.CONCEPT_ID.eq(108537001L)).selectOne(context);
 		assertDrugType(amlodipineVtm, Dmd.Product.VIRTUAL_THERAPEUTIC_MOIETY);
 		
-		List<Long> amlodipineTfIds = new Search.Request.Builder().search("istin").withDirectParent(Dmd.Product.TRADE_FAMILY.conceptId).withActive().build().searchForConcepts(Search.getInstance());
+		List<Long> amlodipineTfIds = new Search.Request.Builder(Search.getInstance()).searchFor("istin").withDirectParent(Dmd.Product.TRADE_FAMILY.conceptId).withActive().build().searchForConcepts();
 		List<Concept> amlodipineTfs1 = SelectQuery.query(Concept.class, Concept.CONCEPT_ID.in(amlodipineTfIds)).select(context);
 		List<Concept> amlodipineTfs2 = Vtm.getTfs(amlodipineVtm).collect(Collectors.toList());
 		for (Concept aTf : amlodipineTfs2) {

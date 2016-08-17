@@ -4,10 +4,10 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<parent>
-                <groupId>com.eldrix.rsterminology</groupId>
-                <artifactId>rsterminology</artifactId>
-                <version>0.1</version>
-        </parent>
+		<groupId>com.eldrix.rsterminology</groupId>
+		<artifactId>rsterminology</artifactId>
+		<version>0.1</version>
+	</parent>
 
 	<groupId>com.eldrix.rsterminology.server</groupId>
 	<artifactId>rsterminology-server</artifactId>
@@ -30,7 +30,7 @@
 		<maven.compiler.target>1.8</maven.compiler.target>
 
 		<!-- Custom properties (mostly framework versions) -->
-		<bootique-version>0.12.1</bootique-version>
+		<bootique-version>0.15</bootique-version>
 		<cayenne-version>4.0.M3</cayenne-version>
 		<slf4j-version>1.7.12</slf4j-version>
 
@@ -114,12 +114,37 @@
 
 		<!-- unit test deps -->
 		<!-- TODO -->
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<scope>test</scope>
+		</dependency>
 
+		<dependency>
+			<groupId>com.nhl.bootique</groupId>
+			<artifactId>bootique-test</artifactId>
+			<version>${bootique-version}</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>com.sun.jersey</groupId>
+			<artifactId>jersey-client</artifactId>
+			<version>1.8</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.sun.jersey</groupId>
+			<artifactId>jersey-json</artifactId>
+			<version>1.8</version>
+			<scope>test</scope>
+		</dependency>
 		<dependency>
 			<groupId>com.eldrix.rsterminology.core</groupId>
 			<artifactId>rsterminology-core</artifactId>
 			<version>0.0.1-SNAPSHOT</version>
 		</dependency>
+
 	</dependencies>
 
 	<build>

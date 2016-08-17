@@ -3,8 +3,10 @@ package com.eldrix.terminology.server;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Stream;
@@ -20,6 +22,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Module;
 import com.nhl.bootique.Bootique;
@@ -27,9 +30,9 @@ import com.nhl.bootique.jersey.JerseyModule;
 
 public class TestServer {
 	final static ExecutorService executor = Executors.newSingleThreadExecutor();
-	final Client client = ClientBuilder.newClient().register(JacksonJsonProvider.class);
-	final WebTarget target = client.target("http://localhost:8080");
-	final static ObjectMapper mapper = new ObjectMapper();
+	final static Client client = ClientBuilder.newClient().register(JacksonJsonProvider.class);
+	final static WebTarget target = client.target("http://localhost:8080");
+	final static ObjectMapper mapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false);
 
 	@BeforeClass
 	public static void startServer() throws InterruptedException {
@@ -43,10 +46,25 @@ public class TestServer {
 			.autoLoadModules()
 			.run();
 		});
-		Thread.sleep(3000);
+		int numberOfTries = 10;
+		while (numberOfTries > 0) {
+			Thread.sleep(500);
+			numberOfTries--;
+			try {
+				Optional<ClientConcept> cc = performRequest(target.path("snomedct/concepts/24700007"), ClientConcept.class).findFirst();
+				if (cc.isPresent()) {
+					return;
+				}
+			}
+			catch(Exception e) {
+				;	// NOP
+			}
+		}
+		System.err.println("Failed to start server");
+		System.exit(1);
 	}
 	
-	private <T> Stream<T> performRequest(WebTarget t, Class<T> clazz) {
+	private static <T> Stream<T> performRequest(WebTarget t, Class<T> clazz) {
 		Map<String,?> r1 = t.request(MediaType.APPLICATION_JSON).get(new GenericType<Map<String, ?>>() {});
 		List<?> r2 = (List<?>) r1.get("data");
 		return r2.stream().map(o -> mapper.convertValue(o, clazz));
@@ -70,6 +88,16 @@ public class TestServer {
 	public void testSynonyms() {
 		assertTrue(performRequest(target.path("snomedct/synonyms").queryParam("s", "heart attack"), String.class)
 			.anyMatch(s -> s.equals("Myocardial infarction")));
+	}
+	
+	@Test
+	public void testParsingMedication() {
+		@SuppressWarnings("rawtypes")
+		Optional<HashMap> pmb = performRequest(
+			target.path("snomedct/dmd/parse").queryParam("s", "amlodipine 5mg od"), HashMap.class)
+			.findFirst();
+		assertTrue(pmb.isPresent());
+		assertEquals(Long.valueOf(108537001L), Long.valueOf( (int) pmb.get().get("conceptId")));
 	}
 	
 	public static class ClientConcept {

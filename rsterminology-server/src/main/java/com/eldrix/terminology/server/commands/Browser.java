@@ -15,7 +15,6 @@ import com.eldrix.terminology.snomedct.Concept;
 import com.eldrix.terminology.snomedct.Search;
 import com.eldrix.terminology.snomedct.Search.ResultItem;
 import com.eldrix.terminology.snomedct.Semantic.Dmd;
-import com.eldrix.terminology.snomedct.Semantic.Dmd.Product;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.nhl.bootique.cli.Cli;
@@ -188,7 +187,7 @@ public class Browser extends CommandWithMetadata {
 						rootConceptIds = r;
 					}
 				}
-				List<ResultItem> results = new Search.Request.Builder().search(search).setMaxHits(hits).withRecursiveParent(rootConceptIds).build().search(Search.getInstance());
+				List<ResultItem> results = Search.getInstance().newBuilder().searchFor(search).setMaxHits(hits).withRecursiveParent(rootConceptIds).build().search();
 				if (results.size() > 0) {
 					results.forEach(ri -> {
 						System.out.println(ri.getTerm() + " -- " + ri.getPreferredTerm() + " -- " + ri.getConceptId());

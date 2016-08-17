@@ -66,15 +66,25 @@ public class SnomedCTResource {
 	public DataResponse<ResultItem> search(@QueryParam("s") String search, 
 			@DefaultValue("138875005") @QueryParam("root") final List<Long> recursiveParents, 
 			@QueryParam("is") final List<Long> directParents, 
-			@DefaultValue("200") @QueryParam("maxHits") int maxHits, 
+			@DefaultValue("200") @QueryParam("maxHits") int maxHits,
+			@DefaultValue("0") @QueryParam("fsn") int includeFsn,
+			@DefaultValue("0") @QueryParam("inactive") int includeInactive,
 			@Context UriInfo uriInfo) {
 		try {
-			Search.Request.Builder b = new Search.Request.Builder();
-			b.search(search).setMaxHits(maxHits).withActive().withRecursiveParent(recursiveParents);
+			Search.Request.Builder b = Search.getInstance().newBuilder();
+			b.searchFor(search)
+				.setMaxHits(maxHits)
+				.withRecursiveParent(recursiveParents);
+			if (includeInactive == 0) {
+				b.withActive();
+			}
+			if (includeFsn == 0) {
+				b.withoutFullySpecifiedNames();
+			}
 			if (directParents.size() > 0) {
 				b.withDirectParent(directParents);
 			}
-			List<ResultItem> result = b.build().search(Search.getInstance()); 
+			List<ResultItem> result = b.build().search(); 
 			return DataResponse.forObjects(result);
 		} catch (IOException e) {
 			e.printStackTrace();			
@@ -94,9 +104,21 @@ public class SnomedCTResource {
 	public DataResponse<String> synonyms(@QueryParam("s") String search, 
 			@DefaultValue("138875005") @QueryParam("root") List<Long> roots,
 			@DefaultValue("200") @QueryParam("maxHits") int maxHits,
+			@DefaultValue("0") @QueryParam("fsn") int includeFsn,
+			@DefaultValue("0") @QueryParam("inactive") int includeInactive,
 			@Context UriInfo uriInfo) {
 		try {
-			List<Long> conceptIds = new Search.Request.Builder().search(search).setMaxHits(maxHits).withActive().withRecursiveParent(roots).build().searchForConcepts(Search.getInstance());
+			Search.Request.Builder b = Search.getInstance().newBuilder()
+				.searchFor(search)
+				.setMaxHits(maxHits)
+				.withRecursiveParent(roots);
+			if (includeInactive == 0) {
+				b.withActive();
+			}
+			if (includeFsn == 0) {
+				b.withoutFullySpecifiedNames();
+			}
+			List<Long> conceptIds = b.build().searchForConcepts();
 			ICayennePersister cayenne = LinkRestRuntime.service(ICayennePersister.class, config);
 			ObjectContext context = cayenne.newContext();
 			SelectQuery<DataRow> select = SelectQuery.dataRowQuery(Description.class, Description.CONCEPT_ID.in(conceptIds));

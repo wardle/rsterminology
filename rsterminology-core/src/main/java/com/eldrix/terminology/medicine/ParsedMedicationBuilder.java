@@ -306,7 +306,7 @@ public class ParsedMedicationBuilder {
 	}
 
 	protected static ResultItem _search(Search search, String searchText, long[] parentConceptIds) throws CorruptIndexException, IOException {
-		List<ResultItem> ris = new Search.Request.Builder().search(searchText).withRecursiveParent(parentConceptIds).setMaxHits(1).build().search(search);
+		List<ResultItem> ris = search.newBuilder().searchFor(searchText).withRecursiveParent(parentConceptIds).setMaxHits(1).build().search();
 		return ris.isEmpty() ? null : ris.get(0);
 	}
 

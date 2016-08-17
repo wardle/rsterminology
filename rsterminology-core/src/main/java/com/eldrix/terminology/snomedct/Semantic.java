@@ -2,6 +2,7 @@ package com.eldrix.terminology.snomedct;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -150,6 +151,17 @@ public class Semantic {
 			}
 			_concept = c;
 		}
+		
+		Dmd(Concept c) {
+			if (c == null) {
+				throw new NullPointerException("Concept mandatory");
+			}
+			Product p = Product.productForConcept(c);
+			if (p == null) {
+				throw new IllegalArgumentException("Concept is not a DMD product");
+			}
+			_concept = c;
+		}
 		public Concept concept() {
 			return _concept;
 		}
@@ -164,6 +176,11 @@ public class Semantic {
 				return d._concept == this._concept;
 			}
 			return false;
+		}
+		
+		@Override
+		public int hashCode() {
+			return Objects.hash(_concept);
 		}
 	}
 

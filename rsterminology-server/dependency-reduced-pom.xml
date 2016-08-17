@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <parent>
+    <artifactId>rsterminology</artifactId>
+    <groupId>com.eldrix.rsterminology</groupId>
+    <version>0.1</version>
+  </parent>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.eldrix.rsterminology.server</groupId>
+  <artifactId>rsterminology-server</artifactId>
+  <name>RSTerminology server</name>
+  <version>0.2-SNAPSHOT</version>
+  <description>A SNOMED-CT terminology server.</description>
+  <url>http://eldrix.com</url>
+  <developers>
+    <developer>
+      <id>mwardle</id>
+      <name>Mark Wardle</name>
+      <email>mark@wardle.org</email>
+      <organization>Eldrix Ltd</organization>
+      <timezone>Europe/London</timezone>
+    </developer>
+  </developers>
+  <organization>
+    <name>Eldrix Ltd</name>
+  </organization>
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <artifactId>maven-source-plugin</artifactId>
+          <version>2.4</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.cayenne.plugins</groupId>
+          <artifactId>maven-cayenne-plugin</artifactId>
+          <version>${cayenne-version}</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+    <plugins>
+      <plugin>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>2.3</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <transformers>
+                <transformer />
+                <transformer>
+                  <mainClass>com.eldrix.terminology.server.SnomedCTApplication</mainClass>
+                </transformer>
+              </transformers>
+            </configuration>
+          </execution>
+        </executions>
+        <configuration>
+          <createDependencyReducedPom>true</createDependencyReducedPom>
+          <filters>
+            <filter>
+              <artifact>*:*</artifact>
+              <excludes>
+                <exclude>META-INF/*.SF</exclude>
+                <exclude>META-INF/*.DSA</exclude>
+                <exclude>META-INF/*.RSA</exclude>
+              </excludes>
+            </filter>
+          </filters>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>com.nhl.bootique.bom</groupId>
+        <artifactId>bootique-bom</artifactId>
+        <version>${bootique-version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.derby</groupId>
+        <artifactId>derby</artifactId>
+        <version>10.10.1.1</version>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <version>${slf4j-version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>jcl-over-slf4j</artifactId>
+        <version>${slf4j-version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+  <properties>
+    <main.class>com.eldrix.terminology.server.SnomedCTApplication</main.class>
+    <bootique-version>0.12.1</bootique-version>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <slf4j-version>1.7.12</slf4j-version>
+    <maven.compiler.source>1.8</maven.compiler.source>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.compiler.target>1.8</maven.compiler.target>
+    <cayenne-version>4.0.M3</cayenne-version>
+  </properties>
+</project>
+

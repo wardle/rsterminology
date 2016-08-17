@@ -8,7 +8,4 @@ cayenne:
   createSchema: false
 
 log:
-  level: warn
-  loggers:
-    com.eldrix.terminology.snomedct:
-      level: debug
+  level: none
