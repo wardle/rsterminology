@@ -72,6 +72,10 @@ public class Search {
 	private static final int DEFAULT_MAXIMUM_HITS = 200;		// default maximum of hits to return.
 	private static final String INDEX_LOCATION_PROPERTY_KEY="com.eldrix.snomedct.search.lucene.IndexLocation";
 	private static final String DEFAULT_INDEX_LOCATION="/var/rsdb/sct_lucene6/";
+	
+	/**
+	 * Names of the fields for the Lucene backend.
+	 */
 	private static final String FIELD_TERM="term";
 	private static final String FIELD_PREFERRED_TERM="preferredTerm";
 	private static final String FIELD_CONCEPT_ID="conceptId";
@@ -117,6 +121,12 @@ public class Search {
 			return LongPoint.newSetQuery(FIELD_RECURSIVE_PARENT_CONCEPT_ID, parentConceptIds);
 		}
 		
+		/**
+		 * Returns a filter for descriptions with one of the given parent concepts.
+		 *
+		 * @param parentConceptIds
+		 * @return
+		 */
 		public static Query filterForRecursiveParent(List<Long> parentConceptIds) {
 			return LongPoint.newSetQuery(FIELD_RECURSIVE_PARENT_CONCEPT_ID, parentConceptIds);
 		}
@@ -136,20 +146,33 @@ public class Search {
 		public static Query filterForDirectParent(long[] isAParentConceptIds) {
 			return LongPoint.newSetQuery(FIELD_DIRECT_PARENT_CONCEPT_ID, isAParentConceptIds);
 		}
-		
+		/**
+		 * Returns a filter for descriptions with one the given direct parents.
+		 */
 		public static Query filterForDirectParent(List<Long> isAParentConceptIds) {
 			return LongPoint.newSetQuery(FIELD_DIRECT_PARENT_CONCEPT_ID, isAParentConceptIds);
 		}
-		
-		
+		/**
+		 * Returns a filter for descriptions with the given direct parent.
+		 */
 		public static Query filterForDirectParent(long isAParentConceptId) {
 			return LongPoint.newExactQuery(FIELD_DIRECT_PARENT_CONCEPT_ID, isAParentConceptId);
 		}
 		
+		/**
+		 * Return a filter to include only descriptions of the specified types.
+		 * @param types
+		 * @return
+		 */
 		public static Query filterForDescriptionType(int... types) {
 			return IntPoint.newSetQuery(FIELD_DESCRIPTION_TYPE, types);
 		}
 
+		/**
+		 * Return a filter to include only descriptions of the specified types.
+		 * @param types
+		 * @return
+		 */
 		public static Query filterForDescriptionType(Description.Type... types) {
 			int[] t = new int[types.length];
 			for (int i=0; i<types.length; i++) {
