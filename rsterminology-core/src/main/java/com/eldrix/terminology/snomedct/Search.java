@@ -117,7 +117,7 @@ public class Search {
 		 * @param parentConceptIds
 		 * @return
 		 */
-		public static Query filterForRecursiveParent(long[] parentConceptIds) {
+		public static Query forRecursiveParent(long[] parentConceptIds) {
 			return LongPoint.newSetQuery(FIELD_RECURSIVE_PARENT_CONCEPT_ID, parentConceptIds);
 		}
 		
@@ -127,7 +127,7 @@ public class Search {
 		 * @param parentConceptIds
 		 * @return
 		 */
-		public static Query filterForRecursiveParent(List<Long> parentConceptIds) {
+		public static Query forRecursiveParent(List<Long> parentConceptIds) {
 			return LongPoint.newSetQuery(FIELD_RECURSIVE_PARENT_CONCEPT_ID, parentConceptIds);
 		}
 
@@ -136,26 +136,26 @@ public class Search {
 		 * @param parentConceptId
 		 * @return
 		 */
-		public static Query filterForRecursiveParent(long parentConceptId) {
+		public static Query forRecursiveParent(long parentConceptId) {
 			return LongPoint.newExactQuery(FIELD_RECURSIVE_PARENT_CONCEPT_ID, parentConceptId);
 		}
 
 		/**
 		 * Returns a filter for descriptions with one the given direct parents.
 		 */
-		public static Query filterForDirectParent(long[] isAParentConceptIds) {
+		public static Query forDirectParent(long[] isAParentConceptIds) {
 			return LongPoint.newSetQuery(FIELD_DIRECT_PARENT_CONCEPT_ID, isAParentConceptIds);
 		}
 		/**
 		 * Returns a filter for descriptions with one the given direct parents.
 		 */
-		public static Query filterForDirectParent(List<Long> isAParentConceptIds) {
+		public static Query forDirectParent(List<Long> isAParentConceptIds) {
 			return LongPoint.newSetQuery(FIELD_DIRECT_PARENT_CONCEPT_ID, isAParentConceptIds);
 		}
 		/**
 		 * Returns a filter for descriptions with the given direct parent.
 		 */
-		public static Query filterForDirectParent(long isAParentConceptId) {
+		public static Query forDirectParent(long isAParentConceptId) {
 			return LongPoint.newExactQuery(FIELD_DIRECT_PARENT_CONCEPT_ID, isAParentConceptId);
 		}
 		
@@ -164,7 +164,7 @@ public class Search {
 		 * @param types
 		 * @return
 		 */
-		public static Query filterForDescriptionType(int... types) {
+		public static Query forDescriptionType(int... types) {
 			return IntPoint.newSetQuery(FIELD_DESCRIPTION_TYPE, types);
 		}
 
@@ -173,18 +173,18 @@ public class Search {
 		 * @param types
 		 * @return
 		 */
-		public static Query filterForDescriptionType(Description.Type... types) {
+		public static Query forDescriptionType(Description.Type... types) {
 			int[] t = new int[types.length];
 			for (int i=0; i<types.length; i++) {
 				t[i] = types[i].code;
 			}
-			return filterForDescriptionType(t);
+			return forDescriptionType(t);
 		}
 		
 		/**
 		 * Return a filter to include all types of description except the one specified.
 		 */
-		public static Query filterForDescriptionsExcluding(Description.Type exclude) {
+		public static Query withoutDescriptionType(Description.Type exclude) {
 			Description.Type[] values = Description.Type.values();
 			int len = values.length;
 			int[] types = new int[len-1];
@@ -194,19 +194,19 @@ public class Search {
 					types[i++] = type.code;
 				}
 			}
-			return filterForDescriptionType(types);
+			return forDescriptionType(types);
 		}
 
 		
 		/**
 		 * Return concepts that are a type of VTM or TF.
 		 */
-		public static final Query DMD_VTM_OR_TF = filterForDirectParent(dmdVtmOrTfIds);
+		public static final Query DMD_VTM_OR_TF = forDirectParent(dmdVtmOrTfIds);
 
 		/**
 		 * Return concepts that are a type of VMP or AMP.
 		 */
-		public static final Query DMD_VMP_OR_AMP = filterForDirectParent(dmdVmpOrAmpIds);
+		public static final Query DMD_VMP_OR_AMP = forDirectParent(dmdVmpOrAmpIds);
 
 		/**
 		 * Return concepts that are active.
@@ -216,7 +216,7 @@ public class Search {
 		/**
 		 * Return descriptions of all types except fully specified names.
 		 */
-		public static final Query DESCRIPTION_NO_FSN = filterForDescriptionsExcluding(Description.Type.FULLY_SPECIFIED_NAME);
+		public static final Query WITHOUT_FULLY_SPECIFIED_NAMES = withoutDescriptionType(Description.Type.FULLY_SPECIFIED_NAME);
 	}
 
 	/**
@@ -503,15 +503,15 @@ public class Search {
 			 * @return
 			 */
 			public Builder withRecursiveParent(long[] parents) {
-				return withFilters(Search.Filter.filterForRecursiveParent(parents));
+				return withFilters(Search.Filter.forRecursiveParent(parents));
 			}
 
 			public Builder withRecursiveParent(List<Long> parents) {
-				return withFilters(Search.Filter.filterForRecursiveParent(parents));
+				return withFilters(Search.Filter.forRecursiveParent(parents));
 			}
 			
 			public Builder withRecursiveParent(long parent) {
-				return withFilters(Search.Filter.filterForRecursiveParent(parent));
+				return withFilters(Search.Filter.forRecursiveParent(parent));
 			}
 
 			/**
@@ -520,15 +520,15 @@ public class Search {
 			 * @return
 			 */
 			public Builder withDirectParent(long[] isA) {
-				return withFilters(Search.Filter.filterForDirectParent(isA));
+				return withFilters(Search.Filter.forDirectParent(isA));
 			}
 			
 			public Builder withDirectParent(List<Long> isA) {
-				return withFilters(Search.Filter.filterForDirectParent(isA));
+				return withFilters(Search.Filter.forDirectParent(isA));
 			}
 			
 			public Builder withDirectParent(long isA) {
-				return withFilters(Search.Filter.filterForDirectParent(isA));
+				return withFilters(Search.Filter.forDirectParent(isA));
 			}
 
 			/**
@@ -536,7 +536,7 @@ public class Search {
 			 * @return
 			 */
 			public Builder withoutFullySpecifiedNames() {
-				return withFilters(Search.Filter.DESCRIPTION_NO_FSN);
+				return withFilters(Search.Filter.WITHOUT_FULLY_SPECIFIED_NAMES);
 			}
 			
 			/**
