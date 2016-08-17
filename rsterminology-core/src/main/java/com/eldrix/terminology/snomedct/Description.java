@@ -68,7 +68,7 @@ public class Description extends _Description {
 		}
 		private static final Map<Integer, Type> _lookup = new HashMap<Integer, Type>();
 		static {
-			for (Type t : EnumSet.allOf(Type.class)) {
+			for (Type t : values()) {
 				_lookup.put(t.code, t);
 			}
 		};
