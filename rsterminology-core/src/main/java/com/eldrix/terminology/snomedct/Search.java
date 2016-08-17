@@ -159,6 +159,23 @@ public class Search {
 		}
 		
 		/**
+		 * Return a filter to include all types of description except the one specified.
+		 */
+		public static Query filterForDescriptionsExcluding(Description.Type exclude) {
+			Description.Type[] values = Description.Type.values();
+			int len = values.length;
+			int[] types = new int[len-1];
+			int i = 0;
+			for (Description.Type type : values) {
+				if (type != exclude) {
+					types[i++] = type.code;
+				}
+			}
+			return filterForDescriptionType(types);
+		}
+
+		
+		/**
 		 * Return concepts that are a type of VTM or TF.
 		 */
 		public static final Query DMD_VTM_OR_TF = filterForDirectParent(dmdVtmOrTfIds);
@@ -174,10 +191,9 @@ public class Search {
 		public static final Query CONCEPT_ACTIVE = IntPoint.newSetQuery(FIELD_CONCEPT_STATUS, Concept.Status.activeCodes());
 
 		/**
-		 * Return descriptions of any type, except fully specified names.
+		 * Return descriptions of all types except fully specified names.
 		 */
-		public static final Query DESCRIPTION_NO_FSN = IntPoint.newSetQuery(FIELD_DESCRIPTION_TYPE, Description.Type.UNSPECIFIED.code, Description.Type.PREFERRED.code, Description.Type.SYNONYM.code);
-		
+		public static final Query DESCRIPTION_NO_FSN = filterForDescriptionsExcluding(Description.Type.FULLY_SPECIFIED_NAME);
 	}
 
 	/**
