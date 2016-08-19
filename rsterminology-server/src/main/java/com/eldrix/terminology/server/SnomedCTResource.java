@@ -76,7 +76,7 @@ public class SnomedCTResource {
 				.setMaxHits(maxHits)
 				.withRecursiveParent(recursiveParents);
 			if (includeInactive == 0) {
-				b.withActive();
+				b.onlyActive();
 			}
 			if (includeFsn == 0) {
 				b.withoutFullySpecifiedNames();
@@ -113,7 +113,7 @@ public class SnomedCTResource {
 				.setMaxHits(maxHits)
 				.withRecursiveParent(roots);
 			if (includeInactive == 0) {
-				b.withActive();
+				b.onlyActive();
 			}
 			if (includeFsn == 0) {
 				b.withoutFullySpecifiedNames();

@@ -543,7 +543,7 @@ public class Search {
 			 * Include only active concepts during search.
 			 * @return
 			 */
-			public Builder withActive() {
+			public Builder onlyActive() {
 				return withFilters(Search.Filter.CONCEPT_ACTIVE);
 			}
 

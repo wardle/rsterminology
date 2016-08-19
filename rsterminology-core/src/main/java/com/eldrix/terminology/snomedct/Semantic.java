@@ -162,7 +162,7 @@ public class Semantic {
 			}
 			_concept = c;
 		}
-		public Concept concept() {
+		public Concept getConcept() {
 			return _concept;
 		}
 		
@@ -337,10 +337,21 @@ public class Semantic {
 			return getVmpps(_concept).map(c -> new Vmpp(c));
 		}
 
+		/**
+		 * Return the dispensed dose forms for the specified VMP.
+		 * It is usually the case that VMPs have a single dose form, but there are some VMPs that have multiple dose forms.
+		 * For example, many ear drops are recorded as "ear drops" AND "drops".
+		 * @param vmp
+		 * @return
+		 */
 		public static Stream<Concept> getDispensedDoseForms(Concept vmp) {
 			return vmp.getParentRelationships().stream()
 					.filter(r -> r.getRelationshipTypeConcept().getConceptId() == RelationType.HAS_DISPENSED_DOSE_FORM.conceptId)
-					.map(Relationship::getTargetConcept);
+					.map(Relationship::getTargetConcept)
+					.distinct();
+		}
+		public Stream<Concept> getDispensedDoseForms() {
+			return getDispensedDoseForms(_concept);
 		}
 
 		/**
@@ -432,10 +443,14 @@ public class Semantic {
 		
 		/**
 		 * Parse the dose and units for a given VMP.
+		 * TODO: not implemented
 		 */
 		public static BigDecimal getDose(Concept vmp) {
 			String term = vmp.getPreferredDescription().getTerm();
 			return null;
+		}
+		public BigDecimal getDose() {
+			return getDose(_concept);
 		}
 	}
 
