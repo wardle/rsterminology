@@ -240,14 +240,12 @@ public class Semantic {
 		}
 
 		public static Stream<Concept> getTfs(Concept vtm) {
-			return getVmps(vtm)
-					.flatMap(vmp -> Vmp.getAmps(vmp))
+			return getAmps(vtm)
 					.map(amp -> Amp.getTf(amp))
 					.filter(Optional::isPresent)
 					.map(Optional::get)
 					.distinct();
 		}
-
 		public Stream<Tf> getTfs() {
 			return getTfs(_concept).map(Tf::new);
 		}
@@ -600,6 +598,13 @@ public class Semantic {
 		public Optional<Vmp> getVmp() {
 			return getVmp(_concept).map(Vmp::new);
 		}
+		
+		public static Optional<Concept> getVtm(Concept vmpp) {
+			return getVmp(vmpp).flatMap(vmp -> Vmp.getVtm(vmp));
+		}
+		public Optional<Vtm> getVtm() {
+			return getVtm(_concept).map(Vtm::new);
+		}
 
 		/**
 		 * Return the AMPPs for the given VMPP.
@@ -659,6 +664,18 @@ public class Semantic {
 
 		public Optional<Vmpp> getVmpp() {
 			return getVmpp(_concept).map(Vmpp::new);
+		}
+
+		/**
+		 * Return the trade family for the specified AMPP.
+		 * @param ampp
+		 * @return
+		 */
+		public static Optional<Concept> getTf(Concept ampp) {
+			return getAmp(ampp).flatMap(amp -> Amp.getTf(amp));
+		}
+		public Optional<Tf> getTf() {
+			return getTf(_concept).map(Tf::new);
 		}
 	}
 }
