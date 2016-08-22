@@ -17,6 +17,7 @@ import javax.ws.rs.core.UriInfo;
 
 import org.apache.cayenne.DataRow;
 import org.apache.cayenne.ObjectContext;
+import org.apache.cayenne.query.ObjectSelect;
 import org.apache.cayenne.query.SelectQuery;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.queryparser.classic.ParseException;
@@ -25,8 +26,10 @@ import com.eldrix.terminology.medicine.ParsedMedication;
 import com.eldrix.terminology.medicine.ParsedMedicationBuilder;
 import com.eldrix.terminology.snomedct.Concept;
 import com.eldrix.terminology.snomedct.Description;
+import com.eldrix.terminology.snomedct.Project;
 import com.eldrix.terminology.snomedct.Search;
 import com.eldrix.terminology.snomedct.Search.ResultItem;
+import com.eldrix.terminology.snomedct.SearchUtilities;
 import com.nhl.link.rest.DataResponse;
 import com.nhl.link.rest.LinkRest;
 import com.nhl.link.rest.LinkRestException;
@@ -69,6 +72,7 @@ public class SnomedCTResource {
 			@DefaultValue("200") @QueryParam("maxHits") int maxHits,
 			@DefaultValue("0") @QueryParam("fsn") int includeFsn,
 			@DefaultValue("0") @QueryParam("inactive") int includeInactive,
+			@QueryParam("project") String project,
 			@Context UriInfo uriInfo) {
 		try {
 			Search.Request.Builder b = Search.getInstance().newBuilder();
@@ -84,14 +88,23 @@ public class SnomedCTResource {
 			if (directParents.size() > 0) {
 				b.withDirectParent(directParents);
 			}
-			List<ResultItem> result = b.build().search(); 
+			List<ResultItem> result = b.build().search();
+			if (project != null && project.length() > 0) {
+				ICayennePersister cayenne = LinkRestRuntime.service(ICayennePersister.class, config);
+				ObjectContext context = cayenne.newContext();
+				Project p = ObjectSelect.query(Project.class, Project.NAME.eq(project)).selectOne(context);
+				result = SearchUtilities.filterSearchForProject(result, p, recursiveParents);
+			}
 			return DataResponse.forObjects(result);
 		} catch (IOException e) {
 			e.printStackTrace();			
 			throw new LinkRestException(Status.INTERNAL_SERVER_ERROR, e.getLocalizedMessage(), e);
 		}
 	}
+	
+	
 
+	
 	@GET
 	@Path("dmd/parse")
 	public DataResponse<ParsedMedication> parseMedication(@QueryParam("s") String search, @Context UriInfo uriInfo) throws CorruptIndexException, IOException, ParseException {

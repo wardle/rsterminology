@@ -21,6 +21,7 @@ public class SnomedCTApplication implements Module {
 
 		Module jersey = JerseyModule.builder()
 				.packageRoot(SnomedCTResource.class)
+				.resource(ProjectResource.class)
 				.build();
 		Bootique.app(args)
 		.module(SnomedCTApplication.class)
