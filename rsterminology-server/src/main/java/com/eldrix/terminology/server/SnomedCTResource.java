@@ -59,8 +59,13 @@ public class SnomedCTResource {
 
 	/**
 	 * Search for a concept using the search terms provided.
-	 * @param search
-	 * @param rootIds
+	 * @param search - search term
+	 * @param root - one or more root concept identifiers
+	 * @param is - zero or more direct parent concept identifiers
+	 * @param maxHits - number of hits
+	 * @param fsn - whether to include FSN terms in search results (defaults to 0)
+	 * @param inactive - whether to include inactive terms in search results (defaults to 0)
+	 * @param project - optional name of project to limit search results to curated list for that project
 	 * @param uriInfo
 	 * @return
 	 */
