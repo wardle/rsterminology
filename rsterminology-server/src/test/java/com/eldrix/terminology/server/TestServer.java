@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.ws.rs.client.Client;
@@ -98,7 +99,32 @@ public class TestServer {
 			.findFirst();
 		assertTrue(pmb.isPresent());
 		assertEquals(Long.valueOf(108537001L), Long.valueOf( (int) pmb.get().get("conceptId")));
+		assertEquals(5, pmb.get().get("dose"));
 	}
+	
+	
+	@Test
+	public void testFilteredSearch() {
+		long unfiltered = performRequest(target.path("snomedct/search").queryParam("s", "gastroent"), ClientResultItem.class).count();
+		long filtered = performRequest(target.path("snomedct/search").queryParam("s", "gastroent").queryParam("project", "CAVACUTEPAEDS"), ClientResultItem.class).count();
+		assertTrue(unfiltered > filtered);
+	}
+	
+	
+	@Test
+	public void testProject() {
+		@SuppressWarnings("rawtypes")
+		Optional<HashMap> r = performRequest(target.path("projects/41").queryParam("include", "commonConcepts"), HashMap.class).findFirst();
+		assertEquals("CAVACUTEPAEDS", r.get().get("name"));
+		@SuppressWarnings({ "unchecked", "rawtypes" })
+		List<HashMap> common = (List<HashMap>) r.get().get("commonConcepts");
+		List<Long> commonConcepts = common.stream().map(hm -> mapper.convertValue(hm, ClientConcept.class)).map(c -> c.conceptId).collect(Collectors.toList());
+		Stream<ClientResultItem> search = performRequest(target.path("snomedct/search").queryParam("s", "gastroent").queryParam("project", "CAVACUTEPAEDS"), ClientResultItem.class);
+		assertTrue(search.allMatch(ri -> commonConcepts.contains(ri.conceptId)));
+	}
+	
+	
+	
 	
 	public static class ClientConcept {
 		public long id;
