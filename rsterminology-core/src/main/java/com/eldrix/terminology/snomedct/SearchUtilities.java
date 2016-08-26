@@ -41,5 +41,9 @@ public class SearchUtilities {
 				.filter(ri -> commonConceptIds.contains(ri.getConceptId()))
 				.collect(Collectors.toList());
 	}
+	public static List<ResultItem> filterSearchForProject(List<ResultItem> unfiltered, Project p) {
+		return filterSearchForProject(unfiltered, p, null);
+	}
+
 	
 }
