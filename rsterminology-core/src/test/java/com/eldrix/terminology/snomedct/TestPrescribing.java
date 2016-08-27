@@ -200,10 +200,10 @@ public class TestPrescribing {
 	public static void assertDrugType(Concept concept, Dmd.Product product) {
 		for (Dmd.Product dp : Dmd.Product.values()) {
 			if (dp == product) {
-				assertTrue(dp.isAConcept(concept));
+				assertTrue(dp.isAProduct(concept));
 			}
 			else {
-				assertFalse(dp.isAConcept(concept));
+				assertFalse(dp.isAProduct(concept));
 			}
 		}
 	}

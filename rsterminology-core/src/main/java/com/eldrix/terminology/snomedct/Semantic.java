@@ -125,7 +125,7 @@ public class Semantic {
 			 * @param c
 			 * @return
 			 */
-			public boolean isAConcept(Concept c) {
+			public boolean isAProduct(Concept c) {
 				if (c != null) {
 					for (Relationship r : c.getParentRelationships()) {
 						if (r.getRelationshipTypeConceptId() == Semantic.RelationType.IS_A.conceptId && conceptId == r.getTargetConceptId()) {
@@ -146,7 +146,7 @@ public class Semantic {
 			if (product == null || c == null) {
 				throw new NullPointerException("Product and concept mandatory.");
 			}
-			if (!product.isAConcept(c)) {
+			if (!product.isAProduct(c)) {
 				throw new IllegalArgumentException("Concept is not a " + product);
 			}
 			_concept = c;
@@ -195,7 +195,7 @@ public class Semantic {
 		}
 
 		public static boolean isA(Concept c) {
-			return Product.VIRTUAL_THERAPEUTIC_MOIETY.isAConcept(c);
+			return Product.VIRTUAL_THERAPEUTIC_MOIETY.isAProduct(c);
 		}
 
 		/**
@@ -206,7 +206,7 @@ public class Semantic {
 		 */
 		public static Stream<Concept> getVmps(Concept vtm) {
 			return vtm.getChildConcepts().stream()
-					.filter(child -> Product.VIRTUAL_MEDICINAL_PRODUCT.isAConcept(child));
+					.filter(child -> Product.VIRTUAL_MEDICINAL_PRODUCT.isAProduct(child));
 		}
 		
 
@@ -267,7 +267,7 @@ public class Semantic {
 		}
 		
 		public static boolean isA(Concept c) {
-			return Product.VIRTUAL_MEDICINAL_PRODUCT.isAConcept(c);
+			return Product.VIRTUAL_MEDICINAL_PRODUCT.isAProduct(c);
 		}
 
 		/**
@@ -278,7 +278,7 @@ public class Semantic {
 		 */
 		public static Optional<Concept> getVtm(Concept vmp) {
 			return vmp.getParentConcepts().stream()
-					.filter(parent -> Product.VIRTUAL_THERAPEUTIC_MOIETY.isAConcept(parent))
+					.filter(parent -> Product.VIRTUAL_THERAPEUTIC_MOIETY.isAProduct(parent))
 					.findFirst();
 		}
 
@@ -294,7 +294,7 @@ public class Semantic {
 		 */
 		public static Stream<Concept> getAmps(Concept vmp) {
 			return vmp.getChildConcepts().stream()
-					.filter(child -> Product.ACTUAL_MEDICINAL_PRODUCT.isAConcept(child));
+					.filter(child -> Product.ACTUAL_MEDICINAL_PRODUCT.isAProduct(child));
 		}
 
 		public Stream<Amp> getAmps() {
@@ -464,7 +464,7 @@ public class Semantic {
 		}
 
 		public static boolean isA(Concept c) {
-			return Product.ACTUAL_MEDICINAL_PRODUCT.isAConcept(c);
+			return Product.ACTUAL_MEDICINAL_PRODUCT.isAProduct(c);
 		}
 
 		/**
@@ -475,7 +475,7 @@ public class Semantic {
 		 */
 		public static Optional<Concept> getTf(Concept amp) {
 			return amp.getParentConcepts().stream()
-					.filter(parent -> Product.TRADE_FAMILY.isAConcept(parent))
+					.filter(parent -> Product.TRADE_FAMILY.isAProduct(parent))
 					.findFirst();
 		}
 
@@ -506,7 +506,7 @@ public class Semantic {
 		 */
 		public static Optional<Concept> getVmp(Concept amp) {
 			return amp.getParentConcepts().stream()
-					.filter(parent -> Product.VIRTUAL_MEDICINAL_PRODUCT.isAConcept(parent))
+					.filter(parent -> Product.VIRTUAL_MEDICINAL_PRODUCT.isAProduct(parent))
 					.findFirst();
 		}
 		public Optional<Vmp> getVmp() {
@@ -538,7 +538,7 @@ public class Semantic {
 		}
 
 		public static boolean isA(Concept c) {
-			return Product.TRADE_FAMILY.isAConcept(c);
+			return Product.TRADE_FAMILY.isAProduct(c);
 		}
 
 		/**
@@ -549,7 +549,7 @@ public class Semantic {
 		 */
 		public static Stream<Concept> getAmps(Concept tf) {
 			return tf.getChildConcepts().stream()
-					.filter(child -> Product.ACTUAL_MEDICINAL_PRODUCT.isAConcept(child));
+					.filter(child -> Product.ACTUAL_MEDICINAL_PRODUCT.isAProduct(child));
 		}
 
 		public Stream<Amp> getAmps() {
@@ -579,7 +579,7 @@ public class Semantic {
 		}
 
 		public static boolean isA(Concept c) {
-			return Product.VIRTUAL_MEDICINAL_PRODUCT_PACK.isAConcept(c);
+			return Product.VIRTUAL_MEDICINAL_PRODUCT_PACK.isAProduct(c);
 		}
 
 		/**
@@ -612,7 +612,7 @@ public class Semantic {
 		 */
 		public static Stream<Concept>getAmpps(Concept vmpp) {
 			return vmpp.getChildConcepts().stream()
-					.filter(child -> Product.ACTUAL_MEDICINAL_PRODUCT_PACK.isAConcept(child));
+					.filter(child -> Product.ACTUAL_MEDICINAL_PRODUCT_PACK.isAProduct(child));
 		}	
 		public Stream<Ampp> getAmpps() {
 			return getAmpps(_concept).map(Ampp::new);
@@ -630,7 +630,7 @@ public class Semantic {
 		}
 
 		public static boolean isA(Concept c) {
-			return Product.ACTUAL_MEDICINAL_PRODUCT_PACK.isAConcept(c);
+			return Product.ACTUAL_MEDICINAL_PRODUCT_PACK.isAProduct(c);
 		}
 
 		/**
@@ -658,7 +658,7 @@ public class Semantic {
 		 */
 		public static Optional<Concept> getVmpp(Concept ampp) {
 			return ampp.getParentConcepts().stream()
-					.filter(parent -> Product.VIRTUAL_MEDICINAL_PRODUCT_PACK.isAConcept(parent))
+					.filter(parent -> Product.VIRTUAL_MEDICINAL_PRODUCT_PACK.isAProduct(parent))
 					.findFirst();
 		}
 
