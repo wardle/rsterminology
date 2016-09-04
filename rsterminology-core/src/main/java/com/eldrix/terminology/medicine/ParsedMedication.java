@@ -1,6 +1,7 @@
 package com.eldrix.terminology.medicine;
 
 import java.math.BigDecimal;
+import java.util.Objects;
 
 import com.eldrix.terminology.medicine.Medication.Frequency;
 import com.eldrix.terminology.medicine.Medication.Route;
@@ -11,7 +12,7 @@ import com.eldrix.terminology.medicine.Medication.Units;
  *
  * Equality checks compare the core attributes which should allow
  * appropriate round-tripping when a medication is converted into a string
- * and then re-parsed. This allows a list of medications to be used in NSSet
+ * and then re-parsed. This allows a list of medications to be used in a set
  * and thus allow intersections and other logic.
  *
  * @author mark
@@ -35,7 +36,7 @@ public class ParsedMedication implements Comparable<ParsedMedication> {
 			BigDecimal dose, Units units, Frequency frequency, Route route, boolean asRequired,
 			String notes) {
 		_conceptId = conceptId;
-		_drugName = drugName;
+		_drugName = Objects.requireNonNull(drugName);
 		_mappedDrugName = mappedDrugName;
 		_dose = dose;
 		_units = units;
