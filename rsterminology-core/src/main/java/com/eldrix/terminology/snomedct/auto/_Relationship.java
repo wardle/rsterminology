@@ -24,9 +24,6 @@ public abstract class _Relationship extends CayenneDataObject {
     public static final Property<Integer> REFINABILITY = new Property<Integer>("refinability");
     public static final Property<String> RELATIONSHIP_GROUP = new Property<String>("relationshipGroup");
     public static final Property<Long> RELATIONSHIP_ID = new Property<Long>("relationshipId");
-    public static final Property<Long> RELATIONSHIP_TYPE_CONCEPT_ID = new Property<Long>("relationshipTypeConceptId");
-    public static final Property<Long> SOURCE_CONCEPT_ID = new Property<Long>("sourceConceptId");
-    public static final Property<Long> TARGET_CONCEPT_ID = new Property<Long>("targetConceptId");
     public static final Property<Concept> RELATIONSHIP_TYPE_CONCEPT = new Property<Concept>("relationshipTypeConcept");
     public static final Property<Concept> SOURCE_CONCEPT = new Property<Concept>("sourceConcept");
     public static final Property<Concept> TARGET_CONCEPT = new Property<Concept>("targetConcept");
@@ -64,27 +61,6 @@ public abstract class _Relationship extends CayenneDataObject {
     }
     public Long getRelationshipId() {
         return (Long)readProperty("relationshipId");
-    }
-
-    public void setRelationshipTypeConceptId(Long relationshipTypeConceptId) {
-        writeProperty("relationshipTypeConceptId", relationshipTypeConceptId);
-    }
-    public Long getRelationshipTypeConceptId() {
-        return (Long)readProperty("relationshipTypeConceptId");
-    }
-
-    public void setSourceConceptId(Long sourceConceptId) {
-        writeProperty("sourceConceptId", sourceConceptId);
-    }
-    public Long getSourceConceptId() {
-        return (Long)readProperty("sourceConceptId");
-    }
-
-    public void setTargetConceptId(Long targetConceptId) {
-        writeProperty("targetConceptId", targetConceptId);
-    }
-    public Long getTargetConceptId() {
-        return (Long)readProperty("targetConceptId");
     }
 
     public void setRelationshipTypeConcept(Concept relationshipTypeConcept) {

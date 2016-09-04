@@ -115,9 +115,6 @@
 		<obj-attribute name="refinability" type="java.lang.Integer" db-attribute-path="refinability"/>
 		<obj-attribute name="relationshipGroup" type="java.lang.String" db-attribute-path="relationship_group"/>
 		<obj-attribute name="relationshipId" type="java.lang.Long" db-attribute-path="relationship_id"/>
-		<obj-attribute name="relationshipTypeConceptId" type="java.lang.Long" db-attribute-path="relationship_type_concept_id"/>
-		<obj-attribute name="sourceConceptId" type="java.lang.Long" db-attribute-path="source_concept_id"/>
-		<obj-attribute name="targetConceptId" type="java.lang.Long" db-attribute-path="target_concept_id"/>
 	</obj-entity>
 	<db-relationship name="childConcept" source="t_cached_parent_concepts" target="t_concept" toDependentPK="true" toMany="false">
 		<db-attribute-pair source="child_concept_id" target="concept_id"/>
