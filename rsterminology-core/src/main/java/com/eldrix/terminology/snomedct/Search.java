@@ -370,6 +370,22 @@ public class Search {
 		}
 
 		/**
+		 * Convenience method to return the top hit from a search directly.
+		 * @return
+		 * @throws CorruptIndexException
+		 * @throws IOException
+		 */
+		public ResultItem searchForSingle() throws CorruptIndexException, IOException {
+			TopDocs docs = searchForTopDocs();
+			ScoreDoc[] sds = docs.scoreDocs;
+			if (docs.totalHits > 0 && sds.length > 0) {
+				Document doc = _searcher.searcher().doc(sds[0].doc);
+				return new _ResultItem(doc);
+			}
+			return null;
+		}
+		
+		/**
 		 * Search, returning the results as a list of concept identifiers.
 		 * There will be no duplicates in the returned results.
 		 * @return
@@ -577,13 +593,12 @@ public class Search {
 			 * @return
 			 */
 			public Request build() {
-				if (_query == null) {
-					throw new NullPointerException("Must specify a query to create a request");
-				}
 				Query query = _query;
 				if (_filters != null && _filters.size() > 0) {
 					BooleanQuery.Builder bqBuilder = new BooleanQuery.Builder();
-					bqBuilder.add(_query, Occur.MUST);		// add the basic query
+					if (_query != null) {
+						bqBuilder.add(_query, Occur.MUST);		// add the basic query if it exists
+					}
 					for (Query q : _filters) {
 						bqBuilder.add(q, Occur.FILTER);		// and add each filter as a filter.
 					}
@@ -732,6 +747,9 @@ public class Search {
 			return null;
 		}
 		return new _ResultItem(concept);
+	}
+	public static ResultItem resultForConcept(long conceptId, String term, String preferredTerm) {
+		return new _ResultItem(term, conceptId, preferredTerm);
 	}
 
 

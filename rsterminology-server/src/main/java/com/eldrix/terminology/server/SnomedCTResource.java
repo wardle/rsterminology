@@ -81,9 +81,11 @@ public class SnomedCTResource {
 			@Context UriInfo uriInfo) {
 		try {
 			Search.Request.Builder b = Search.getInstance().newBuilder();
-			b.searchFor(search)
-				.setMaxHits(maxHits)
-				.withRecursiveParent(recursiveParents);
+			b.setMaxHits(maxHits)
+			.withRecursiveParent(recursiveParents);
+			if (search != null && search.length() > 0) {
+				b.searchFor(search);
+			}
 			if (includeInactive == 0) {
 				b.onlyActive();
 			}
