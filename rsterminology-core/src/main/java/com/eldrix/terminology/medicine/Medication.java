@@ -163,17 +163,22 @@ public class Medication {
 		abstract BigDecimal equivalentDailyDose(BigDecimal dose);
 	}
 
+	public enum PrescribingType {
+		DOSE_BASED,
+		PRODUCT_BASED;
+	}
+	
 	public enum Units {
-		MICROGRAM(258685003L, new String[] { "mcg" }, new BigDecimal("0.00001")),
-		MILLIGRAM(258684004L, new String[] { "mg" }, new BigDecimal("0.001")),
-		MILLILITRES(258773002L, new String[] { "ml" }, new BigDecimal("0.001")),
-		GRAM(258682000L, new String[] { "g", "gram" }, BigDecimal.ONE),
-		UNITS(408102007L, new String[] { "units", "u" }, BigDecimal.ONE),
-		TABLETS(385055001L, new String[] { "tablets", "tab", "t" }, BigDecimal.ONE),
-		PUFFS(415215001L, new String[] { "puffs", "puff", "p" }, BigDecimal.ONE),
-		NONE(408102007L, new String[] { "" }, BigDecimal.ONE);
+		MICROGRAM(PrescribingType.DOSE_BASED, 258685003L, new String[] { "mcg" }, new BigDecimal("0.00001")),
+		MILLIGRAM(PrescribingType.DOSE_BASED, 258684004L, new String[] { "mg" }, new BigDecimal("0.001")),
+		MILLILITRES(PrescribingType.PRODUCT_BASED, 258773002L, new String[] { "ml" }, new BigDecimal("0.001")),
+		GRAM(PrescribingType.DOSE_BASED, 258682000L, new String[] { "g", "gram" }, BigDecimal.ONE),
+		UNITS(PrescribingType.PRODUCT_BASED, 408102007L, new String[] { "units", "u" }, BigDecimal.ONE),
+		TABLETS(PrescribingType.PRODUCT_BASED, 385055001L, new String[] { "tablets", "tab", "t" }, BigDecimal.ONE),
+		PUFFS(PrescribingType.PRODUCT_BASED, 415215001L, new String[] { "puffs", "puff", "p" }, BigDecimal.ONE),
+		NONE(PrescribingType.PRODUCT_BASED, 408102007L, new String[] { "" }, BigDecimal.ONE);
 		
-
+		private final PrescribingType _prescribingType;
 		private final long _conceptId;
 		private final String[] _abbreviations;
 		public final BigDecimal conversion;
@@ -189,10 +194,15 @@ public class Medication {
 			}
 		};
 
-		Units(long conceptId, String[] abbrev, BigDecimal convert) {
+		Units(PrescribingType prescribingType, long conceptId, String[] abbrev, BigDecimal convert) {
+			_prescribingType = prescribingType;
 			_conceptId = conceptId;
 			_abbreviations = abbrev;
 			conversion = convert;
+		}
+
+		public PrescribingType prescribingType() {
+			return _prescribingType;
 		}
 
 		public long conceptId() {
