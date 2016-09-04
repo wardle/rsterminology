@@ -142,7 +142,7 @@ public class Semantic {
 
 		protected final Concept _concept;
 
-		Dmd(Product product, Concept c) {
+		protected Dmd(Product product, Concept c) {
 			if (product == null || c == null) {
 				throw new NullPointerException("Product and concept mandatory.");
 			}
@@ -152,16 +152,6 @@ public class Semantic {
 			_concept = c;
 		}
 		
-		Dmd(Concept c) {
-			if (c == null) {
-				throw new NullPointerException("Concept mandatory");
-			}
-			Product p = Product.productForConcept(c);
-			if (p == null) {
-				throw new IllegalArgumentException("Concept is not a DMD product");
-			}
-			_concept = c;
-		}
 		public Concept getConcept() {
 			return _concept;
 		}
