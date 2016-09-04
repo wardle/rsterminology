@@ -4,6 +4,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Date;
 import java.util.List;
 
 import org.apache.cayenne.ObjectContext;
@@ -89,10 +90,12 @@ public class ParseRf1 {
 		final Class<T> _clazz;
 		final String _firstColumnName;
 		final int _numberColumns;
+		final Date _dateCreated;
 		DefaultRf1FileParser(Class<T> clazz, String firstColumnName, int numberColumns) {
 			_firstColumnName = firstColumnName;
 			_numberColumns = numberColumns;
 			_clazz = clazz;
+			_dateCreated = new Date();
 		}
 
 		@Override
@@ -219,6 +222,7 @@ public class ParseRf1 {
 		}
 		@Override
 		void update(Relationship r, String[] csv) {
+			r.setDateUpdated(_dateCreated);
 			r.setRelationshipId(relationshipId(csv));
 			r.setCharacteristicType(characteristicType(csv));
 			r.setRefinability(refinability(csv));

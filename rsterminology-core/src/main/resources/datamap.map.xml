@@ -58,6 +58,7 @@
 	</db-entity>
 	<db-entity name="t_relationship" schema="public">
 		<db-attribute name="characteristic_type" type="INTEGER" isMandatory="true" length="10"/>
+		<db-attribute name="date_updated" type="DATE" isMandatory="true"/>
 		<db-attribute name="refinability" type="INTEGER" isMandatory="true" length="10"/>
 		<db-attribute name="relationship_group" type="VARCHAR" isMandatory="true" length="10"/>
 		<db-attribute name="relationship_id" type="BIGINT" isPrimaryKey="true" isMandatory="true" length="19"/>
@@ -110,6 +111,7 @@
 	</obj-entity>
 	<obj-entity name="Relationship" className="com.eldrix.terminology.snomedct.Relationship" dbEntityName="t_relationship">
 		<obj-attribute name="characteristicType" type="java.lang.Integer" db-attribute-path="characteristic_type"/>
+		<obj-attribute name="dateUpdated" type="java.util.Date" db-attribute-path="date_updated"/>
 		<obj-attribute name="refinability" type="java.lang.Integer" db-attribute-path="refinability"/>
 		<obj-attribute name="relationshipGroup" type="java.lang.String" db-attribute-path="relationship_group"/>
 		<obj-attribute name="relationshipId" type="java.lang.Long" db-attribute-path="relationship_id"/>

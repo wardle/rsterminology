@@ -1,5 +1,7 @@
 package com.eldrix.terminology.snomedct.auto;
 
+import java.util.Date;
+
 import org.apache.cayenne.CayenneDataObject;
 import org.apache.cayenne.exp.Property;
 
@@ -18,6 +20,7 @@ public abstract class _Relationship extends CayenneDataObject {
     public static final String RELATIONSHIP_ID_PK_COLUMN = "relationship_id";
 
     public static final Property<Integer> CHARACTERISTIC_TYPE = new Property<Integer>("characteristicType");
+    public static final Property<Date> DATE_UPDATED = new Property<Date>("dateUpdated");
     public static final Property<Integer> REFINABILITY = new Property<Integer>("refinability");
     public static final Property<String> RELATIONSHIP_GROUP = new Property<String>("relationshipGroup");
     public static final Property<Long> RELATIONSHIP_ID = new Property<Long>("relationshipId");
@@ -33,6 +36,13 @@ public abstract class _Relationship extends CayenneDataObject {
     }
     public Integer getCharacteristicType() {
         return (Integer)readProperty("characteristicType");
+    }
+
+    public void setDateUpdated(Date dateUpdated) {
+        writeProperty("dateUpdated", dateUpdated);
+    }
+    public Date getDateUpdated() {
+        return (Date)readProperty("dateUpdated");
     }
 
     public void setRefinability(Integer refinability) {
