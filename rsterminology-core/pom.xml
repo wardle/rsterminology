@@ -10,7 +10,7 @@
 
 	<groupId>com.eldrix.rsterminology.core</groupId>
 	<artifactId>rsterminology-core</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>1.0-SNAPSHOT</version>
 	<name>RSTerminology</name>
 	<description>A terminology service</description>
 
@@ -76,6 +76,7 @@
 			<plugin>
 				<groupId>org.apache.cayenne.plugins</groupId>
 				<artifactId>maven-cayenne-plugin</artifactId>
+        <version>4.0.M3</version>
 				<executions>
 					<execution>
 						<id>cgen</id>
