@@ -3,15 +3,9 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
-	<parent>
-		<groupId>com.eldrix.rsterminology</groupId>
-		<artifactId>rsterminology</artifactId>
-		<version>0.1</version>
-	</parent>
-
 	<groupId>com.eldrix.rsterminology.server</groupId>
 	<artifactId>rsterminology-server</artifactId>
-	<version>0.2-SNAPSHOT</version>
+	<version>1.0-SNAPSHOT</version>
 
 	<name>RSTerminology server</name>
 	<description>A SNOMED-CT terminology server.</description>
@@ -142,7 +136,7 @@
 		<dependency>
 			<groupId>com.eldrix.rsterminology.core</groupId>
 			<artifactId>rsterminology-core</artifactId>
-			<version>0.0.1-SNAPSHOT</version>
+			<version>1.0-SNAPSHOT</version>
 		</dependency>
 
 	</dependencies>
