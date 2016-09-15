@@ -60,7 +60,7 @@ public class Description extends _Description {
 		PREFERRED(1, "Preferred"),
 		SYNONYM(2, "Synonym"),
 		FULLY_SPECIFIED_NAME(3, "Fully specified name");
-		int code;
+		public final int code;
 		String name;
 		Type(int code, String name) {
 			this.code = code;
