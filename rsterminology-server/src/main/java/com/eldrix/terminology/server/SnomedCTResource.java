@@ -17,6 +17,7 @@ import javax.ws.rs.core.UriInfo;
 
 import org.apache.cayenne.DataRow;
 import org.apache.cayenne.ObjectContext;
+import org.apache.cayenne.exp.Expression;
 import org.apache.cayenne.query.ObjectSelect;
 import org.apache.cayenne.query.SelectQuery;
 import org.apache.lucene.index.CorruptIndexException;
@@ -141,14 +142,19 @@ public class SnomedCTResource {
 			List<Long> conceptIds = b.build().searchForConcepts();
 			ICayennePersister cayenne = LinkRestRuntime.service(ICayennePersister.class, config);
 			ObjectContext context = cayenne.newContext();
-			SelectQuery<DataRow> select = SelectQuery.dataRowQuery(Description.class, Description.CONCEPT_ID.in(conceptIds));
+			Expression qual = Description.CONCEPT_ID.in(conceptIds); 
+			if (includeFsn == 0) {
+				qual = qual.andExp(Description.DESCRIPTION_TYPE_CODE.ne(Description.Type.FULLY_SPECIFIED_NAME.code));
+			}
+			SelectQuery<DataRow> select = SelectQuery.dataRowQuery(Description.class, qual);
 			List<DataRow> data = select.select(context);
-			List<String> result = data.stream().map(row -> (String) row.get(Description.TERM.getName())).collect(Collectors.toList());
+			List<String> result = data.stream()
+					.map(row -> (String) row.get(Description.TERM.getName()))
+					.collect(Collectors.toList());
 			return DataResponse.forObjects(result);
 		} catch (IOException e) {
 			e.printStackTrace();	
 			throw new LinkRestException(Status.INTERNAL_SERVER_ERROR, e.getLocalizedMessage(), e);
 		}
 	}
-
 }
