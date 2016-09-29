@@ -5,7 +5,7 @@ jdbc:
 
 cayenne:
   datasource: rsdb
-  createSchema: false
+  createSchema: true
 
 log:
   level: none
