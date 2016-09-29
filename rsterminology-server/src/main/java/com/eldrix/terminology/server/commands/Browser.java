@@ -17,10 +17,10 @@ import com.eldrix.terminology.snomedct.Search.ResultItem;
 import com.eldrix.terminology.snomedct.Semantic.Dmd;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
-import com.nhl.bootique.cli.Cli;
-import com.nhl.bootique.command.CommandMetadata;
-import com.nhl.bootique.command.CommandOutcome;
-import com.nhl.bootique.command.CommandWithMetadata;
+import io.bootique.cli.Cli;
+import io.bootique.command.CommandMetadata;
+import io.bootique.command.CommandOutcome;
+import io.bootique.command.CommandWithMetadata;
 
 /**
  * This is a very simply command-line SNOMED-CT browser.

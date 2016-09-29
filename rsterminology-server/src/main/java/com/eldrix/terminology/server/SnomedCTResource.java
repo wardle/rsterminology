@@ -52,7 +52,7 @@ public class SnomedCTResource {
 	 */
 	@GET
 	@Path("concepts/{conceptId}")
-	public DataResponse<Concept> getOne(@PathParam("conceptId") int id, @Context UriInfo uriInfo) {
+	public DataResponse<Concept> getOne(@PathParam("conceptId") long id, @Context UriInfo uriInfo) {
 		return LinkRest.select(Concept.class, config)
 				.byId(id).uri(uriInfo)
 				.selectOne();
@@ -147,7 +147,7 @@ public class SnomedCTResource {
 				qual = qual.andExp(Description.DESCRIPTION_TYPE_CODE.ne(Description.Type.FULLY_SPECIFIED_NAME.code));
 			}
 			SelectQuery<DataRow> select = SelectQuery.dataRowQuery(Description.class, qual);
-			List<DataRow> data = select.select(context);
+			List<DataRow> data = context.select(select);
 			List<String> result = data.stream()
 					.map(row -> (String) row.get(Description.TERM.getName()))
 					.collect(Collectors.toList());

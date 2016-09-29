@@ -26,8 +26,8 @@ import org.junit.Test;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Module;
-import com.nhl.bootique.Bootique;
-import com.nhl.bootique.jersey.JerseyModule;
+import io.bootique.Bootique;
+import io.bootique.jersey.JerseyModule;
 
 public class TestServer {
 	final static ExecutorService executor = Executors.newSingleThreadExecutor();

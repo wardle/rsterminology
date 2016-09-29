@@ -7,10 +7,10 @@ import com.eldrix.terminology.server.commands.ImportRf1;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.multibindings.Multibinder;
-import com.nhl.bootique.BQCoreModule;
-import com.nhl.bootique.Bootique;
-import com.nhl.bootique.command.Command;
-import com.nhl.bootique.jersey.JerseyModule;
+import io.bootique.BQCoreModule;
+import io.bootique.Bootique;
+import io.bootique.command.Command;
+import io.bootique.jersey.JerseyModule;
 
 /**
  * A runnable Bootique (http://bootique.io/) application.
@@ -19,14 +19,9 @@ public class SnomedCTApplication implements Module {
 
 	public static void main(String[] args) throws Exception {
 
-		Module jersey = JerseyModule.builder()
-				.packageRoot(SnomedCTResource.class)
-				.resource(ProjectResource.class)
-				.build();
 		Bootique.app(args)
-		.module(SnomedCTApplication.class)
-		.module(jersey)
 		.autoLoadModules()
+		.module(SnomedCTApplication.class)
 		.run();
 	}
 
@@ -37,5 +32,9 @@ public class SnomedCTApplication implements Module {
 		multibinder.addBinding().to(BuildParentCache.class);
 		multibinder.addBinding().to(ImportRf1.class);
 		multibinder.addBinding().to(Browser.class);
+		
+		Multibinder<Object> jersey = JerseyModule.contributeResources(binder);
+		jersey.addBinding().to(SnomedCTResource.class);
+		jersey.addBinding().to(ProjectResource.class);
 	}
 }
