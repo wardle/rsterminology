@@ -1,5 +1,6 @@
 package com.eldrix.terminology.server;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -19,6 +20,7 @@ import org.apache.cayenne.DataRow;
 import org.apache.cayenne.ObjectContext;
 import org.apache.cayenne.exp.Expression;
 import org.apache.cayenne.query.ObjectSelect;
+import org.apache.cayenne.query.Ordering;
 import org.apache.cayenne.query.SelectQuery;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.queryparser.classic.ParseException;
@@ -26,6 +28,7 @@ import org.apache.lucene.queryparser.classic.ParseException;
 import com.eldrix.terminology.medicine.ParsedMedication;
 import com.eldrix.terminology.medicine.ParsedMedicationBuilder;
 import com.eldrix.terminology.snomedct.Concept;
+import com.eldrix.terminology.snomedct.CrossMapTable;
 import com.eldrix.terminology.snomedct.Description;
 import com.eldrix.terminology.snomedct.Project;
 import com.eldrix.terminology.snomedct.Search;
@@ -57,6 +60,12 @@ public class SnomedCTResource {
 				.byId(id).uri(uriInfo)
 				.selectOne();
 	}
+
+	@Path("concepts/{conceptId}/crossmaps")
+	public CrossMapSubResource crossMaps(@PathParam("conceptId") long conceptId) {
+		return new CrossMapSubResource(config, conceptId);
+	}
+
 
 	/**
 	 * Search for a concept using the search terms provided.
