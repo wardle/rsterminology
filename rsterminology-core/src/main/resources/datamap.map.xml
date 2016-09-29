@@ -17,6 +17,34 @@
 		<db-attribute name="is_primitive" type="INTEGER" isMandatory="true" length="10"/>
 		<db-attribute name="snomed_id" type="VARCHAR" isMandatory="true" length="10"/>
 	</db-entity>
+	<db-entity name="t_cross_map_set" schema="public">
+		<db-attribute name="name" type="VARCHAR" isMandatory="true" length="255"/>
+		<db-attribute name="realm_id" type="VARCHAR" length="24"/>
+		<db-attribute name="rule_type" type="INTEGER"/>
+		<db-attribute name="scheme_id" type="VARCHAR" length="64"/>
+		<db-attribute name="scheme_name" type="VARCHAR" length="255"/>
+		<db-attribute name="scheme_version" type="VARCHAR" length="12"/>
+		<db-attribute name="separator" type="VARCHAR" length="1"/>
+		<db-attribute name="set_id" type="BIGINT" isPrimaryKey="true" isMandatory="true"/>
+		<db-attribute name="type" type="INTEGER" isMandatory="true"/>
+	</db-entity>
+	<db-entity name="t_cross_map_table" schema="public">
+		<db-attribute name="advice" type="VARCHAR" length="255"/>
+		<db-attribute name="concept_id" type="BIGINT" isPrimaryKey="true" isMandatory="true"/>
+		<db-attribute name="date_updated" type="TIMESTAMP"/>
+		<db-attribute name="option" type="INTEGER" isPrimaryKey="true" isMandatory="true"/>
+		<db-attribute name="priority" type="INTEGER" isMandatory="true"/>
+		<db-attribute name="rule" type="VARCHAR" length="255"/>
+		<db-attribute name="set_id" type="BIGINT" isPrimaryKey="true" isMandatory="true"/>
+		<db-attribute name="target_id" type="BIGINT" isMandatory="true"/>
+	</db-entity>
+	<db-entity name="t_cross_map_target" schema="public">
+		<db-attribute name="advice" type="VARCHAR" length="255"/>
+		<db-attribute name="codes" type="VARCHAR" length="255"/>
+		<db-attribute name="rule" type="VARCHAR" length="255"/>
+		<db-attribute name="scheme_id" type="VARCHAR" isMandatory="true" length="64"/>
+		<db-attribute name="target_id" type="BIGINT" isPrimaryKey="true" isMandatory="true"/>
+	</db-entity>
 	<db-entity name="t_description" schema="public">
 		<db-attribute name="concept_id" type="BIGINT" isMandatory="true" length="19"/>
 		<db-attribute name="description_id" type="BIGINT" isPrimaryKey="true" isMandatory="true" length="19"/>
@@ -73,6 +101,34 @@
 		<obj-attribute name="fullySpecifiedName" type="java.lang.String" db-attribute-path="fully_specified_name"/>
 		<obj-attribute name="isPrimitive" type="java.lang.Integer" db-attribute-path="is_primitive"/>
 		<obj-attribute name="snomedId" type="java.lang.String" db-attribute-path="snomed_id"/>
+	</obj-entity>
+	<obj-entity name="CrossMapSet" className="com.eldrix.terminology.snomedct.CrossMapSet" dbEntityName="t_cross_map_set">
+		<obj-attribute name="name" type="java.lang.String" db-attribute-path="name"/>
+		<obj-attribute name="realmId" type="java.lang.String" db-attribute-path="realm_id"/>
+		<obj-attribute name="ruleType" type="java.lang.Integer" db-attribute-path="rule_type"/>
+		<obj-attribute name="schemeId" type="java.lang.String" db-attribute-path="scheme_id"/>
+		<obj-attribute name="schemeName" type="java.lang.String" db-attribute-path="scheme_name"/>
+		<obj-attribute name="schemeVersion" type="java.lang.String" db-attribute-path="scheme_version"/>
+		<obj-attribute name="separator" type="java.lang.String" db-attribute-path="separator"/>
+		<obj-attribute name="setId" type="java.lang.Long" db-attribute-path="set_id"/>
+		<obj-attribute name="type" type="java.lang.Integer" db-attribute-path="type"/>
+	</obj-entity>
+	<obj-entity name="CrossMapTable" className="com.eldrix.terminology.snomedct.CrossMapTable" dbEntityName="t_cross_map_table">
+		<obj-attribute name="advice" type="java.lang.String" db-attribute-path="advice"/>
+		<obj-attribute name="conceptId" type="java.lang.Long" db-attribute-path="concept_id"/>
+		<obj-attribute name="dateUpdated" type="java.util.Date" db-attribute-path="date_updated"/>
+		<obj-attribute name="mapSetId" type="java.lang.Long" db-attribute-path="set_id"/>
+		<obj-attribute name="option" type="java.lang.Integer" db-attribute-path="option"/>
+		<obj-attribute name="priority" type="java.lang.Integer" db-attribute-path="priority"/>
+		<obj-attribute name="rule" type="java.lang.String" db-attribute-path="rule"/>
+		<obj-attribute name="targetId" type="java.lang.Long" db-attribute-path="target_id"/>
+	</obj-entity>
+	<obj-entity name="CrossMapTarget" className="com.eldrix.terminology.snomedct.CrossMapTarget" dbEntityName="t_cross_map_target">
+		<obj-attribute name="advice" type="java.lang.String" db-attribute-path="advice"/>
+		<obj-attribute name="codes" type="java.lang.String" db-attribute-path="codes"/>
+		<obj-attribute name="rule" type="java.lang.String" db-attribute-path="rule"/>
+		<obj-attribute name="schemeId" type="java.lang.String" db-attribute-path="scheme_id"/>
+		<obj-attribute name="targetId" type="java.lang.Long" db-attribute-path="target_id"/>
 	</obj-entity>
 	<obj-entity name="Description" className="com.eldrix.terminology.snomedct.Description" dbEntityName="t_description">
 		<obj-attribute name="conceptId" type="java.lang.Long" db-attribute-path="concept_id"/>
@@ -131,14 +187,26 @@
 	<db-relationship name="childRelationships" source="t_concept" target="t_relationship" toMany="true">
 		<db-attribute-pair source="concept_id" target="target_concept_id"/>
 	</db-relationship>
+	<db-relationship name="cross_maps" source="t_concept" target="t_cross_map_table" toMany="true">
+		<db-attribute-pair source="concept_id" target="concept_id"/>
+	</db-relationship>
 	<db-relationship name="descriptions" source="t_concept" target="t_description" toMany="true">
 		<db-attribute-pair source="concept_id" target="concept_id"/>
 	</db-relationship>
 	<db-relationship name="parentRelationships" source="t_concept" target="t_relationship" toMany="true">
 		<db-attribute-pair source="concept_id" target="source_concept_id"/>
 	</db-relationship>
-	<db-relationship name="untitledRel" source="t_concept" target="t_project_concept" toDependentPK="true" toMany="true">
-		<db-attribute-pair source="concept_id" target="conceptconceptid"/>
+	<db-relationship name="tables" source="t_cross_map_set" target="t_cross_map_table" toMany="true">
+		<db-attribute-pair source="set_id" target="set_id"/>
+	</db-relationship>
+	<db-relationship name="concept" source="t_cross_map_table" target="t_concept" toMany="false">
+		<db-attribute-pair source="concept_id" target="concept_id"/>
+	</db-relationship>
+	<db-relationship name="set" source="t_cross_map_table" target="t_cross_map_set" toMany="false">
+		<db-attribute-pair source="set_id" target="set_id"/>
+	</db-relationship>
+	<db-relationship name="target" source="t_cross_map_table" target="t_cross_map_target" toMany="false">
+		<db-attribute-pair source="target_id" target="target_id"/>
 	</db-relationship>
 	<db-relationship name="concept" source="t_description" target="t_concept" toMany="false">
 		<db-attribute-pair source="concept_id" target="concept_id"/>
@@ -168,10 +236,15 @@
 		<db-attribute-pair source="target_concept_id" target="concept_id"/>
 	</db-relationship>
 	<obj-relationship name="childRelationships" source="Concept" target="Relationship" deleteRule="Deny" db-relationship-path="childRelationships"/>
+	<obj-relationship name="crossMaps" source="Concept" target="CrossMapTable" deleteRule="Deny" db-relationship-path="cross_maps"/>
 	<obj-relationship name="descriptions" source="Concept" target="Description" deleteRule="Deny" db-relationship-path="descriptions"/>
 	<obj-relationship name="parentRelationships" source="Concept" target="Relationship" deleteRule="Deny" db-relationship-path="parentRelationships"/>
 	<obj-relationship name="recursiveChildConcepts" source="Concept" target="Concept" deleteRule="Deny" db-relationship-path="cachedChildConcepts.childConcept"/>
 	<obj-relationship name="recursiveParentConcepts" source="Concept" target="Concept" deleteRule="Deny" db-relationship-path="cachedParentConcepts.parentConcept"/>
+	<obj-relationship name="tables" source="CrossMapSet" target="CrossMapTable" deleteRule="Deny" db-relationship-path="tables"/>
+	<obj-relationship name="concept" source="CrossMapTable" target="Concept" deleteRule="Nullify" db-relationship-path="concept"/>
+	<obj-relationship name="set" source="CrossMapTable" target="CrossMapSet" deleteRule="Nullify" db-relationship-path="set"/>
+	<obj-relationship name="target" source="CrossMapTable" target="CrossMapTarget" deleteRule="Deny" db-relationship-path="target"/>
 	<obj-relationship name="concept" source="Description" target="Concept" deleteRule="Nullify" db-relationship-path="concept"/>
 	<obj-relationship name="children" source="Project" target="Project" deleteRule="Deny" db-relationship-path="children"/>
 	<obj-relationship name="commonConcepts" source="Project" target="Concept" deleteRule="Deny" db-relationship-path="commonConcepts.concept"/>

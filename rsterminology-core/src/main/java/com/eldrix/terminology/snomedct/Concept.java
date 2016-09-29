@@ -236,6 +236,7 @@ public class Concept extends _Concept {
 	 * basis.
 	 * @return
 	 */
+	@SuppressWarnings("unused")
 	private Set<Long> _getRecursiveParentsFromFetch() {
 		Set<Long> parents = new HashSet<>(ParentCache.fetchRecursiveParentsForConcept(getObjectContext(), getConceptId()));
 		return Collections.unmodifiableSet(parents);

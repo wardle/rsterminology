@@ -82,8 +82,22 @@
 							<goal>cgen</goal>
 						</goals>
 					</execution>
+					 <execution>
+      		    <id>cdbgen</id>
+      		    <configuration>
+      			<map>${project.build.sourceDirectory}/../resources/datamap.map.xml</map>
+                        <adapter>org.apache.cayenne.dba.postgres.PostgresAdapter</adapter>
+                        <driver>org.postgresql.Driver</driver>
+                        <url>jdbc:postgresql:rsdb</url>
+                        <username>mark</username>
+      		    </configuration>
+      		    <goals>
+      			<goal>cdbgen</goal>
+      		    </goals>
+      		</execution>
 				</executions>
 			</plugin>
+			
 		</plugins>
 	</build>
 </project>

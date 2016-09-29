@@ -6,6 +6,7 @@ import org.apache.cayenne.CayenneDataObject;
 import org.apache.cayenne.exp.Property;
 
 import com.eldrix.terminology.snomedct.Concept;
+import com.eldrix.terminology.snomedct.CrossMapTable;
 import com.eldrix.terminology.snomedct.Description;
 import com.eldrix.terminology.snomedct.Relationship;
 
@@ -28,6 +29,7 @@ public abstract class _Concept extends CayenneDataObject {
     public static final Property<Integer> IS_PRIMITIVE = new Property<Integer>("isPrimitive");
     public static final Property<String> SNOMED_ID = new Property<String>("snomedId");
     public static final Property<List<Relationship>> CHILD_RELATIONSHIPS = new Property<List<Relationship>>("childRelationships");
+    public static final Property<List<CrossMapTable>> CROSS_MAPS = new Property<List<CrossMapTable>>("crossMaps");
     public static final Property<List<Description>> DESCRIPTIONS = new Property<List<Description>>("descriptions");
     public static final Property<List<Relationship>> PARENT_RELATIONSHIPS = new Property<List<Relationship>>("parentRelationships");
     public static final Property<List<Concept>> RECURSIVE_CHILD_CONCEPTS = new Property<List<Concept>>("recursiveChildConcepts");
@@ -84,6 +86,18 @@ public abstract class _Concept extends CayenneDataObject {
     @SuppressWarnings("unchecked")
     public List<Relationship> getChildRelationships() {
         return (List<Relationship>)readProperty("childRelationships");
+    }
+
+
+    public void addToCrossMaps(CrossMapTable obj) {
+        addToManyTarget("crossMaps", obj, true);
+    }
+    public void removeFromCrossMaps(CrossMapTable obj) {
+        removeToManyTarget("crossMaps", obj, true);
+    }
+    @SuppressWarnings("unchecked")
+    public List<CrossMapTable> getCrossMaps() {
+        return (List<CrossMapTable>)readProperty("crossMaps");
     }
 
 

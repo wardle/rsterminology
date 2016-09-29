@@ -6,6 +6,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -434,8 +435,9 @@ public class Semantic {
 		 * TODO: not implemented
 		 */
 		public static BigDecimal getDose(Concept vmp) {
-			String term = vmp.getPreferredDescription().getTerm();
-			return null;
+			//String term = vmp.getPreferredDescription().getTerm();
+			throw new NotImplementedException();
+			//return null;
 		}
 		public BigDecimal getDose() {
 			return getDose(_concept);

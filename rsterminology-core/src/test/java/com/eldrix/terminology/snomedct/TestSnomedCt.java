@@ -9,6 +9,7 @@ import static org.junit.Assert.assertTrue;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import org.apache.cayenne.ObjectContext;
@@ -61,6 +62,21 @@ public class TestSnomedCt {
 		assertTrue(d.isActive());
 	}
 
+	@Test 
+	public void testCrossmaps() {
+		final long icd10 = 91000000146L;	
+		ObjectContext context = getRuntime().newContext();
+		ObjectSelect<Concept> q = ObjectSelect.query(Concept.class, Concept.CONCEPT_ID.eq(24700007L));
+		Concept ms = context.selectFirst(q);
+		Optional<String> msIcd10 = ms.getCrossMaps().stream()
+			.filter(cm -> cm.getMapSetId() == icd10)
+			.map(cm -> cm.getTarget().getCodes())
+			.findFirst();
+		if (msIcd10.isPresent()) {
+			assertEquals("G35X", msIcd10.get());
+		}
+	}
+	
 	@Test
 	public void testSearch() {
 		try {
