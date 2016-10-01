@@ -33,6 +33,7 @@ import com.eldrix.terminology.snomedct.CrossMapTable;
 import com.eldrix.terminology.snomedct.CrossMapTarget;
 import com.eldrix.terminology.snomedct.Description;
 import com.eldrix.terminology.snomedct.Project;
+import com.eldrix.terminology.snomedct.Relationship;
 import com.eldrix.terminology.snomedct.Search;
 import com.eldrix.terminology.snomedct.Search.ResultItem;
 import com.eldrix.terminology.snomedct.SearchUtilities;
@@ -63,6 +64,43 @@ public class ConceptResource {
 				.byId(id).uri(uriInfo)
 				.selectOne();
 	}
+
+	@GET
+	@Path("{conceptId}/descriptions")
+	public DataResponse<Description> descriptions(@PathParam("conceptId") long conceptId, @Context UriInfo uriInfo) {
+		return LinkRest.select(Description.class, config)
+				.toManyParent(Concept.class, conceptId, Concept.DESCRIPTIONS)
+				.uri(uriInfo)
+				.select();
+	}
+
+	@GET
+	@Path("{conceptId}/children")
+	public DataResponse<Relationship> children(@PathParam("conceptId") long conceptId, @Context UriInfo uriInfo) {
+		return LinkRest.select(Relationship.class, config)
+				.toManyParent(Concept.class, conceptId, Concept.CHILD_RELATIONSHIPS)
+				.uri(uriInfo)
+				.select();
+	}
+
+	@GET
+	@Path("{conceptId}/parents")
+	public DataResponse<Relationship> parents(@PathParam("conceptId") long conceptId, @Context UriInfo uriInfo) {
+		return LinkRest.select(Relationship.class, config)
+				.toManyParent(Concept.class, conceptId, Concept.PARENT_RELATIONSHIPS)
+				.uri(uriInfo)
+				.select();
+	}
+
+	@GET
+	@Path("{conceptId}/recursiveParents") 
+	public DataResponse<Concept> recursiveParents(@PathParam("conceptId") long conceptId, @Context UriInfo uriInfo) {
+		return LinkRest.select(Concept.class, config)
+				.toManyParent(Concept.class, conceptId, Concept.RECURSIVE_PARENT_CONCEPTS)
+				.uri(uriInfo)
+				.select();
+	}
+
 
 	@GET
 	@Path("{conceptId}/crossmaps")
