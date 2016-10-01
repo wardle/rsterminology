@@ -60,8 +60,8 @@ public class SearchResource {
 			@DefaultValue("138875005") @QueryParam("root") final List<Long> recursiveParents, 
 			@QueryParam("is") final List<Long> directParents, 
 			@DefaultValue("200") @QueryParam("maxHits") int maxHits,
-			@DefaultValue("0") @QueryParam("fsn") int includeFsn,
-			@DefaultValue("0") @QueryParam("inactive") int includeInactive,
+			@DefaultValue("false") @QueryParam("fsn") boolean includeFsn,
+			@DefaultValue("false") @QueryParam("inactive") boolean includeInactive,
 			@QueryParam("project") String project,
 			@Context UriInfo uriInfo) {
 		try {
@@ -71,10 +71,10 @@ public class SearchResource {
 			if (search != null && search.length() > 0) {
 				b.searchFor(search);
 			}
-			if (includeInactive == 0) {
+			if (!includeInactive) {
 				b.onlyActive();
 			}
-			if (includeFsn == 0) {
+			if (!includeFsn) {
 				b.withoutFullySpecifiedNames();
 			}
 			if (directParents.size() > 0) {
@@ -119,26 +119,29 @@ public class SearchResource {
 	public DataResponse<String> synonyms(@QueryParam("s") String search, 
 			@DefaultValue("138875005") @QueryParam("root") List<Long> roots,
 			@DefaultValue("200") @QueryParam("maxHits") int maxHits,
-			@DefaultValue("0") @QueryParam("fsn") int includeFsn,
-			@DefaultValue("0") @QueryParam("inactive") int includeInactive,
+			@DefaultValue("false") @QueryParam("fsn") boolean includeFsn,
+			@DefaultValue("false") @QueryParam("inactive") boolean includeInactive,
 			@Context UriInfo uriInfo) {
 		try {
 			Search.Request.Builder b = Search.getInstance().newBuilder()
 				.searchFor(search)
 				.setMaxHits(maxHits)
 				.withRecursiveParent(roots);
-			if (includeInactive == 0) {
+			if (!includeInactive) {
 				b.onlyActive();
 			}
-			if (includeFsn == 0) {
+			if (!includeFsn) {
 				b.withoutFullySpecifiedNames();
 			}
 			List<Long> conceptIds = b.build().searchForConcepts();
 			ICayennePersister cayenne = LinkRestRuntime.service(ICayennePersister.class, config);
 			ObjectContext context = cayenne.newContext();
 			Expression qual = Description.CONCEPT_ID.in(conceptIds); 
-			if (includeFsn == 0) {
+			if (!includeFsn) {
 				qual = qual.andExp(Description.DESCRIPTION_TYPE_CODE.ne(Description.Type.FULLY_SPECIFIED_NAME.code));
+			}
+			if (!includeInactive) {
+				qual = qual.andExp(Description.DESCRIPTION_STATUS_CODE.in(Description.Status.activeCodes()));
 			}
 			SelectQuery<DataRow> select = SelectQuery.dataRowQuery(Description.class, qual);
 			List<DataRow> data = context.select(select);
