@@ -206,7 +206,6 @@ public class TestSnomedCt {
 	public void testRequest() throws CorruptIndexException, IOException, ParseException {
 		ObjectContext context = getRuntime().newContext();
 		Search search = Search.getInstance();
-		int[] a = Concept.Status.activeCodes();
 		List<ResultItem> sAmlodipine = new Search.Request.Builder(search).searchByParsing("amlodip*").withFilters(Search.Filter.DMD_VTM_OR_TF, Search.Filter.CONCEPT_ACTIVE).setMaxHits(1).build().search();
 		assertEquals(1, sAmlodipine.size());
 		Concept amlodipine = ObjectSelect.query(Concept.class, Concept.CONCEPT_ID.eq(sAmlodipine.get(0).getConceptId())).selectOne(context);
