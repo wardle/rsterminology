@@ -23,6 +23,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.eldrix.terminology.server.resources.ConceptResource;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Module;
@@ -39,7 +40,7 @@ public class TestServer {
 	public static void startServer() throws InterruptedException {
 		executor.submit(() -> {
 			Module jersey = JerseyModule.builder()
-					.packageRoot(SnomedCTResource.class)
+					.packageRoot(ConceptResource.class)
 					.build();
 			Bootique.app(new String[] {"--config=run.yml", "--server"})
 			.module(SnomedCTApplication.class)

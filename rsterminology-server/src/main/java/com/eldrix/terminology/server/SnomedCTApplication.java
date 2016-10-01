@@ -4,6 +4,10 @@ import com.eldrix.terminology.server.commands.Browser;
 import com.eldrix.terminology.server.commands.BuildParentCache;
 import com.eldrix.terminology.server.commands.CreateIndex;
 import com.eldrix.terminology.server.commands.ImportRf1;
+import com.eldrix.terminology.server.resources.CrossMapResource;
+import com.eldrix.terminology.server.resources.ProjectResource;
+import com.eldrix.terminology.server.resources.SearchResource;
+import com.eldrix.terminology.server.resources.ConceptResource;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.multibindings.Multibinder;
@@ -34,7 +38,9 @@ public class SnomedCTApplication implements Module {
 		multibinder.addBinding().to(Browser.class);
 		
 		Multibinder<Object> jersey = JerseyModule.contributeResources(binder);
-		jersey.addBinding().to(SnomedCTResource.class);
+		jersey.addBinding().to(SearchResource.class);
+		jersey.addBinding().to(ConceptResource.class);
 		jersey.addBinding().to(ProjectResource.class);
+		jersey.addBinding().to(CrossMapResource.class);
 	}
 }
