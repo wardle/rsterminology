@@ -1,7 +1,8 @@
 package com.eldrix.terminology.snomedct;
 
-import java.util.EnumSet;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -29,9 +30,13 @@ public class Description extends _Description {
 		PENDING_MOVE(11, "Pending move", true);
 
 		private static final Map<Integer, Status> _lookup = new HashMap<Integer, Status>();
+		private static List<Integer> activeCodes = new ArrayList<>();
 		static {
-			for (Status st : EnumSet.allOf(Status.class)) {
+			for (Status st : Status.values()) {
 				_lookup.put(st.code, st);
+				if (st.isActive()) {
+					activeCodes.add(st.code);
+				}
 			}
 		};
 
@@ -52,6 +57,9 @@ public class Description extends _Description {
 		}
 		public static Optional<Status> getStatus(int code) {
 			return Optional.ofNullable(_lookup.get(code));
+		}
+		public static List<Integer> activeCodes() {
+			return activeCodes;
 		}
 	}
 

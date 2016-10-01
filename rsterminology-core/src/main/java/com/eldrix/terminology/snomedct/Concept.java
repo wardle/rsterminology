@@ -1,5 +1,6 @@
 package com.eldrix.terminology.snomedct;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -12,10 +13,10 @@ import java.util.stream.Collectors;
 import org.apache.cayenne.exp.Expression;
 import org.apache.cayenne.validation.BeanValidationFailure;
 import org.apache.cayenne.validation.ValidationResult;
-import org.apache.commons.lang3.ArrayUtils;
 
 import com.eldrix.terminology.snomedct.Semantic.RelationType;
 import com.eldrix.terminology.snomedct.auto._Concept;
+
 /**
  * A SNOMED CT clinical concept.
  * A concept is described by multiple descriptions.
@@ -58,14 +59,13 @@ public class Concept extends _Concept {
 		PENDING_MOVE(11, "Pending move", true);
 
 		private static final Map<Integer, Status> _lookup;
-		private static int[] activeCodes;
+		private static List<Integer> activeCodes = new ArrayList<>();
 		static {
 			_lookup = new HashMap<Integer, Status>();
-			activeCodes = new int[0];
 			for (Status st : Status.values()) {
 				_lookup.put(st.code, st);
 				if (st.isActive) {
-					activeCodes = ArrayUtils.add(activeCodes, st.code);
+					activeCodes.add(st.code);
 				}
 			}
 		};
@@ -77,7 +77,7 @@ public class Concept extends _Concept {
 			this.title = title;
 			this.isActive = isActive;
 		}		
-		public static int[] activeCodes() {
+		public static List<Integer> activeCodes() {
 			return activeCodes;
 		}
 	}
