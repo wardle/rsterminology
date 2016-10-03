@@ -12,8 +12,8 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Configuration;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.core.Response.Status;
+import javax.ws.rs.core.UriInfo;
 
 import org.apache.cayenne.DataRow;
 import org.apache.cayenne.ObjectContext;
@@ -28,8 +28,8 @@ import com.eldrix.terminology.medicine.ParsedMedicationBuilder;
 import com.eldrix.terminology.snomedct.Description;
 import com.eldrix.terminology.snomedct.Project;
 import com.eldrix.terminology.snomedct.Search;
-import com.eldrix.terminology.snomedct.SearchUtilities;
 import com.eldrix.terminology.snomedct.Search.ResultItem;
+import com.eldrix.terminology.snomedct.SearchUtilities;
 import com.nhl.link.rest.DataResponse;
 import com.nhl.link.rest.LinkRestException;
 import com.nhl.link.rest.runtime.LinkRestRuntime;
@@ -38,6 +38,7 @@ import com.nhl.link.rest.runtime.cayenne.ICayennePersister;
 @Path("snomedct")
 @Produces(MediaType.APPLICATION_JSON)
 public class SearchResource {
+	private static final String ERROR_NO_SEARCH_PARAMETER = "No search parameter specified";
 
 	@Context
 	private Configuration config;
@@ -64,6 +65,9 @@ public class SearchResource {
 			@DefaultValue("false") @QueryParam("inactive") boolean includeInactive,
 			@QueryParam("project") String project,
 			@Context UriInfo uriInfo) {
+		if (search == null || search.length() == 0) {
+			throw new LinkRestException(Status.BAD_REQUEST, ERROR_NO_SEARCH_PARAMETER);
+		}
 		try {
 			Search.Request.Builder b = Search.getInstance().newBuilder();
 			b.setMaxHits(maxHits)
@@ -93,10 +97,10 @@ public class SearchResource {
 			throw new LinkRestException(Status.INTERNAL_SERVER_ERROR, e.getLocalizedMessage(), e);
 		}
 	}
-	
-	
 
-	
+
+
+
 	@GET
 	@Path("dmd/parse")
 	public DataResponse<ParsedMedication> parseMedication(@QueryParam("s") String search, @Context UriInfo uriInfo) throws CorruptIndexException, IOException, ParseException {
@@ -122,11 +126,12 @@ public class SearchResource {
 			@DefaultValue("false") @QueryParam("fsn") boolean includeFsn,
 			@DefaultValue("false") @QueryParam("inactive") boolean includeInactive,
 			@Context UriInfo uriInfo) {
+		if (search == null || search.length() == 0) {
+			throw new LinkRestException(Status.BAD_REQUEST, ERROR_NO_SEARCH_PARAMETER);
+		}
 		try {
 			Search.Request.Builder b = Search.getInstance().newBuilder()
-				.searchFor(search)
-				.setMaxHits(maxHits)
-				.withRecursiveParent(roots);
+					.searchFor(search).setMaxHits(maxHits).withRecursiveParent(roots);
 			if (!includeInactive) {
 				b.onlyActive();
 			}
