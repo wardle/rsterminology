@@ -32,6 +32,10 @@ import com.eldrix.terminology.snomedct.Search.ResultItem;
 import com.eldrix.terminology.snomedct.SearchUtilities;
 import com.nhl.link.rest.DataResponse;
 import com.nhl.link.rest.LinkRestException;
+import com.nhl.link.rest.encoder.DataResponseEncoder;
+import com.nhl.link.rest.encoder.Encoder;
+import com.nhl.link.rest.encoder.GenericEncoder;
+import com.nhl.link.rest.encoder.ListEncoder;
 import com.nhl.link.rest.runtime.LinkRestRuntime;
 import com.nhl.link.rest.runtime.cayenne.ICayennePersister;
 
@@ -39,7 +43,7 @@ import com.nhl.link.rest.runtime.cayenne.ICayennePersister;
 @Produces(MediaType.APPLICATION_JSON)
 public class SearchResource {
 	private static final String ERROR_NO_SEARCH_PARAMETER = "No search parameter specified";
-
+	
 	@Context
 	private Configuration config;
 
@@ -91,7 +95,7 @@ public class SearchResource {
 				Project p = ObjectSelect.query(Project.class, Project.NAME.eq(project)).selectOne(context);
 				result = SearchUtilities.filterSearchForProject(result, p, recursiveParents);
 			}
-			return DataResponse.forObjects(result);
+			return responseWithList(result);
 		} catch (IOException e) {
 			e.printStackTrace();			
 			throw new LinkRestException(Status.INTERNAL_SERVER_ERROR, e.getLocalizedMessage(), e);
@@ -105,7 +109,7 @@ public class SearchResource {
 	@Path("dmd/parse")
 	public DataResponse<ParsedMedication> parseMedication(@QueryParam("s") String search, @Context UriInfo uriInfo) throws CorruptIndexException, IOException, ParseException {
 		ParsedMedication pm = new ParsedMedicationBuilder().parseString(search).build(Search.getInstance());
-		return DataResponse.forObject(pm);
+		return responseWithObject(pm);
 	}
 
 	/**
@@ -153,10 +157,24 @@ public class SearchResource {
 			List<String> result = data.stream()
 					.map(row -> (String) row.get(Description.TERM.getName()))
 					.collect(Collectors.toList());
-			return DataResponse.forObjects(result);
+			return responseWithList(result);
 		} catch (IOException e) {
 			e.printStackTrace();	
 			throw new LinkRestException(Status.INTERNAL_SERVER_ERROR, e.getLocalizedMessage(), e);
 		}
+	}
+	
+	private <T> DataResponse<T> responseWithList(List<T> data) {
+		DataResponse<T> response = DataResponse.forObjects(data);
+		response.setEncoder(encoder());
+		return response;		
+	}
+	private <T> DataResponse<T> responseWithObject(T object) {
+		DataResponse<T> response = DataResponse.forObject(object);
+		response.setEncoder(encoder());
+		return response;
+	}
+	private Encoder encoder() {
+		return new DataResponseEncoder("data", new ListEncoder(GenericEncoder.encoder()), "total", GenericEncoder.encoder());
 	}
 }
