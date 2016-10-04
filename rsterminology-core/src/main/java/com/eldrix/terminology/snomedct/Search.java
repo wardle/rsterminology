@@ -415,10 +415,11 @@ public class Search {
 		 */
 		public static class Builder {
 			private static final int MINIMUM_CHARS_FOR_PREFIX_SEARCH = 3;
-			private static final int DEFAULT_FUZZY = 2;
+			private static final int MINIMUM_CHARS_FOR_FUZZY_SEARCH = MINIMUM_CHARS_FOR_PREFIX_SEARCH;
+			private static final int DEFAULT_FUZZY_MAXIMUM_EDITS = 2;
 			Search _searcher;
 			int _maxHits = DEFAULT_MAXIMUM_HITS;
-			int _fuzzy = 0;
+			int _fuzzyMaxEdits = 0;
 			boolean _useQueryParser = false;
 			String _searchText;
 			Query _query;
@@ -502,13 +503,22 @@ public class Search {
 				return this;
 			}
 
+			/**
+			 * Turn on fuzzy matching with the specified number of edits.
+			 * @param distance
+			 * @return
+			 */
 			public Builder useFuzzy(int distance) {
-				_fuzzy = distance;
+				_fuzzyMaxEdits = distance > 2 ? 2 : distance;
 				return this;
 			}
 			
+			/**
+			 * Turn on fuzzy matching with the default number of edits.
+			 * @return
+			 */
 			public Builder useFuzzy() {
-				_fuzzy = DEFAULT_FUZZY;
+				_fuzzyMaxEdits = DEFAULT_FUZZY_MAXIMUM_EDITS;
 				return this;
 			}
 			
@@ -595,7 +605,7 @@ public class Search {
 					}
 				}
 				if (q == null) {
-					q = queryFromString(_analyzer, _searchText, _fuzzy);
+					q = queryFromString(_analyzer, _searchText, _fuzzyMaxEdits);
 				}
 				return q;
 			}
@@ -619,7 +629,7 @@ public class Search {
 					while (stream.incrementToken()) {
 						String s = termAtt.toString();
 						Term term = new Term("term", s);
-						Query tq = fuzzy > 0 ? new FuzzyQuery(term, fuzzy) : new TermQuery(term);
+						Query tq = s.length() > MINIMUM_CHARS_FOR_FUZZY_SEARCH && fuzzy > 0 ? new FuzzyQuery(term, fuzzy) : new TermQuery(term);
 						if (s.length() >= MINIMUM_CHARS_FOR_PREFIX_SEARCH) {
 							PrefixQuery pq = new PrefixQuery(new Term("term", s));
 							pq.setRewriteMethod(PrefixQuery.SCORING_BOOLEAN_REWRITE);
