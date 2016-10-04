@@ -51,7 +51,7 @@ public class TestProject {
 		// and now perform a filtered search...
 		Search search = Search.getInstance();
 		List<ResultItem> result = new Search.Request.Builder(search)
-				.searchFor("bronchio").onlyActive().withoutFullySpecifiedNames()
+				.search("bronchio").onlyActive().withoutFullySpecifiedNames()
 				.withRecursiveParent(Semantic.Category.DISEASE.conceptId).build()
 				.search();
 		List<ResultItem> filtered1 = SearchUtilities.filterSearchForProject(result, p, Collections.singletonList(Semantic.Category.DISEASE.conceptId));

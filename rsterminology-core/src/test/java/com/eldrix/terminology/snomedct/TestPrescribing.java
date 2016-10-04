@@ -86,7 +86,7 @@ public class TestPrescribing {
 		// co-careldopa is a prescribable VTM -- see http://dmd.medicines.org.uk/DesktopDefault.aspx?VMP=377270003&toc=nofloat
 		ParsedMedication pm1 = new ParsedMedicationBuilder().parseString("co-careldopa 25mg/250mg 1t tds").build();
 		Concept cocareldopa = ObjectSelect.query(Concept.class, 
-				Concept.CONCEPT_ID.eq(searchVmp.searchFor("co-careldopa 25mg/250mg").build().searchForConcepts().get(0))).selectOne(context);
+				Concept.CONCEPT_ID.eq(searchVmp.search("co-careldopa 25mg/250mg").build().searchForConcepts().get(0))).selectOne(context);
 		assertEquals(Dmd.Product.VIRTUAL_MEDICINAL_PRODUCT, Dmd.Product.productForConcept(cocareldopa));
 		Vmp cocareldopaVmp = new Vmp(cocareldopa);
 		assertFalse(cocareldopaVmp.isInvalidToPrescribe());
@@ -99,7 +99,7 @@ public class TestPrescribing {
 		
 		// diltiazem m/r is a VTM not recommended for prescription -- see http://dmd.medicines.org.uk/DesktopDefault.aspx?VMP=319183002&toc=nofloat
 		Concept diltiazem = ObjectSelect.query(Concept.class, 
-				Concept.CONCEPT_ID.eq(searchVmp.searchFor("diltiazem 120mg m/r").build().searchForConcepts().get(0))).selectOne(context);
+				Concept.CONCEPT_ID.eq(searchVmp.search("diltiazem 120mg m/r").build().searchForConcepts().get(0))).selectOne(context);
 		Vmp diltiazemVmp = new Vmp(diltiazem);
 		assertFalse(diltiazemVmp.isInvalidToPrescribe());
 		assertTrue(diltiazemVmp.isNotRecommendedToPrescribe());
@@ -124,7 +124,7 @@ public class TestPrescribing {
 	public void testHashcodesDmd() throws CorruptIndexException, IOException {
 		ObjectContext context = getRuntime().newContext();
 		Builder b = new Search.Request.Builder(Search.getInstance());
-		List<ResultItem> aMadopar = b.searchFor("madopar").setMaxHits(1).withFilters(Search.Filter.DMD_VTM_OR_TF).build().search();
+		List<ResultItem> aMadopar = b.search("madopar").setMaxHits(1).withFilters(Search.Filter.DMD_VTM_OR_TF).build().search();
 		Concept madopar = ObjectSelect.query(Concept.class, Concept.CONCEPT_ID.eq(aMadopar.get(0).getConceptId())).selectOne(context);
 		Tf madoparTf = new Tf(madopar);
 		List<Vtm> vtms = madoparTf.getAmps()
@@ -143,7 +143,7 @@ public class TestPrescribing {
 		Concept amlodipineVtm= ObjectSelect.query(Concept.class, Concept.CONCEPT_ID.eq(108537001L)).selectOne(context);
 		assertDrugType(amlodipineVtm, Dmd.Product.VIRTUAL_THERAPEUTIC_MOIETY);
 		
-		List<Long> amlodipineTfIds = new Search.Request.Builder(Search.getInstance()).searchFor("istin").withDirectParent(Dmd.Product.TRADE_FAMILY.conceptId).onlyActive().build().searchForConcepts();
+		List<Long> amlodipineTfIds = new Search.Request.Builder(Search.getInstance()).search("istin").withDirectParent(Dmd.Product.TRADE_FAMILY.conceptId).onlyActive().build().searchForConcepts();
 		List<Concept> amlodipineTfs1 = SelectQuery.query(Concept.class, Concept.CONCEPT_ID.in(amlodipineTfIds)).select(context);
 		List<Concept> amlodipineTfs2 = Vtm.getTfs(amlodipineVtm).collect(Collectors.toList());
 		for (Concept aTf : amlodipineTfs2) {
@@ -187,7 +187,7 @@ public class TestPrescribing {
 	public void testDoseParsing() throws CorruptIndexException, IOException {
 		ObjectContext context = getRuntime().newContext();
 		// find a VMP for amlodipine 5mg.
-		ResultItem a1 = Search.getInstance().newBuilder().searchFor("amlodipine 5mg").withFilters(Filter.DMD_VMP_OR_AMP).onlyActive().withoutFullySpecifiedNames().setMaxHits(1).build().search().get(0);
+		ResultItem a1 = Search.getInstance().newBuilder().search("amlodipine 5mg").withFilters(Filter.DMD_VMP_OR_AMP).onlyActive().withoutFullySpecifiedNames().setMaxHits(1).build().search().get(0);
 		Concept a2 = ObjectSelect.query(Concept.class, Concept.CONCEPT_ID.eq(a1.getConceptId())).selectOne(context);
 		assertTrue(Vmp.isA(a2));
 		Vmp amlodipineVmp = new Vmp(a2);

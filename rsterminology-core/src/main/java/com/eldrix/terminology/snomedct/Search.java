@@ -497,7 +497,7 @@ public class Search {
 			 * @throws ParseException
 			 * @throws IOException 
 			 */
-			public Builder searchFor(String search) throws IOException {
+			public Builder search(String search) throws IOException {
 				_searchText = search;
 				_query = null;
 				return this;

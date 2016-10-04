@@ -78,7 +78,7 @@ public class SearchResource {
 			b.setMaxHits(maxHits)
 			.withRecursiveParent(recursiveParents);
 			if (search != null && search.length() > 0) {
-				b.searchFor(search);
+				b.search(search);
 			}
 			if (!includeInactive) {
 				b.onlyActive();
@@ -139,7 +139,7 @@ public class SearchResource {
 		}
 		try {
 			Search.Request.Builder b = Search.getInstance().newBuilder()
-					.searchFor(search).setMaxHits(maxHits).withRecursiveParent(roots);
+					.search(search).setMaxHits(maxHits).withRecursiveParent(roots);
 			if (!includeInactive) {
 				b.onlyActive();
 			}

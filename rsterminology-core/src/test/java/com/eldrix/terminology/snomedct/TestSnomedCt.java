@@ -83,7 +83,7 @@ public class TestSnomedCt {
 			ObjectContext context = getRuntime().newContext();
 			Search search = Search.getInstance();
 			Search.Request.Builder builder = new Search.Request.Builder(search);
-			List<Long> results = builder.searchFor("mult sclerosis").setMaxHits(200).withRecursiveParent(64572001L).build().searchForConcepts();
+			List<Long> results = builder.search("mult sclerosis").setMaxHits(200).withRecursiveParent(64572001L).build().searchForConcepts();
 			System.out.println(builder._query);
 			Expression qual = ExpressionFactory.inExp(Concept.CONCEPT_ID.getName(), results);
 			List<Concept> concepts = ObjectSelect.query(Concept.class, qual).prefetch(Concept.DESCRIPTIONS.joint()).select(context);
@@ -100,8 +100,8 @@ public class TestSnomedCt {
 				}
 			}
 			
-			assertNotEquals(0, builder.searchFor("mult scler").build().search().size());
-			assertNotEquals(0, builder.searchFor("parkin").build().search().size());
+			assertNotEquals(0, builder.search("mult scler").build().search().size());
+			assertNotEquals(0, builder.search("parkin").build().search().size());
 			
 			
 		} catch (CorruptIndexException e) {
@@ -117,10 +117,10 @@ public class TestSnomedCt {
 	public void testFuzzySearch() throws CorruptIndexException, IOException {
 		Search search = Search.getInstance();
 		Search.Request.Builder builder = new Search.Request.Builder(search);
-		List<ResultItem> noFuzzy = builder.searchFor("bronchopnuemonia").build().search();
+		List<ResultItem> noFuzzy = builder.search("bronchopnuemonia").build().search();
 		assertEquals(0, noFuzzy.size());
 		
-		List<ResultItem> fuzzy = builder.searchFor("bronchopnuemonai").useFuzzy(2).build().search();
+		List<ResultItem> fuzzy = builder.search("bronchopnuemonai").useFuzzy(2).build().search();
 		assertNotEquals(0, fuzzy.size());
 	}
 	
@@ -194,21 +194,21 @@ public class TestSnomedCt {
 		ObjectContext context = getRuntime().newContext();
 		Search search = Search.getInstance();
 		Builder b = new Search.Request.Builder(search);
-		List<ResultItem> sAmlodipine = b.searchFor("amlodip*").useQueryParser(true).setMaxHits(1).withFilters(Search.Filter.DMD_VTM_OR_TF).build().search();
+		List<ResultItem> sAmlodipine = b.search("amlodip*").useQueryParser(true).setMaxHits(1).withFilters(Search.Filter.DMD_VTM_OR_TF).build().search();
 		assertEquals(1, sAmlodipine.size());
 		Concept amlodipine = ObjectSelect.query(Concept.class, Concept.CONCEPT_ID.eq(sAmlodipine.get(0).getConceptId())).selectOne(context);
 		assertNotNull(amlodipine);
 		assertTrue(Semantic.Vtm.isA(amlodipine));		// this should be a VTM
-		List<ResultItem> aMadopar = b.useQueryParser(false).searchFor("madopar").setMaxHits(1).withFilters(Search.Filter.DMD_VTM_OR_TF).build().search();
+		List<ResultItem> aMadopar = b.useQueryParser(false).search("madopar").setMaxHits(1).withFilters(Search.Filter.DMD_VTM_OR_TF).build().search();
 		Concept madopar = ObjectSelect.query(Concept.class, Concept.CONCEPT_ID.eq(aMadopar.get(0).getConceptId())).selectOne(context);
 		assertTrue(Semantic.Tf.isA(madopar));
 
-		assertEquals(0, b.searchFor("madopar").clearFilters().withDirectParent(Dmd.Product.VIRTUAL_THERAPEUTIC_MOIETY.conceptId).build().search().size());
-		assertEquals(0, b.searchFor("madopar").clearFilters().withDirectParent(Dmd.Product.VIRTUAL_MEDICINAL_PRODUCT.conceptId).build().search().size());
-		assertEquals(0, b.searchFor("madopar").clearFilters().withDirectParent(Dmd.Product.VIRTUAL_MEDICINAL_PRODUCT_PACK.conceptId).build().search().size());
-		assertNotEquals(0, b.searchFor("madopar").clearFilters().withDirectParent(Dmd.Product.TRADE_FAMILY.conceptId).build().search().size());
-		assertNotEquals(0, b.searchFor("madopar").clearFilters().withDirectParent(Dmd.Product.ACTUAL_MEDICINAL_PRODUCT.conceptId).build().search().size());
-		assertNotEquals(0, b.searchFor("madopar").clearFilters().withDirectParent(Dmd.Product.ACTUAL_MEDICINAL_PRODUCT_PACK.conceptId).build().search().size());
+		assertEquals(0, b.search("madopar").clearFilters().withDirectParent(Dmd.Product.VIRTUAL_THERAPEUTIC_MOIETY.conceptId).build().search().size());
+		assertEquals(0, b.search("madopar").clearFilters().withDirectParent(Dmd.Product.VIRTUAL_MEDICINAL_PRODUCT.conceptId).build().search().size());
+		assertEquals(0, b.search("madopar").clearFilters().withDirectParent(Dmd.Product.VIRTUAL_MEDICINAL_PRODUCT_PACK.conceptId).build().search().size());
+		assertNotEquals(0, b.search("madopar").clearFilters().withDirectParent(Dmd.Product.TRADE_FAMILY.conceptId).build().search().size());
+		assertNotEquals(0, b.search("madopar").clearFilters().withDirectParent(Dmd.Product.ACTUAL_MEDICINAL_PRODUCT.conceptId).build().search().size());
+		assertNotEquals(0, b.search("madopar").clearFilters().withDirectParent(Dmd.Product.ACTUAL_MEDICINAL_PRODUCT_PACK.conceptId).build().search().size());
 	
 	}
 	
@@ -216,18 +216,18 @@ public class TestSnomedCt {
 	public void testRequest() throws CorruptIndexException, IOException, ParseException {
 		ObjectContext context = getRuntime().newContext();
 		Search search = Search.getInstance();
-		List<ResultItem> sAmlodipine = new Search.Request.Builder(search).searchFor("amlodip*").useQueryParser(true).withFilters(Search.Filter.DMD_VTM_OR_TF, Search.Filter.CONCEPT_ACTIVE).setMaxHits(1).build().search();
+		List<ResultItem> sAmlodipine = new Search.Request.Builder(search).search("amlodip*").useQueryParser(true).withFilters(Search.Filter.DMD_VTM_OR_TF, Search.Filter.CONCEPT_ACTIVE).setMaxHits(1).build().search();
 		assertEquals(1, sAmlodipine.size());
 		Concept amlodipine = ObjectSelect.query(Concept.class, Concept.CONCEPT_ID.eq(sAmlodipine.get(0).getConceptId())).selectOne(context);
 		assertTrue(Vtm.isA(amlodipine));
 		
-		List<ResultItem> sMultipleSclerosisInDrugs = new Search.Request.Builder(search).searchFor("multiple sclerosis").useQueryParser(true).withFilters(Search.Filter.DMD_VTM_OR_TF).build().search();
+		List<ResultItem> sMultipleSclerosisInDrugs = new Search.Request.Builder(search).search("multiple sclerosis").useQueryParser(true).withFilters(Search.Filter.DMD_VTM_OR_TF).build().search();
 		assertEquals(0, sMultipleSclerosisInDrugs.size());
 		
-		List<ResultItem> sMultipleSclerosis = new Search.Request.Builder(search).searchFor("multiple sclerosis").withRecursiveParent(Semantic.Category.DISEASE.conceptId).setMaxHits(1).build().search();
+		List<ResultItem> sMultipleSclerosis = new Search.Request.Builder(search).search("multiple sclerosis").withRecursiveParent(Semantic.Category.DISEASE.conceptId).setMaxHits(1).build().search();
 		assertEquals(1, sMultipleSclerosis.size());
 		
-		List<ResultItem> sMs = new Search.Request.Builder(search).searchFor("ms").withRecursiveParent(Semantic.Category.DISEASE.conceptId).withFilters(Search.Filter.CONCEPT_ACTIVE).setMaxHits(200).build().search();
+		List<ResultItem> sMs = new Search.Request.Builder(search).search("ms").withRecursiveParent(Semantic.Category.DISEASE.conceptId).withFilters(Search.Filter.CONCEPT_ACTIVE).setMaxHits(200).build().search();
 		//sMs.forEach(ri -> System.out.println(ri));
 		assertTrue(sMs.stream().anyMatch(ri -> ri.getConceptId()==24700007L));	// multiple sclerosis
 		assertTrue(sMs.stream().anyMatch(ri -> ri.getConceptId()==79619009L));		// mitral stenosis
