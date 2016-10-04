@@ -55,7 +55,8 @@ public class SearchResource {
 	 * @param maxHits - number of hits
 	 * @param fsn - whether to include FSN terms in search results (defaults to 0)
 	 * @param inactive - whether to include inactive terms in search results (defaults to 0)
-	 * @param fuzzy - whether to use a fuzzy search if no results found for non-fuzzy search (defaults to true)
+	 * @param fuzzy - whether to use a fuzzy search for search (default to false)
+	 * @param fallbackFuzzy - whether to use a fuzzy search if no results found for non-fuzzy search (defaults to true)
 	 * @param project - optional name of project to limit search results to curated list for that project
 	 * @param uriInfo
 	 * @return
@@ -68,7 +69,8 @@ public class SearchResource {
 			@DefaultValue("200") @QueryParam("maxHits") int maxHits,
 			@DefaultValue("false") @QueryParam("fsn") boolean includeFsn,
 			@DefaultValue("false") @QueryParam("inactive") boolean includeInactive,
-			@DefaultValue("true") @QueryParam("fuzzy") boolean fuzzy,
+			@DefaultValue("false") @QueryParam("fuzzy") boolean fuzzy,
+			@DefaultValue("true") @QueryParam("fallbackFuzzy") boolean fallbackFuzzy,
 			@QueryParam("project") String project,
 			@Context UriInfo uriInfo) {
 		if (search == null || search.length() == 0) {
@@ -87,11 +89,14 @@ public class SearchResource {
 			if (!includeFsn) {
 				b.withoutFullySpecifiedNames();
 			}
+			if (fuzzy) {
+				b.useFuzzy();
+			}
 			if (directParents.size() > 0) {
 				b.withDirectParent(directParents);
 			}
 			List<ResultItem> result = b.build().search();
-			if (fuzzy && result.size() == 0) {
+			if (!fuzzy && fallbackFuzzy && result.size() == 0) {
 				result = b.useFuzzy().build().search();
 			}
 			if (project != null && project.length() > 0) {
@@ -124,6 +129,8 @@ public class SearchResource {
 	 * @param maxHits - max number of hits to be returned, default 200.
 	 * @param includeFsn - whether to include fully specified names, default false
 	 * @param includeInactive - whether to include inactive concepts, default false
+	 * @param fuzzy - whether to perform a fuzzy match, default false, as otherwise one gets surprising matches.
+	 * @param fallbackFuzzy - whether to fallback to a fuzzy search if there are no results, default true.
 	 * @param uriInfo
 	 * @return
 	 */
@@ -134,6 +141,8 @@ public class SearchResource {
 			@DefaultValue("200") @QueryParam("maxHits") int maxHits,
 			@DefaultValue("false") @QueryParam("fsn") boolean includeFsn,
 			@DefaultValue("false") @QueryParam("inactive") boolean includeInactive,
+			@DefaultValue("false") @QueryParam("fuzzy") boolean fuzzy,
+			@DefaultValue("true") @QueryParam("fallbackFuzzy") boolean fallbackFuzzy,
 			@Context UriInfo uriInfo) {
 		if (search == null || search.length() == 0) {
 			throw new LinkRestException(Status.BAD_REQUEST, ERROR_NO_SEARCH_PARAMETER);
@@ -147,7 +156,13 @@ public class SearchResource {
 			if (!includeFsn) {
 				b.withoutFullySpecifiedNames();
 			}
+			if (fuzzy) {
+				b.useFuzzy();
+			}
 			List<Long> conceptIds = b.build().searchForConcepts();
+			if (!fuzzy && fallbackFuzzy && conceptIds.size() == 0) {
+				conceptIds = b.useFuzzy().build().searchForConcepts();
+			}
 			ICayennePersister cayenne = LinkRestRuntime.service(ICayennePersister.class, config);
 			ObjectContext context = cayenne.newContext();
 			Expression qual = Description.CONCEPT_ID.in(conceptIds); 
