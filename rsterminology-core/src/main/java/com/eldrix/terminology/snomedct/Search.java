@@ -37,6 +37,7 @@ import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.PrefixQuery;
@@ -414,8 +415,12 @@ public class Search {
 		 */
 		public static class Builder {
 			private static final int MINIMUM_CHARS_FOR_PREFIX_SEARCH = 3;
+			private static final int DEFAULT_FUZZY = 2;
 			Search _searcher;
 			int _maxHits = DEFAULT_MAXIMUM_HITS;
+			int _fuzzy = 0;
+			boolean _useQueryParser = false;
+			String _searchText;
 			Query _query;
 			ArrayList<Query> _filters;
 			QueryParser _queryParser;
@@ -457,6 +462,9 @@ public class Search {
 
 			/**
 			 * Set the main query for this search.
+			 * This allows complete control over the query by client applications
+			 * but for most uses, specifying the search string with or without a 
+			 * query parser will be sufficient.
 			 * @param query
 			 * @return
 			 */
@@ -465,17 +473,19 @@ public class Search {
 				return this;
 			}
 
+
 			/**
-			 * Set the main query for this search to be the result of a QueryParser of the given string.
-			 * @param search
+			 * Specify whether the search text should be parsed by a Lucene
+			 * QueryParser or simply as a plain string. For most user-entered
+			 * strings, it is recommended to use a plain string.
+			 * @param use
 			 * @return
-			 * @throws ParseException
 			 */
-			public Builder searchByParsing(String search) throws ParseException {
-				_query = queryParser().parse(search);
+			public Builder useQueryParser(boolean use) {
+				_useQueryParser = use;
 				return this;
 			}
-
+			
 			/**
 			 * Search for a SNOMED-CT term, for each token, a term query and prefix query.
 			 * This is usually a good default for most SNOMED-CT searches.
@@ -487,32 +497,21 @@ public class Search {
 			 * @throws IOException 
 			 */
 			public Builder searchFor(String search) throws IOException {
-				BooleanQuery.Builder b = new BooleanQuery.Builder();
-				TokenStream stream = _analyzer.tokenStream(FIELD_TERM, search);
-				CharTermAttribute termAtt = stream.addAttribute(CharTermAttribute.class);
-				try {
-					stream.reset();
-					while (stream.incrementToken()) {
-						String s = termAtt.toString();
-						TermQuery tq = new TermQuery(new Term("term", s));
-						if (s.length() >= MINIMUM_CHARS_FOR_PREFIX_SEARCH) {
-							PrefixQuery pq = new PrefixQuery(new Term("term", s));
-							pq.setRewriteMethod(PrefixQuery.SCORING_BOOLEAN_REWRITE);
-							BooleanQuery bq = new BooleanQuery.Builder().add(tq, Occur.SHOULD).add(pq, Occur.SHOULD).build();
-							b.add(bq, Occur.MUST);
-						}
-						else {
-							b.add(tq,Occur.MUST);
-						}
-					}			     
-					stream.end();
-				} finally {
-					stream.close();
-				}
-				_query = b.build();
+				_searchText = search;
+				_query = null;
 				return this;
 			}
 
+			public Builder useFuzzy(int distance) {
+				_fuzzy = distance;
+				return this;
+			}
+			
+			public Builder useFuzzy() {
+				_fuzzy = DEFAULT_FUZZY;
+				return this;
+			}
+			
 			/**
 			 * Filter only for concepts with the specified (recursive) parents.
 			 * @param parents
@@ -587,17 +586,68 @@ public class Search {
 				_filters.clear();
 				return this;
 			}
-
+						
+			private Query query() {
+				Query q = _query;
+				if (q == null) {
+					if (_useQueryParser) {
+						q = queryUsingQueryParser(queryParser(), _searchText);
+					}
+				}
+				if (q == null) {
+					q = queryFromString(_analyzer, _searchText, _fuzzy);
+				}
+				return q;
+			}
+			
+			// determine query using a query parser.
+			private static Query queryUsingQueryParser(QueryParser qp, String searchText) {
+				try {
+					return qp.parse(searchText);
+				} catch (ParseException e) {
+					e.printStackTrace();
+				}
+				return null;
+			}
+			
+			// determine query from plain search string with optional fuzziness.
+			private static Query queryFromString(Analyzer analyzer, String searchText, int fuzzy) {
+				BooleanQuery.Builder b = new BooleanQuery.Builder();
+				try (TokenStream stream = analyzer.tokenStream(FIELD_TERM, searchText)) {
+				CharTermAttribute termAtt = stream.addAttribute(CharTermAttribute.class);
+					stream.reset();
+					while (stream.incrementToken()) {
+						String s = termAtt.toString();
+						Term term = new Term("term", s);
+						Query tq = fuzzy > 0 ? new FuzzyQuery(term, fuzzy) : new TermQuery(term);
+						if (s.length() >= MINIMUM_CHARS_FOR_PREFIX_SEARCH) {
+							PrefixQuery pq = new PrefixQuery(new Term("term", s));
+							pq.setRewriteMethod(PrefixQuery.SCORING_BOOLEAN_REWRITE);
+							BooleanQuery bq = new BooleanQuery.Builder().add(tq, Occur.SHOULD).add(pq, Occur.SHOULD).build();
+							b.add(bq, Occur.MUST);
+						}
+						else {
+							b.add(tq,Occur.MUST);
+						}
+					}			     
+					stream.end();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+				return b.build();
+			}
+			
 			/**
 			 * Create the search request.
 			 * @return
+			 * @throws ParseException 
 			 */
 			public Request build() {
-				Query query = _query;
+				Query query = query();
 				if (_filters != null && _filters.size() > 0) {
 					BooleanQuery.Builder bqBuilder = new BooleanQuery.Builder();
-					if (_query != null) {
-						bqBuilder.add(_query, Occur.MUST);		// add the basic query if it exists
+					if (query != null) {
+						bqBuilder.add(query, Occur.MUST);		// add the basic query if it exists
 					}
 					for (Query q : _filters) {
 						bqBuilder.add(q, Occur.FILTER);		// and add each filter as a filter.

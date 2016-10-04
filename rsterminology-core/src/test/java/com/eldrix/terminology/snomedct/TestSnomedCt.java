@@ -114,6 +114,17 @@ public class TestSnomedCt {
 	}
 	
 	@Test
+	public void testFuzzySearch() throws CorruptIndexException, IOException {
+		Search search = Search.getInstance();
+		Search.Request.Builder builder = new Search.Request.Builder(search);
+		List<ResultItem> noFuzzy = builder.searchFor("bronchopnuemonia").build().search();
+		assertEquals(0, noFuzzy.size());
+		
+		List<ResultItem> fuzzy = builder.searchFor("bronchopnuemonai").useFuzzy(2).build().search();
+		assertNotEquals(0, fuzzy.size());
+	}
+	
+	@Test
 	public void testRecursiveParents() {
 		ObjectContext context = getRuntime().newContext();
 		timingForRecursiveParents(context, 26078007L);
@@ -183,13 +194,12 @@ public class TestSnomedCt {
 		ObjectContext context = getRuntime().newContext();
 		Search search = Search.getInstance();
 		Builder b = new Search.Request.Builder(search);
-		List<ResultItem> sAmlodipine = b.searchByParsing("amlodip*").setMaxHits(1).withFilters(Search.Filter.DMD_VTM_OR_TF).build().search();
+		List<ResultItem> sAmlodipine = b.searchFor("amlodip*").useQueryParser(true).setMaxHits(1).withFilters(Search.Filter.DMD_VTM_OR_TF).build().search();
 		assertEquals(1, sAmlodipine.size());
 		Concept amlodipine = ObjectSelect.query(Concept.class, Concept.CONCEPT_ID.eq(sAmlodipine.get(0).getConceptId())).selectOne(context);
 		assertNotNull(amlodipine);
 		assertTrue(Semantic.Vtm.isA(amlodipine));		// this should be a VTM
-		
-		List<ResultItem> aMadopar = b.searchFor("madopar").setMaxHits(1).withFilters(Search.Filter.DMD_VTM_OR_TF).build().search();
+		List<ResultItem> aMadopar = b.useQueryParser(false).searchFor("madopar").setMaxHits(1).withFilters(Search.Filter.DMD_VTM_OR_TF).build().search();
 		Concept madopar = ObjectSelect.query(Concept.class, Concept.CONCEPT_ID.eq(aMadopar.get(0).getConceptId())).selectOne(context);
 		assertTrue(Semantic.Tf.isA(madopar));
 
@@ -206,15 +216,15 @@ public class TestSnomedCt {
 	public void testRequest() throws CorruptIndexException, IOException, ParseException {
 		ObjectContext context = getRuntime().newContext();
 		Search search = Search.getInstance();
-		List<ResultItem> sAmlodipine = new Search.Request.Builder(search).searchByParsing("amlodip*").withFilters(Search.Filter.DMD_VTM_OR_TF, Search.Filter.CONCEPT_ACTIVE).setMaxHits(1).build().search();
+		List<ResultItem> sAmlodipine = new Search.Request.Builder(search).searchFor("amlodip*").useQueryParser(true).withFilters(Search.Filter.DMD_VTM_OR_TF, Search.Filter.CONCEPT_ACTIVE).setMaxHits(1).build().search();
 		assertEquals(1, sAmlodipine.size());
 		Concept amlodipine = ObjectSelect.query(Concept.class, Concept.CONCEPT_ID.eq(sAmlodipine.get(0).getConceptId())).selectOne(context);
 		assertTrue(Vtm.isA(amlodipine));
 		
-		List<ResultItem> sMultipleSclerosisInDrugs = new Search.Request.Builder(search).searchByParsing("multiple sclerosis").withFilters(Search.Filter.DMD_VTM_OR_TF).build().search();
+		List<ResultItem> sMultipleSclerosisInDrugs = new Search.Request.Builder(search).searchFor("multiple sclerosis").useQueryParser(true).withFilters(Search.Filter.DMD_VTM_OR_TF).build().search();
 		assertEquals(0, sMultipleSclerosisInDrugs.size());
 		
-		List<ResultItem> sMultipleSclerosis = new Search.Request.Builder(search).searchByParsing("multiple sclerosis").withRecursiveParent(Semantic.Category.DISEASE.conceptId).setMaxHits(1).build().search();
+		List<ResultItem> sMultipleSclerosis = new Search.Request.Builder(search).searchFor("multiple sclerosis").withRecursiveParent(Semantic.Category.DISEASE.conceptId).setMaxHits(1).build().search();
 		assertEquals(1, sMultipleSclerosis.size());
 		
 		List<ResultItem> sMs = new Search.Request.Builder(search).searchFor("ms").withRecursiveParent(Semantic.Category.DISEASE.conceptId).withFilters(Search.Filter.CONCEPT_ACTIVE).setMaxHits(200).build().search();
