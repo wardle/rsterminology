@@ -55,6 +55,7 @@ public class SearchResource {
 	 * @param maxHits - number of hits
 	 * @param fsn - whether to include FSN terms in search results (defaults to 0)
 	 * @param inactive - whether to include inactive terms in search results (defaults to 0)
+	 * @param fuzzy - whether to use a fuzzy search if no results found for non-fuzzy search (defaults to true)
 	 * @param project - optional name of project to limit search results to curated list for that project
 	 * @param uriInfo
 	 * @return
@@ -86,13 +87,13 @@ public class SearchResource {
 			if (!includeFsn) {
 				b.withoutFullySpecifiedNames();
 			}
-			if (fuzzy) {
-				b.useFuzzy();
-			}
 			if (directParents.size() > 0) {
 				b.withDirectParent(directParents);
 			}
 			List<ResultItem> result = b.build().search();
+			if (fuzzy && result.size() == 0) {
+				result = b.useFuzzy().build().search();
+			}
 			if (project != null && project.length() > 0) {
 				ICayennePersister cayenne = LinkRestRuntime.service(ICayennePersister.class, config);
 				ObjectContext context = cayenne.newContext();
