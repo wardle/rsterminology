@@ -43,7 +43,7 @@ import com.nhl.link.rest.runtime.cayenne.ICayennePersister;
 @Produces(MediaType.APPLICATION_JSON)
 public class SearchResource {
 	private static final String ERROR_NO_SEARCH_PARAMETER = "No search parameter specified";
-	
+
 	@Context
 	private Configuration config;
 
@@ -63,9 +63,9 @@ public class SearchResource {
 	 */
 	@GET
 	@Path("search")
-	public DataResponse<ResultItem> search(@QueryParam("s") String search, 
-			@DefaultValue("138875005") @QueryParam("root") final List<Long> recursiveParents, 
-			@QueryParam("is") final List<Long> directParents, 
+	public DataResponse<ResultItem> search(@QueryParam("s") String search,
+			@DefaultValue("138875005") @QueryParam("root") final List<Long> recursiveParents,
+			@QueryParam("is") final List<Long> directParents,
 			@DefaultValue("200") @QueryParam("maxHits") int maxHits,
 			@DefaultValue("false") @QueryParam("fsn") boolean includeFsn,
 			@DefaultValue("false") @QueryParam("inactive") boolean includeInactive,
@@ -77,39 +77,47 @@ public class SearchResource {
 			throw new LinkRestException(Status.BAD_REQUEST, ERROR_NO_SEARCH_PARAMETER);
 		}
 		try {
-			Search.Request.Builder b = Search.getInstance().newBuilder();
-			b.setMaxHits(maxHits)
-			.withRecursiveParent(recursiveParents);
-			if (search != null && search.length() > 0) {
-				b.search(search);
-			}
-			if (!includeInactive) {
-				b.onlyActive();
-			}
-			if (!includeFsn) {
-				b.withoutFullySpecifiedNames();
-			}
-			if (fuzzy) {
-				b.useFuzzy();
-			}
-			if (directParents.size() > 0) {
-				b.withDirectParent(directParents);
-			}
-			List<ResultItem> result = b.build().search();
-			if (!fuzzy && fallbackFuzzy && result.size() == 0) {
-				result = b.useFuzzy().build().search();
-			}
-			if (project != null && project.length() > 0) {
-				ICayennePersister cayenne = LinkRestRuntime.service(ICayennePersister.class, config);
-				ObjectContext context = cayenne.newContext();
-				Project p = ObjectSelect.query(Project.class, Project.NAME.eq(project)).selectOne(context);
-				result = SearchUtilities.filterSearchForProject(result, p, recursiveParents);
-			}
+			List<ResultItem> result = _performSearch(search, recursiveParents, directParents, maxHits, includeFsn,
+					includeInactive, fuzzy, fallbackFuzzy, project);
 			return responseWithList(result);
 		} catch (IOException e) {
-			e.printStackTrace();			
+			e.printStackTrace();
 			throw new LinkRestException(Status.INTERNAL_SERVER_ERROR, e.getLocalizedMessage(), e);
 		}
+	}
+
+	private List<ResultItem> _performSearch(String search, final List<Long> recursiveParents,
+			final List<Long> directParents, int maxHits, boolean includeFsn, boolean includeInactive, boolean fuzzy,
+			boolean fallbackFuzzy, String project) throws CorruptIndexException, IOException {
+		Search.Request.Builder b = Search.getInstance().newBuilder();
+		b.setMaxHits(maxHits)
+		.withRecursiveParent(recursiveParents);
+		if (search != null && search.length() > 0) {
+			b.search(search);
+		}
+		if (!includeInactive) {
+			b.onlyActive();
+		}
+		if (!includeFsn) {
+			b.withoutFullySpecifiedNames();
+		}
+		if (fuzzy) {
+			b.useFuzzy();
+		}
+		if (directParents.size() > 0) {
+			b.withDirectParent(directParents);
+		}
+		List<ResultItem> result = b.build().search();
+		if (!fuzzy && fallbackFuzzy && result.size() == 0) {
+			result = b.useFuzzy().build().search();
+		}
+		if (project != null && project.length() > 0) {
+			ICayennePersister cayenne = LinkRestRuntime.service(ICayennePersister.class, config);
+			ObjectContext context = cayenne.newContext();
+			Project p = ObjectSelect.query(Project.class, Project.NAME.eq(project)).selectOne(context);
+			result = SearchUtilities.filterSearchForProject(result, p, recursiveParents);
+		}
+		return result;
 	}
 
 
@@ -136,7 +144,7 @@ public class SearchResource {
 	 */
 	@GET
 	@Path("synonyms")
-	public DataResponse<String> synonyms(@QueryParam("s") String search, 
+	public DataResponse<String> synonyms(@QueryParam("s") String search,
 			@DefaultValue("138875005") @QueryParam("root") List<Long> roots,
 			@DefaultValue("200") @QueryParam("maxHits") int maxHits,
 			@DefaultValue("false") @QueryParam("fsn") boolean includeFsn,
@@ -148,46 +156,52 @@ public class SearchResource {
 			throw new LinkRestException(Status.BAD_REQUEST, ERROR_NO_SEARCH_PARAMETER);
 		}
 		try {
-			Search.Request.Builder b = Search.getInstance().newBuilder()
-					.search(search).setMaxHits(maxHits).withRecursiveParent(roots);
-			if (!includeInactive) {
-				b.onlyActive();
-			}
-			if (!includeFsn) {
-				b.withoutFullySpecifiedNames();
-			}
-			if (fuzzy) {
-				b.useFuzzy();
-			}
-			List<Long> conceptIds = b.build().searchForConcepts();
-			if (!fuzzy && fallbackFuzzy && conceptIds.size() == 0) {
-				conceptIds = b.useFuzzy().build().searchForConcepts();
-			}
-			ICayennePersister cayenne = LinkRestRuntime.service(ICayennePersister.class, config);
-			ObjectContext context = cayenne.newContext();
-			Expression qual = Description.CONCEPT_ID.in(conceptIds); 
-			if (!includeFsn) {
-				qual = qual.andExp(Description.DESCRIPTION_TYPE_CODE.ne(Description.Type.FULLY_SPECIFIED_NAME.code));
-			}
-			if (!includeInactive) {
-				qual = qual.andExp(Description.DESCRIPTION_STATUS_CODE.in(Description.Status.activeCodes()));
-			}
-			SelectQuery<DataRow> select = SelectQuery.dataRowQuery(Description.class, qual);
-			List<DataRow> data = context.select(select);
-			List<String> result = data.stream()
-					.map(row -> (String) row.get(Description.TERM.getName()))
-					.collect(Collectors.toList());
+			List<String> result = _performSynonymSearch(search, roots, maxHits, includeFsn, includeInactive, fuzzy, fallbackFuzzy);
 			return responseWithList(result);
 		} catch (IOException e) {
-			e.printStackTrace();	
+			e.printStackTrace();
 			throw new LinkRestException(Status.INTERNAL_SERVER_ERROR, e.getLocalizedMessage(), e);
 		}
 	}
-	
+
+
+	private List<String> _performSynonymSearch(String search, List<Long> roots, int maxHits, boolean includeFsn,
+			boolean includeInactive, boolean fuzzy, boolean fallbackFuzzy) throws IOException, CorruptIndexException {
+		Search.Request.Builder b = Search.getInstance().newBuilder()
+				.search(search).setMaxHits(maxHits).withRecursiveParent(roots);
+		if (!includeInactive) {
+			b.onlyActive();
+		}
+		if (!includeFsn) {
+			b.withoutFullySpecifiedNames();
+		}
+		if (fuzzy) {
+			b.useFuzzy();
+		}
+		List<Long> conceptIds = b.build().searchForConcepts();
+		if (!fuzzy && fallbackFuzzy && conceptIds.size() == 0) {
+			conceptIds = b.useFuzzy().build().searchForConcepts();
+		}
+		ICayennePersister cayenne = LinkRestRuntime.service(ICayennePersister.class, config);
+		ObjectContext context = cayenne.newContext();
+		Expression qual = Description.CONCEPT_ID.in(conceptIds);
+		if (!includeFsn) {
+			qual = qual.andExp(Description.DESCRIPTION_TYPE_CODE.ne(Description.Type.FULLY_SPECIFIED_NAME.code));
+		}
+		if (!includeInactive) {
+			qual = qual.andExp(Description.DESCRIPTION_STATUS_CODE.in(Description.Status.activeCodes()));
+		}
+		SelectQuery<DataRow> select = SelectQuery.dataRowQuery(Description.class, qual);
+		List<DataRow> data = context.select(select);
+		return data.stream()
+				.map(row -> (String) row.get(Description.TERM.getName()))
+				.collect(Collectors.toList());
+	}
+
 	private <T> DataResponse<T> responseWithList(List<T> data) {
 		DataResponse<T> response = DataResponse.forObjects(data);
 		response.setEncoder(encoder());
-		return response;		
+		return response;
 	}
 	private <T> DataResponse<T> responseWithObject(T object) {
 		DataResponse<T> response = DataResponse.forObject(object);
