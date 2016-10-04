@@ -127,8 +127,8 @@ public class SearchResource {
 	 * @param search - search term
 	 * @param roots - roots, defaults to clinical diagnoses
 	 * @param maxHits - max number of hits to be returned, default 200.
-	 * @param includeFsn - whether to include fully specified names, default false
-	 * @param includeInactive - whether to include inactive concepts, default false
+	 * @param fsn - whether to include fully specified names, default false
+	 * @param inactive - whether to include inactive concepts, default false
 	 * @param fuzzy - whether to perform a fuzzy match, default false, as otherwise one gets surprising matches.
 	 * @param fallbackFuzzy - whether to fallback to a fuzzy search if there are no results, default true.
 	 * @param uriInfo
