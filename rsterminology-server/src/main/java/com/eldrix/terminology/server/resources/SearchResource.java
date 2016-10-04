@@ -67,6 +67,7 @@ public class SearchResource {
 			@DefaultValue("200") @QueryParam("maxHits") int maxHits,
 			@DefaultValue("false") @QueryParam("fsn") boolean includeFsn,
 			@DefaultValue("false") @QueryParam("inactive") boolean includeInactive,
+			@DefaultValue("true") @QueryParam("fuzzy") boolean fuzzy,
 			@QueryParam("project") String project,
 			@Context UriInfo uriInfo) {
 		if (search == null || search.length() == 0) {
@@ -84,6 +85,9 @@ public class SearchResource {
 			}
 			if (!includeFsn) {
 				b.withoutFullySpecifiedNames();
+			}
+			if (fuzzy) {
+				b.useFuzzy();
 			}
 			if (directParents.size() > 0) {
 				b.withDirectParent(directParents);
