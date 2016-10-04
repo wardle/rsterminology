@@ -38,13 +38,9 @@ public class TestServer {
 
 	@BeforeClass
 	public static void startServer() throws InterruptedException {
-		executor.submit(() -> {
-			Module jersey = JerseyModule.builder()
-					.packageRoot(ConceptResource.class)
-					.build();
+		executor.submit(() -> {			
 			Bootique.app(new String[] {"--config=run.yml", "--server"})
 			.module(SnomedCTApplication.class)
-			.module(jersey)
 			.autoLoadModules()
 			.run();
 		});
