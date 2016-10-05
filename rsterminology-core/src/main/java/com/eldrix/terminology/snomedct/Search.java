@@ -56,7 +56,7 @@ import com.eldrix.terminology.snomedct.Semantic.Dmd;
 import com.eldrix.terminology.snomedct.Semantic.RelationType;
 
 
-/*
+/**
  * Provides full-text indexing and search facilities for SNOMED CT concepts (descriptions really) using Apache Lucene.
  * This provides a thin-wrapper around Apache Lucene's full-text search facilities.
  * 
@@ -98,10 +98,10 @@ public class Search {
 	 *
 	 */
 	public static class SnomedSimilarity extends ClassicSimilarity {
-		  @Override
-		  public float lengthNorm(FieldInvertState state) {
-		    return (float) 1.0 / state.getLength();
-		  }
+		@Override
+		public float lengthNorm(FieldInvertState state) {
+			return (float) 1.0 / state.getLength();
+		}
 	}
 
 	/**
@@ -477,6 +477,8 @@ public class Search {
 			/**
 			 * Search by parsing the search text using a "Query Parser".
 			 * For most user-entered strings, it is recommended to use a plain string.
+			 * This uses a default query parser unless a custom one is set <emph>before</emph>
+			 * calling this method. 
 			 * @return
 			 * @throws ParseException
 			 */
@@ -487,7 +489,7 @@ public class Search {
 
 			/**
 			 * Search for a SNOMED-CT term, for each token, a term query and prefix query.
-			 * This is usually a good default for most SNOMED-CT searches.
+			 * This is the default "built-in" parser and is usually a good default for most SNOMED-CT searches.
 			 * If more control is required, either pass a string to the QueryParser using searchByParsing()
 			 * or directly set the query manually.
 			 * @param search
@@ -500,7 +502,7 @@ public class Search {
 			}
 
 			/**
-			 * Turn on fuzzy matching with the specified number of edits.
+			 * Turn on fuzzy matching with the specified number of edits when the built-in parser is used.
 			 * @param distance
 			 * @return
 			 */
@@ -626,7 +628,6 @@ public class Search {
 			/**
 			 * Create the search request.
 			 * @return
-			 * @throws ParseException
 			 */
 			public Request build() {
 				Query query = _query != null ? _query : queryFromString(_analyzer, _searchText, _fuzzyMaxEdits);
