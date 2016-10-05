@@ -654,7 +654,7 @@ public class Search {
 	 * @throws CorruptIndexException
 	 * @throws IOException
 	 */
-	protected static List<ResultItem> resultsFromTopDocs(IndexSearcher searcher, TopDocs docs) throws CorruptIndexException, IOException {
+	private static List<ResultItem> resultsFromTopDocs(IndexSearcher searcher, TopDocs docs) throws CorruptIndexException, IOException {
 		ArrayList<ResultItem> results = new ArrayList<ResultItem>(docs.totalHits);
 		ScoreDoc[] sds = docs.scoreDocs;
 		for (ScoreDoc sd : sds) {
@@ -672,7 +672,7 @@ public class Search {
 	 * @throws CorruptIndexException
 	 * @throws IOException
 	 */
-	protected static List<String> descriptionsFromTopDocs(IndexSearcher searcher, TopDocs docs) throws CorruptIndexException, IOException {
+	private static List<String> descriptionsFromTopDocs(IndexSearcher searcher, TopDocs docs) throws CorruptIndexException, IOException {
 		ArrayList<String> descs = new ArrayList<String>(docs.totalHits);
 		ScoreDoc[] sds = docs.scoreDocs;
 		for (ScoreDoc sd : sds) {
@@ -692,7 +692,7 @@ public class Search {
 	 * @throws CorruptIndexException
 	 * @throws IOException
 	 */
-	protected static List<Long> conceptsFromTopDocs(IndexSearcher searcher, TopDocs docs) throws CorruptIndexException, IOException {
+	private static List<Long> conceptsFromTopDocs(IndexSearcher searcher, TopDocs docs) throws CorruptIndexException, IOException {
 		LinkedHashSet<Long> concepts = new LinkedHashSet<>(docs.totalHits);
 		ScoreDoc[] sds = docs.scoreDocs;
 		for (ScoreDoc sd : sds) {
@@ -702,22 +702,6 @@ public class Search {
 			concepts.add(conceptId);
 		}
 		return new ArrayList<>(concepts);
-	}
-
-	/**
-	 * This is for debugging.
-	 * @param rs
-	 * @throws CorruptIndexException
-	 * @throws IOException
-	 */
-	protected TopDocs printDocuments(TopDocs rs) throws CorruptIndexException, IOException {
-		ScoreDoc[] docs = rs.scoreDocs;
-		System.out.println("Found " + rs.totalHits + " hits");
-		for (ScoreDoc sd: docs) {
-			Document doc = searcher().doc(sd.doc);
-			System.out.println("Term: " + doc.getField(FIELD_TERM) + " Concept: " + doc.getField(FIELD_CONCEPT_ID) + " Score: " + sd.score);
-		}
-		return rs;
 	}
 
 	/*
@@ -759,19 +743,6 @@ public class Search {
 	protected Analyzer analyser() {
 		return _analyzer;
 	}
-
-	/**
-	 * A queryparser is not thread safe so we create a new instance when required.
-	 * @return
-	 */
-	protected QueryParser queryParser() {
-		QueryParser qp = new QueryParser(FIELD_TERM, analyser());
-		qp.setDefaultOperator(QueryParser.Operator.AND);
-		qp.setMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_REWRITE);
-		return qp;
-	}
-
-
 
 	/**
 	 * Generates a fake Lucene full-text search result containing a single result of the concept specified.
