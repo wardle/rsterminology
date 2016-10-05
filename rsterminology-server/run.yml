@@ -5,7 +5,9 @@ jdbc:
 
 cayenne:
   datasource: rsdb
-  createSchema: true
+  createSchema: false
 
 log:
-  level: none
+  level: WARN
+  loggers:
+    org.apache.cayenne: error

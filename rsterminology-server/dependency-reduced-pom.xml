@@ -85,56 +85,15 @@
     <dependency>
       <groupId>io.bootique</groupId>
       <artifactId>bootique-test</artifactId>
-      <version>0.19</version>
+      <version>0.20</version>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>com.sun.jersey</groupId>
-      <artifactId>jersey-client</artifactId>
-      <version>1.8</version>
-      <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <artifactId>jersey-core</artifactId>
-          <groupId>com.sun.jersey</groupId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>com.sun.jersey</groupId>
-      <artifactId>jersey-json</artifactId>
-      <version>1.8</version>
-      <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <artifactId>jettison</artifactId>
-          <groupId>org.codehaus.jettison</groupId>
-        </exclusion>
-        <exclusion>
-          <artifactId>jaxb-impl</artifactId>
-          <groupId>com.sun.xml.bind</groupId>
-        </exclusion>
-        <exclusion>
-          <artifactId>jackson-core-asl</artifactId>
-          <groupId>org.codehaus.jackson</groupId>
-        </exclusion>
-        <exclusion>
-          <artifactId>jackson-mapper-asl</artifactId>
-          <groupId>org.codehaus.jackson</groupId>
-        </exclusion>
-        <exclusion>
-          <artifactId>jackson-jaxrs</artifactId>
-          <groupId>org.codehaus.jackson</groupId>
-        </exclusion>
-        <exclusion>
-          <artifactId>jackson-xc</artifactId>
-          <groupId>org.codehaus.jackson</groupId>
-        </exclusion>
-        <exclusion>
-          <artifactId>jersey-core</artifactId>
-          <groupId>com.sun.jersey</groupId>
-        </exclusion>
-      </exclusions>
+      <groupId>com.fasterxml.jackson.jaxrs</groupId>
+      <artifactId>jackson-jaxrs-providers</artifactId>
+      <version>2.3.0</version>
+      <type>pom</type>
+      <scope>compile</scope>
     </dependency>
   </dependencies>
   <dependencyManagement>
@@ -146,26 +105,11 @@
         <type>pom</type>
         <scope>import</scope>
       </dependency>
-      <dependency>
-        <groupId>org.apache.derby</groupId>
-        <artifactId>derby</artifactId>
-        <version>10.10.1.1</version>
-      </dependency>
-      <dependency>
-        <groupId>org.slf4j</groupId>
-        <artifactId>slf4j-api</artifactId>
-        <version>${slf4j-version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.slf4j</groupId>
-        <artifactId>jcl-over-slf4j</artifactId>
-        <version>${slf4j-version}</version>
-      </dependency>
     </dependencies>
   </dependencyManagement>
   <properties>
     <main.class>com.eldrix.terminology.server.SnomedCTApplication</main.class>
-    <bootique-version>0.19</bootique-version>
+    <bootique-version>0.20</bootique-version>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <slf4j-version>1.7.12</slf4j-version>
     <maven.compiler.source>1.8</maven.compiler.source>

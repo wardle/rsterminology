@@ -17,20 +17,21 @@ import com.eldrix.terminology.snomedct.Search.ResultItem;
 import com.eldrix.terminology.snomedct.Semantic.Dmd;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
+
+import io.bootique.application.CommandMetadata;
 import io.bootique.cli.Cli;
-import io.bootique.command.CommandMetadata;
 import io.bootique.command.CommandOutcome;
 import io.bootique.command.CommandWithMetadata;
 
 /**
  * This is a very simply command-line SNOMED-CT browser.
- * It is extremely rudimentary but it is intended to be help quickly find a concept and browse the hierarchy. 
+ * It is extremely rudimentary but it is intended to be help quickly find a concept and browse the hierarchy.
  * @author Mark Wardle
  *
  */
 public class Browser extends CommandWithMetadata {
 
-	@Inject 
+	@Inject
 	public Provider<ServerRuntime> cayenne;
 
 	private Concept _currentConcept;
@@ -110,7 +111,7 @@ public class Browser extends CommandWithMetadata {
 				Concept c = ObjectSelect.query(Concept.class, Concept.CONCEPT_ID.eq(conceptId)).selectOne(context);
 				if (c != null) {
 					setCurrentConcept(c);
-					printConcept(c, false);					
+					printConcept(c, false);
 				}
 				else {
 					System.err.println("No concept found with identifier: "+conceptId);
@@ -133,7 +134,7 @@ public class Browser extends CommandWithMetadata {
 			});
 		}
 	}
-	
+
 	private void performShowChildRelationships(String line) {
 		if ("c".equalsIgnoreCase(line.trim()) && currentConcept() != null) {
 			StringBuilder sb = new StringBuilder();
@@ -153,7 +154,7 @@ public class Browser extends CommandWithMetadata {
 		}
 		if (includeRelations) {
 			sb.append("\n  |-Recursive parents:");
-			c.getRecursiveParentConcepts().forEach(parent -> 
+			c.getRecursiveParentConcepts().forEach(parent ->
 			sb.append("\n  |    |-" + parent.getConceptId() + " " + parent.getFullySpecifiedName()));
 			sb.append("\n  |-Parent relationships:");
 			c.getParentRelationships().forEach(r -> {
@@ -162,7 +163,7 @@ public class Browser extends CommandWithMetadata {
 		}
 		System.out.println(sb.toString());
 	}
-	
+
 	private void performFind(String line) {
 		Matcher m = Pattern.compile("^f(?<number>\\d*)?\\s+(\\[(?<roots>.*?)\\])?\\s?(?<search>.*)").matcher(line);
 		if (m.matches()) {
@@ -196,12 +197,12 @@ public class Browser extends CommandWithMetadata {
 				else {
 					System.out.println("No results found");
 				}
-				
+
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
-			}			
+			}
 		}
-		
+
 	}
 }

@@ -6,14 +6,15 @@ import org.apache.cayenne.configuration.server.ServerRuntime;
 import com.eldrix.terminology.snomedct.ParentCache;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
+
+import io.bootique.application.CommandMetadata;
 import io.bootique.cli.Cli;
-import io.bootique.command.CommandMetadata;
 import io.bootique.command.CommandOutcome;
 import io.bootique.command.CommandWithMetadata;
 
 public class BuildParentCache extends CommandWithMetadata {
 
-	@Inject 
+	@Inject
 	public Provider<ServerRuntime> cayenne;
 
 	private static CommandMetadata createMetadata() {
