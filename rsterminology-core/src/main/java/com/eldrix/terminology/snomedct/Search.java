@@ -365,7 +365,6 @@ public class Search {
 		 * @throws IOException
 		 */
 		public List<ResultItem> search() throws CorruptIndexException, IOException {
-			System.out.println(_query);
 			TopDocs docs = searchForTopDocs();
 			return resultsFromTopDocs(_searcher.searcher(), docs);
 		}
