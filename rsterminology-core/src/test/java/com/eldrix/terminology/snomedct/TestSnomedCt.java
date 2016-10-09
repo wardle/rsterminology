@@ -13,10 +13,12 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.apache.cayenne.ObjectContext;
+import org.apache.cayenne.ResultIterator;
 import org.apache.cayenne.configuration.server.ServerRuntime;
 import org.apache.cayenne.exp.Expression;
 import org.apache.cayenne.exp.ExpressionFactory;
 import org.apache.cayenne.query.ObjectSelect;
+import org.apache.cayenne.query.SelectQuery;
 import org.apache.cayenne.validation.ValidationException;
 import org.apache.cayenne.validation.ValidationResult;
 import org.apache.lucene.index.CorruptIndexException;
@@ -233,9 +235,42 @@ public class TestSnomedCt {
 		assertTrue(sMs.stream().anyMatch(ri -> ri.getConceptId()==79619009L));		// mitral stenosis
 	}
 	
-
-
-
+	@Test
+	public void testLocale() {
+		ObjectContext context = getRuntime().newContext();
+		Concept haemophilia = ObjectSelect.query(Concept.class, Concept.CONCEPT_ID.eq(90935002L)).selectOne(context);
+		assertNotNull(haemophilia);
+		// haemophilia has two preferred descriptions one for US and one for GB
+		assertTrue(haemophilia.getDescriptions().stream()
+				.filter(d -> d.isPreferred())
+				.count() > 1);
+		Description preferredGB = haemophilia.getPreferredDescription("en-GB").get();
+		assertNotNull(preferredGB);
+		assertTrue(preferredGB.isPreferred());
+		assertTrue(preferredGB.isActive());
+		assertEquals("en-GB", preferredGB.getLanguageCode());
+		Description preferredUS = haemophilia.getPreferredDescription("en-US").get();
+		assertEquals("en-US", preferredUS.getLanguageCode());
+		
+		Concept beclametasone = ObjectSelect.query(Concept.class, Concept.CONCEPT_ID.eq(1389007L)).selectOne(context);
+		assertNotNull(beclametasone);
+		Description bGp = beclametasone.getPreferredDescription("en-GB").get();
+		assertTrue(bGp.isActive());
+	
+	}
+	
+	public void testAllConcepts() {
+		ObjectContext context = getRuntime().newContext();
+		SelectQuery<Concept> query = SelectQuery.query(Concept.class);
+		query.addPrefetch(Concept.DESCRIPTIONS.joint());
+		try (ResultIterator<Concept> iterator = query.iterator(context)) {
+			while (iterator.hasNextRow()) {
+				Concept c = iterator.nextRow();
+				Description d = c.getPreferredDescription();
+				assertNotNull(d);
+			}
+		}
+	}
 	
 	public <T> void assertNoNullsInList(List<T> l) {
 		for (T i : l) {

@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -14,6 +15,7 @@ import org.apache.cayenne.exp.Expression;
 import org.apache.cayenne.validation.BeanValidationFailure;
 import org.apache.cayenne.validation.ValidationResult;
 
+import com.eldrix.terminology.snomedct.Description.Type;
 import com.eldrix.terminology.snomedct.Semantic.RelationType;
 import com.eldrix.terminology.snomedct.auto._Concept;
 
@@ -81,7 +83,7 @@ public class Concept extends _Concept {
 			return activeCodes;
 		}
 	}
-	
+
 	public Optional<Status> getStatus() {
 		return Optional.ofNullable(Status._lookup.get(super.getConceptStatusCode()));
 	}
@@ -95,31 +97,68 @@ public class Concept extends _Concept {
 	}
 
 	/**
-	 * Return the preferred description for this concept.
-	 * TODO: This should take into account the language preferences.
+	 * Return the preferred description for this concept based on the current locale.
 	 * @return
 	 */
 	public Description getPreferredDescription() {
-		if (_preferredDescription == null) {
-			List<Description> all = getDescriptions();
-			List<Description> descs = Description.QUALIFIER_FOR_PREFERRED.filterObjects(all);
-			if (descs.size() == 0) {
-				descs = Description.QUALIFIER_FALLBACK_PREFERRED_DESCRIPTION.filterObjects(all);
-			}
-			if (descs.size() == 0) {
-				descs = Description.QUALIFIER_FSN_DESCRIPTION.filterObjects(all);
-			}
-			if (descs.size() == 0) {
-				descs = all;
-			}
-			if (descs.size() > 0) {
-				_preferredDescription = descs.get(0);
-			}
-			else {
-				throw new IllegalStateException("No descriptions found for concept");
+		Description result = _preferredDescription;
+		if (result == null) {
+			synchronized(this) {
+				result = _preferredDescription;
+				if (result == null) {
+					String currentLocale = Locale.getDefault().toLanguageTag();
+					_preferredDescription = getPreferredDescription(currentLocale).orElseGet( () -> {
+						return getDescriptions().size() > 0 ? getDescriptions().get(0) : null;
+					});
+					if (_preferredDescription == null) {
+						throw new IllegalStateException("No descriptions found for concept: " + getConceptId());
+					}
+				}
 			}
 		}
 		return _preferredDescription;
+	}
+
+	/**
+	 * Return the preferred description for the given locale(s).
+	 * @param preferredLocales - string of the format specified in {@link java.util.Locale.LanguageRange}
+	 * @return
+	 */
+	public Optional<Description> getPreferredDescription(String preferredLocales) {
+		ArrayList<Description> preferred = new ArrayList<>();
+		ArrayList<Description> fallback1 = new ArrayList<>();
+		ArrayList<Description> fallback2 = new ArrayList<>();
+		for (Description d: getDescriptions()) {
+			if (d.isPreferred()) {
+				preferred.add(d);
+			} else if (d.isActive() && d.getType().orElse(Type.UNSPECIFIED) == Type.SYNONYM) {
+				fallback1.add(d);
+			} else {
+				fallback2.add(d);
+			}
+		}
+		return Optional.ofNullable(_findDescriptionMatchingLocale(preferred, preferredLocales)
+				.orElse(_findDescriptionMatchingLocale(fallback1, preferredLocales)
+						.orElse(_findDescriptionMatchingLocale(fallback2, preferredLocales).orElse(null))));
+	}
+
+
+
+
+	/**
+	 * Find a matching description from the list of descriptions best matching the locale preferences.
+	 * The format of the preferredLocales is the same as that in {@link java.util.Locale.LanguageRange}
+	 * @see java.util.Locale.LanguageRange
+	 * @see java.util.Locale
+	 */
+	private static Optional<Description> _findDescriptionMatchingLocale(List<Description> descriptions, String preferredLocales) {
+		List<Locale.LanguageRange> preferred = Locale.LanguageRange.parse(preferredLocales);
+		List<String> tags = descriptions.stream().map(d -> d.getLanguageCode()).collect(Collectors.toList());
+		String result = Locale.lookupTag(preferred, tags);
+		if (result != null) { 
+			return descriptions.stream().filter(d -> d.getLanguageCode().equalsIgnoreCase(result)).findFirst();
+		}
+		return Optional.empty();
 	}
 
 	/**
