@@ -19,6 +19,7 @@ import com.eldrix.terminology.snomedct.CrossMapTable;
 import com.eldrix.terminology.snomedct.CrossMapTarget;
 import com.eldrix.terminology.snomedct.Description;
 import com.eldrix.terminology.snomedct.Relationship;
+import com.opencsv.CSVParser;
 import com.opencsv.CSVReader;
 
 /**
@@ -39,7 +40,7 @@ public class ParseRf1 {
 	};
 
 	public static void processFile(ServerRuntime runtime, String file) throws IOException {
-		try (CSVReader reader = new CSVReader(new FileReader(file), '\t')) {
+		try (CSVReader reader = new CSVReader(new FileReader(file), '\t', CSVParser.NULL_CHARACTER, false)) {
 			String[] csv;
 			int i = 0;
 			ObjectContext context = runtime.newContext();
@@ -52,7 +53,14 @@ public class ParseRf1 {
 				String entityName = context.getEntityResolver().getObjEntity(p.getEntityClass()).getName();
 				System.out.println("Processing SNOMED RF-1 file. Type:" + entityName);
 				while ((csv = reader.readNext()) != null) {
-					p.createOrUpdate(context, csv);
+					ObjectContext nested = runtime.newContext(context);
+					try {
+						p.createOrUpdate(nested, csv);
+						nested.commitChangesToParent();
+					} catch (Exception e) {
+						System.err.println("Error: couldn't import: " + Arrays.toString(csv));
+						e.printStackTrace();
+					}
 					i++;
 					if (i == BATCH_SIZE) {
 						i = 0;
