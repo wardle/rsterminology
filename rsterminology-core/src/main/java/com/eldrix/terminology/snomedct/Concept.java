@@ -12,6 +12,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.cayenne.exp.Expression;
+import org.apache.cayenne.exp.Property;
 import org.apache.cayenne.validation.BeanValidationFailure;
 import org.apache.cayenne.validation.ValidationResult;
 
@@ -46,8 +47,12 @@ import com.eldrix.terminology.snomedct.auto._Concept;
  */
 public class Concept extends _Concept {
 	private static final long serialVersionUID = 1L;
-	private Description _preferredDescription;
-	private Set<Long> _cachedRecursiveParents;
+	private static List<Locale.LanguageRange> _systemLocale = Locale.LanguageRange.parse(Locale.getDefault().toLanguageTag());
+
+	volatile private Description _preferredDescription;
+	volatile private Set<Long> _cachedRecursiveParents;
+
+	public static final Property<Description> PREFERRED_DESCRIPTION = new Property<Description>("preferredDescription");
 
 	public enum Status {
 		CURRENT(0, "Current", true),
@@ -106,8 +111,7 @@ public class Concept extends _Concept {
 			synchronized(this) {
 				result = _preferredDescription;
 				if (result == null) {
-					String currentLocale = Locale.getDefault().toLanguageTag();
-					_preferredDescription = getPreferredDescription(currentLocale).orElseGet( () -> {
+					_preferredDescription = getPreferredDescription(_systemLocale).orElseGet( () -> {
 						return getDescriptions().size() > 0 ? getDescriptions().get(0) : null;
 					});
 					if (_preferredDescription == null) {
@@ -124,7 +128,7 @@ public class Concept extends _Concept {
 	 * @param preferredLocales - string of the format specified in {@link java.util.Locale.LanguageRange}
 	 * @return
 	 */
-	public Optional<Description> getPreferredDescription(String preferredLocales) {
+	public Optional<Description> getPreferredDescription(List<Locale.LanguageRange> preferredLocales) {
 		ArrayList<Description> preferred = new ArrayList<>();
 		ArrayList<Description> fallback1 = new ArrayList<>();
 		ArrayList<Description> fallback2 = new ArrayList<>();
@@ -142,17 +146,17 @@ public class Concept extends _Concept {
 						.orElse(_findDescriptionMatchingLocale(fallback2, preferredLocales).orElse(null))));
 	}
 
-
-
-
+	public Optional<Description> getPreferredDescription(String preferredLocales) {
+		return getPreferredDescription(Locale.LanguageRange.parse(preferredLocales));
+	}
+	
 	/**
 	 * Find a matching description from the list of descriptions best matching the locale preferences.
 	 * The format of the preferredLocales is the same as that in {@link java.util.Locale.LanguageRange}
 	 * @see java.util.Locale.LanguageRange
 	 * @see java.util.Locale
 	 */
-	private static Optional<Description> _findDescriptionMatchingLocale(List<Description> descriptions, String preferredLocales) {
-		List<Locale.LanguageRange> preferred = Locale.LanguageRange.parse(preferredLocales);
+	private static Optional<Description> _findDescriptionMatchingLocale(List<Description> descriptions, List<Locale.LanguageRange> preferred) {
 		List<String> tags = descriptions.stream().map(d -> d.getLanguageCode()).collect(Collectors.toList());
 		String result = Locale.lookupTag(preferred, tags);
 		if (result != null) { 
@@ -230,9 +234,9 @@ public class Concept extends _Concept {
 		return getParentRelationships().stream()
 				.filter(r -> r.getRelationshipTypeConcept().getConceptId() == RelationType.IS_A.conceptId)
 				.map(Relationship::getTargetConcept)
-				.collect(Collectors.toList());
+				.collect(Collectors.collectingAndThen(Collectors.toList(), Collections::unmodifiableList));
 	}
-	
+
 	/**
 	 * Return child concepts using IS-A relationships.
 	 * @return
@@ -241,23 +245,25 @@ public class Concept extends _Concept {
 		return getChildRelationships().stream()
 				.filter(r -> r.getRelationshipTypeConcept().getConceptId() == RelationType.IS_A.conceptId)
 				.map(Relationship::getSourceConcept)
-				.collect(Collectors.toList());
+				.collect(Collectors.collectingAndThen(Collectors.toList(), Collections::unmodifiableList));
 	}
-	
+
 	/**
 	 * This determines a list of concept identifiers that are the recursive parents
 	 * of this concept.
 	 * @return
 	 */
 	public Set<Long> getCachedRecursiveParents() {
-		if (_cachedRecursiveParents == null) {
+		Set<Long> result = _cachedRecursiveParents;
+		if (result == null) {
 			synchronized(this) {
-				if (_cachedRecursiveParents == null) {
-					_cachedRecursiveParents = _getRecursiveParentsFromDatabaseCache();
+				result = _cachedRecursiveParents;
+				if (result == null) {
+					_cachedRecursiveParents = result = _getRecursiveParentsFromDatabaseCache();
 				}
 			}
 		}
-		return _cachedRecursiveParents;
+		return result;
 	}
 
 	public void clearCachedRecursiveParents() {
@@ -286,11 +292,9 @@ public class Concept extends _Concept {
 	 * @return
 	 */
 	private Set<Long> _getRecursiveParentsFromDatabaseCache() {
-		HashSet<Long> parents = new HashSet<Long>();
-		getRecursiveParentConcepts().forEach(c -> {
-			parents.add(c.getConceptId());
-		});
-		return Collections.unmodifiableSet(parents);
+		return getRecursiveParentConcepts().stream()
+			.map(Concept::getConceptId)
+			.collect(Collectors.collectingAndThen(Collectors.toSet(), Collections::unmodifiableSet));
 	}
 
 	@Override
@@ -301,5 +305,5 @@ public class Concept extends _Concept {
 		}
 	}
 
-	
+
 }
