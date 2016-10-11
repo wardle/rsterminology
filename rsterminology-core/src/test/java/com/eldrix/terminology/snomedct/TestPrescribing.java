@@ -284,12 +284,13 @@ public class TestPrescribing {
 		
 	}
 	@Test
-	public void testAllVmps() {
+	public void testSomeVmps() {
 		ObjectContext context = getRuntime().newContext();
 		Expression exp = Concept.PARENT_RELATIONSHIPS.dot(Relationship.TARGET_CONCEPT.dot(Concept.CONCEPT_ID)).eq(Semantic.Dmd.Product.VIRTUAL_MEDICINAL_PRODUCT.conceptId).andExp(Concept.PARENT_RELATIONSHIPS.dot(Relationship.RELATIONSHIP_TYPE_CONCEPT.dot(Concept.CONCEPT_ID)).eq(Semantic.RelationType.IS_A.conceptId));
 		SelectQuery<Concept> query = SelectQuery.query(Concept.class, exp);
+		query.setFetchLimit(500);
 		long maxDoseForms = 0;
-		try (ResultBatchIterator<Concept> iterator = query.batchIterator(context, 500)) {
+		try (ResultBatchIterator<Concept> iterator = query.batchIterator(context, 100)) {
 			for(List<Concept> vmps : iterator) {
 				for (Concept c : vmps) {
 					assertTrue(Vmp.isA(c));
