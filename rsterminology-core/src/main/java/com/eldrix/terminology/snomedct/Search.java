@@ -330,6 +330,12 @@ public class Search {
 		return new Request.Builder(this);
 	}
 
+	/**
+	 * Return the location for the index.
+	 */
+	public String indexLocation() {
+		return _indexLocation;
+	}
 
 	/**
 	 * A search request. 
