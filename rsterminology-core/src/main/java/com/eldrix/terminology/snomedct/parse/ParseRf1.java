@@ -64,12 +64,12 @@ public class ParseRf1 {
 					i++;
 					total++;
 					if (i == BATCH_SIZE) {
-						System.out.println("Processed " + total);
+						System.out.print("\rProcessed " + total);
 						i = 0;
 						context = runtime.newContext();
 					}
 				}
-				System.out.println("Processed " + total + "... complete.");
+				System.out.println("\nProcessed " + total + "... complete.");
 			}
 			else {
 				System.err.println("Unknown file format.");

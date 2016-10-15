@@ -83,7 +83,7 @@ public class ParentCache {
 		long start = System.currentTimeMillis();
 		try (ResultBatchIterator<T> iterator = query.batchIterator(context, batchSize)) {
 			for(List<T> batch : iterator) {
-				System.out.println("Processing batch " + i + "/" + batches + (estimated == 0 ? "" : " Remaining: ~" + estimated / 60000 + " min"));
+				System.out.print("\rProcessing batch " + i + "/" + batches + (estimated == 0 ? "" : " Remaining: ~" + estimated / 60000 + " min"));
 				for (T c : batch) {
 					forEach.accept(c);
 				}
@@ -92,6 +92,7 @@ public class ParentCache {
 				estimated = (batches - i) * elapsed / i;
 			}
 		}
+		System.out.println("\nFinished processing : " + i);
 	}
 	
 	

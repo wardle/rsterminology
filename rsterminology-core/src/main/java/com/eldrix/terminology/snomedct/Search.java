@@ -279,9 +279,10 @@ public class Search {
 		IndexWriter writer = createOrLoadIndexWriter(indexFile(), analyser());
 		SelectQuery<Description> query = SelectQuery.query(Description.class);
 		long i = 0;
+		System.out.println("Updating search index:");
 		try (ResultBatchIterator<Description> iterator = query.batchIterator(context, BATCH_ITERATOR_COUNT)) {
 			for(List<Description> batch : iterator) {
-				System.out.println("Processing batch:" + (++i));
+				System.out.print("\rProcessing batch:" + (++i));
 				for (Description d : batch) {
 					processDescription(writer, d);
 				}
@@ -290,6 +291,7 @@ public class Search {
 		}
 		writer.forceMerge(1);
 		writer.close();
+		System.out.println("Finished updating search index");
 		_searcher = createSearcher();		// create a new searcher now the index has changed.
 	}
 
