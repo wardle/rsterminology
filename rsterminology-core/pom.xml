@@ -14,8 +14,8 @@
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<maven.compiler.target>1.8</maven.compiler.target>
-    <lucene-version>6.1.0</lucene-version>
-    <cayenne-version>4.0.M3</cayenne-version>
+		<lucene-version>6.1.0</lucene-version>
+		<cayenne-version>4.0.M3</cayenne-version>
 	</properties>
 
 	<dependencies>
@@ -23,6 +23,12 @@
 			<groupId>org.apache.cayenne</groupId>
 			<artifactId>cayenne-server</artifactId>
 			<version>${cayenne-version}</version>
+			<exclusions>
+				<exclusion>
+					<artifactId>commons-logging</artifactId>
+					<groupId>commons-logging</groupId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>org.postgresql</groupId>
@@ -54,6 +60,12 @@
 			<groupId>com.opencsv</groupId>
 			<artifactId>opencsv</artifactId>
 			<version>3.8</version>
+			<exclusions>
+				<exclusion>
+					<artifactId>commons-logging</artifactId>
+					<groupId>commons-logging</groupId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.lucene</groupId>
@@ -71,7 +83,7 @@
 			<plugin>
 				<groupId>org.apache.cayenne.plugins</groupId>
 				<artifactId>maven-cayenne-plugin</artifactId>
-        <version>${cayenne-version}</version>
+				<version>${cayenne-version}</version>
 				<executions>
 					<execution>
 						<id>cgen</id>
@@ -83,22 +95,22 @@
 							<goal>cgen</goal>
 						</goals>
 					</execution>
-					 <execution>
-      		    <id>cdbgen</id>
-      		    <configuration>
-      			<map>${project.build.sourceDirectory}/../resources/datamap.map.xml</map>
-                        <adapter>org.apache.cayenne.dba.postgres.PostgresAdapter</adapter>
-                        <driver>org.postgresql.Driver</driver>
-                        <url>jdbc:postgresql:rsdb</url>
-                        <username>mark</username>
-      		    </configuration>
-      		    <goals>
-      			<goal>cdbgen</goal>
-      		    </goals>
-      		</execution>
+					<execution>
+						<id>cdbgen</id>
+						<configuration>
+							<map>${project.build.sourceDirectory}/../resources/datamap.map.xml</map>
+							<adapter>org.apache.cayenne.dba.postgres.PostgresAdapter</adapter>
+							<driver>org.postgresql.Driver</driver>
+							<url>jdbc:postgresql:rsdb</url>
+							<username>mark</username>
+						</configuration>
+						<goals>
+							<goal>cdbgen</goal>
+						</goals>
+					</execution>
 				</executions>
 			</plugin>
-			
+
 		</plugins>
 	</build>
 </project>
