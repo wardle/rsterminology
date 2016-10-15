@@ -52,7 +52,7 @@
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
-			
+
 
 
 
@@ -63,18 +63,14 @@
 	<dependencies>
 
 		<!-- required runtime dependencies -->
- 		<dependency>
-            <groupId>io.bootique</groupId>
-            <artifactId>bootique</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.bootique.linkrest</groupId>
-            <artifactId>bootique-linkrest</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.bootique.logback</groupId>
-            <artifactId>bootique-logback</artifactId>
-        </dependency>
+		<dependency>
+			<groupId>io.bootique</groupId>
+			<artifactId>bootique</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>io.bootique.linkrest</groupId>
+			<artifactId>bootique-linkrest</artifactId>
+		</dependency>
 
 		<dependency>
 			<groupId>com.eldrix.rsterminology.core</groupId>
@@ -94,6 +90,11 @@
 			<artifactId>bootique-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>io.bootique.logback</groupId>
+			<artifactId>bootique-logback</artifactId>
+		</dependency>
+
 	</dependencies>
 
 	<build>

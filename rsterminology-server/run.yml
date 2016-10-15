@@ -1,13 +1,15 @@
 jdbc:
   rsdb:
     url: jdbc:postgresql:rsdb
-    driver: org.postgresql.Driver
+    driverClassName: org.postgresql.Driver
+    initialSize: 10
 
 cayenne:
   datasource: rsdb
   createSchema: false
 
 log:
-  level: WARN
+  level: warn
   loggers:
-    org.apache.cayenne: error
+    org.apache.cayenne:
+      level: warn
