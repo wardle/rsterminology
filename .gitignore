@@ -8,3 +8,4 @@ target
 .classpath
 .prefs
 /rsterminology-server/dependency-reduced-pom.xml
+rsterminology-core/*.log
