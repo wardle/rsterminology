@@ -43,6 +43,7 @@ public class ParseRf1 {
 		try (CSVReader reader = new CSVReader(new FileReader(file), '\t', CSVParser.NULL_CHARACTER, false)) {
 			String[] csv;
 			int i = 0;
+			long total = 0;
 			ObjectContext context = runtime.newContext();
 			String[] header = reader.readNext();			// get header and check it is valid
 			Optional<Rf1FileParser> parser = Arrays.stream(parsers)
@@ -53,22 +54,22 @@ public class ParseRf1 {
 				String entityName = context.getEntityResolver().getObjEntity(p.getEntityClass()).getName();
 				System.out.println("Processing SNOMED RF-1 file. Type:" + entityName);
 				while ((csv = reader.readNext()) != null) {
-					ObjectContext nested = runtime.newContext(context);
 					try {
-						p.createOrUpdate(nested, csv);
-						nested.commitChangesToParent();
+						p.createOrUpdate(context, csv);
+						context.commitChanges();
 					} catch (Exception e) {
 						System.err.println("Error: couldn't import: " + Arrays.toString(csv));
 						e.printStackTrace();
 					}
 					i++;
+					total++;
 					if (i == BATCH_SIZE) {
+						System.out.println("Processed " + total);
 						i = 0;
-						context.commitChanges();
 						context = runtime.newContext();
 					}
 				}
-				context.commitChanges();
+				System.out.println("Processed " + total + "... complete.");
 			}
 			else {
 				System.err.println("Unknown file format.");
