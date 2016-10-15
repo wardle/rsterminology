@@ -7,3 +7,4 @@ target
 .project
 .classpath
 .prefs
+/rsterminology-server/dependency-reduced-pom.xml
