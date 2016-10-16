@@ -272,20 +272,25 @@ public class ParseRf1 {
 		}
 		@Override
 		void update(Relationship r, String[] csv) {
+			ObjectContext context = r.getObjectContext();
 			r.setDateUpdated(_dateCreated);
 			r.setRelationshipId(relationshipId(csv));
 			r.setCharacteristicType(characteristicType(csv));
 			r.setRefinability(refinability(csv));
 			r.setRelationshipGroup(relationshipGroup(csv));
-			List<Concept> concepts = ObjectSelect.query(Concept.class, Concept.CONCEPT_ID.in(relationTypeConceptId(csv), sourceConceptId(csv), targetConceptId(csv))).select(r.getObjectContext());
-			if (concepts.size() == 3) {
-				r.setRelationshipTypeConcept(concepts.get(0));
-				r.setSourceConcept(concepts.get(1));
-				r.setTargetConcept(concepts.get(2));
+			Concept type = ObjectSelect.query(Concept.class, Concept.CONCEPT_ID.eq(relationTypeConceptId(csv))).selectOne(context);
+			Concept source = ObjectSelect.query(Concept.class, Concept.CONCEPT_ID.eq(sourceConceptId(csv))).selectOne(context);
+			Concept target = ObjectSelect.query(Concept.class, Concept.CONCEPT_ID.eq(targetConceptId(csv))).selectOne(context);
+			if (type != null && source != null && target != null) {
+				r.setRelationshipTypeConcept(type);
+				r.setSourceConcept(source);
+				r.setTargetConcept(target);
 			}
 			else {
-				System.err.println("Could not import relationship " + relationshipId(csv) + ": One or more concepts not found");
-				r.getObjectContext().deleteObject(r);
+				System.err.println("Could not import relationship " + relationshipId(csv) + 
+						": One or more concepts not found. Source:" + source + 
+						" Type:" + type + " Target:" + target);
+				context.deleteObject(r);
 			}
 		}
 		Long relationshipId(String[] csv) {		
@@ -457,7 +462,6 @@ public class ParseRf1 {
 				cmt.setRule(mapRule(data));
 				cmt.setAdvice(mapAdvice(data));
 				cmt.setDateUpdated(_dateCreated);
-				context.commitChanges();
 			}
 			else {
 				System.err.println("Could not identify set, concept or target: " + data);
