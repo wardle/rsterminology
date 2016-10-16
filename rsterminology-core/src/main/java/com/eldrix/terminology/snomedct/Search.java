@@ -12,7 +12,7 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.cayenne.ObjectContext;
-import org.apache.cayenne.ResultBatchIterator;
+import org.apache.cayenne.query.EJBQLQuery;
 import org.apache.cayenne.query.SelectQuery;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -52,6 +52,7 @@ import org.apache.lucene.store.LockObtainFailedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.eldrix.terminology.cayenne.CayenneUtility;
 import com.eldrix.terminology.snomedct.Semantic.Dmd;
 import com.eldrix.terminology.snomedct.Semantic.RelationType;
 
@@ -73,7 +74,7 @@ public class Search {
 	private static final int DEFAULT_MAXIMUM_HITS = 200;		// default maximum of hits to return.
 	private static final String INDEX_LOCATION_PROPERTY_KEY="com.eldrix.snomedct.search.lucene.IndexLocation";
 	private static final String DEFAULT_INDEX_LOCATION="/var/rsdb/sct_lucene6/";
-	
+
 	/**
 	 * Names of the fields for the Lucene backend.
 	 */
@@ -121,7 +122,7 @@ public class Search {
 		public static Query forRecursiveParent(long[] parentConceptIds) {
 			return LongPoint.newSetQuery(FIELD_RECURSIVE_PARENT_CONCEPT_ID, parentConceptIds);
 		}
-		
+
 		/**
 		 * Returns a filter for descriptions with one of the given parent concepts.
 		 *
@@ -159,7 +160,7 @@ public class Search {
 		public static Query forDirectParent(long isAParentConceptId) {
 			return LongPoint.newExactQuery(FIELD_DIRECT_PARENT_CONCEPT_ID, isAParentConceptId);
 		}
-		
+
 		/**
 		 * Return a filter to include only descriptions of the specified types.
 		 * @param types
@@ -181,7 +182,7 @@ public class Search {
 			}
 			return forDescriptionType(t);
 		}
-		
+
 		/**
 		 * Return a filter to include all types of description except the one specified.
 		 */
@@ -198,7 +199,7 @@ public class Search {
 			return forDescriptionType(types);
 		}
 
-		
+
 		/**
 		 * Return concepts that are a type of VTM or TF.
 		 */
@@ -277,18 +278,21 @@ public class Search {
 	 */
 	public void processAllDescriptions(ObjectContext context) throws CorruptIndexException, LockObtainFailedException, IOException {
 		IndexWriter writer = createOrLoadIndexWriter(indexFile(), analyser());
+		EJBQLQuery countQuery = new EJBQLQuery("select COUNT(d) FROM Description d");
+		@SuppressWarnings("unchecked") long count = ((List<Long>) context.performQuery(countQuery)).get(0);
 		SelectQuery<Description> query = SelectQuery.query(Description.class);
-		long i = 0;
 		System.out.println("Updating search index:");
-		try (ResultBatchIterator<Description> iterator = query.batchIterator(context, BATCH_ITERATOR_COUNT)) {
-			for(List<Description> batch : iterator) {
-				System.out.print("\rProcessing batch:" + (++i));
+		CayenneUtility.timedBatchIterator(context, query, BATCH_ITERATOR_COUNT, count, (batch) -> {
+			try {
 				for (Description d : batch) {
 					processDescription(writer, d);
 				}
-				writer.commit();
+				writer.commit();			
+			} catch (IOException e) {
+				throw new RuntimeException(e);
 			}
-		}
+		});
+		System.out.println("Merging segments...");
 		writer.forceMerge(1);
 		writer.close();
 		System.out.println("Finished updating search index");
@@ -323,7 +327,7 @@ public class Search {
 		}
 		writer.addDocument(doc);
 	}
-	
+
 	/**
 	 * Create a new request builder.
 	 * @return
@@ -365,7 +369,7 @@ public class Search {
 			return _searcher.searcher().search(_query, _maxHits);
 		}
 
-		
+
 		/**
 		 * Search, returning the ordered results as a list of ResultItems.
 		 * @return
@@ -392,7 +396,7 @@ public class Search {
 			}
 			return null;
 		}
-		
+
 		/**
 		 * Search, returning the results as a list of concept identifiers.
 		 * There will be no duplicates in the returned results.
@@ -404,7 +408,7 @@ public class Search {
 			TopDocs docs = searchForTopDocs();
 			return Search.conceptsFromTopDocs(_searcher.searcher(), docs);
 		}
-		
+
 		/**
 		 * Search, returning the results as a list of descriptions.
 		 * @return
@@ -437,7 +441,7 @@ public class Search {
 				Objects.requireNonNull(searcher);
 				_searcher = searcher;
 			}
-			
+
 			protected QueryParser queryParser() {
 				if (_queryParser == null) {
 					_queryParser = new QueryParser(FIELD_TERM, _analyzer);
@@ -517,7 +521,7 @@ public class Search {
 				_fuzzyMaxEdits = distance > 2 ? 2 : distance;
 				return this;
 			}
-			
+
 			/**
 			 * Turn on fuzzy matching with the default number of edits.
 			 * @return
@@ -526,7 +530,7 @@ public class Search {
 				_fuzzyMaxEdits = DEFAULT_FUZZY_MAXIMUM_EDITS;
 				return this;
 			}
-			
+
 			/**
 			 * Filter only for concepts with the specified (recursive) parents.
 			 * @param parents
@@ -539,7 +543,7 @@ public class Search {
 			public Builder withRecursiveParent(List<Long> parents) {
 				return withFilters(Search.Filter.forRecursiveParent(parents));
 			}
-			
+
 			public Builder withRecursiveParent(long parent) {
 				return withFilters(Search.Filter.forRecursiveParent(parent));
 			}
@@ -552,11 +556,11 @@ public class Search {
 			public Builder withDirectParent(long[] isA) {
 				return withFilters(Search.Filter.forDirectParent(isA));
 			}
-			
+
 			public Builder withDirectParent(List<Long> isA) {
 				return withFilters(Search.Filter.forDirectParent(isA));
 			}
-			
+
 			public Builder withDirectParent(long isA) {
 				return withFilters(Search.Filter.forDirectParent(isA));
 			}
@@ -568,7 +572,7 @@ public class Search {
 			public Builder withoutFullySpecifiedNames() {
 				return withFilters(Search.Filter.WITHOUT_FULLY_SPECIFIED_NAMES);
 			}
-			
+
 			/**
 			 * Include only active concepts during search.
 			 * @return
@@ -591,7 +595,7 @@ public class Search {
 				}
 				return this;
 			}
-			
+
 			/**
 			 * Clear all currently set filters.
 			 * This does not change the search term(s) however.
@@ -815,7 +819,7 @@ public class Search {
 		public int hashCode() {
 			return Objects.hash(_conceptId, _preferredTerm, _term);
 		}
-		
+
 		@Override
 		public String getTerm() {
 			return _term;
