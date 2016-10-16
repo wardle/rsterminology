@@ -15,20 +15,21 @@ public class CayenneUtility {
 	 */
 	public static <T> void timedBatchIterator(ObjectContext context, SelectQuery<T> query, int batchSize, long count, Consumer<List<T>> forEach) {
 		long i = 1;
-		long batches = count / batchSize;
+		long batches = (count / batchSize) + (count % batchSize > 0 ? 1 : 0);
 		long estimated = 0;
 		System.out.println("Processing " + count + ((batches == 0) ? "" : (" in " + batches + " batches...")));
 		long start = System.currentTimeMillis();
 		try (ResultBatchIterator<T> iterator = query.batchIterator(context, batchSize)) {
 			for(List<T> batch : iterator) {
-				System.out.print("\rProcessing batch " + i + "/" + batches + (estimated == 0 ? "" : " Remaining: ~" + estimated / 60000 + " min"));
+				System.out.print("\rProcessing batch " + i + "/" + batches + (estimated == 0 ? "" : " Remaining: ~" + estimated / 60000 + " min   "));
 				forEach.accept(batch);
 				i++;
 				long elapsed = System.currentTimeMillis() - start;
 				estimated = (batches - i) * elapsed / i;
 			}
 		}
-		System.out.println("\nFinished processing : " + i);
+		long duration = System.currentTimeMillis() - start;
+		System.out.println("\nFinished processing : " + count + " Total time:" + duration / 60000 + " minutes");
 	}
 
 }
