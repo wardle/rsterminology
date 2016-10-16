@@ -22,18 +22,18 @@ import io.bootique.command.CommandWithMetadata;
  * @author Mark Wardle
  *
  */
-public class CreateIndex extends CommandWithMetadata {
+public class BuildIndex extends CommandWithMetadata {
 
 	@Inject
 	public Provider<ServerRuntime> cayenne;
 
 	private static CommandMetadata createMetadata() {
-		return CommandMetadata.builder(CreateIndex.class)
-				.description("Builds a new lucene index.")
+		return CommandMetadata.builder(BuildIndex.class)
+				.description("Builds a lucene index.")
 				.build();
 	}
 
-	public CreateIndex() {
+	public BuildIndex() {
 		super(createMetadata());
 	}
 
