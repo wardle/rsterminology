@@ -19,8 +19,6 @@ import io.bootique.command.CommandWithMetadata;
 
 /**
  * Create or update a lucene index.
- * TODO: Allow configuration of location of index.
- * TODO: Migrate to a modern version of lucene.
  * @author Mark Wardle
  *
  */
