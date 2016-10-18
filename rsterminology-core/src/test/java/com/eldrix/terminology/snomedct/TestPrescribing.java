@@ -145,6 +145,13 @@ public class TestPrescribing {
 		
 		List<Long> amlodipineTfIds = new Search.Request.Builder(Search.getInstance()).search("istin").withDirectParent(Dmd.Product.TRADE_FAMILY.conceptId).onlyActive().build().searchForConcepts();
 		List<Concept> amlodipineTfs1 = SelectQuery.query(Concept.class, Concept.CONCEPT_ID.in(amlodipineTfIds)).select(context);
+
+		Tf istin = new Tf(amlodipineTfs1.get(0));
+		Optional<Vtm> istinVtm = istin.getAmps().map(Amp::getVmp).filter(Optional::isPresent).map(Optional::get)
+			.map(Vmp::getVtm).filter(Optional::isPresent).map(Optional::get).findFirst();
+		assertTrue(istinVtm.isPresent());
+		assertEquals(istinVtm.get().getConcept(), amlodipineVtm);
+		
 		List<Concept> amlodipineTfs2 = Vtm.getTfs(amlodipineVtm).collect(Collectors.toList());
 		for (Concept aTf : amlodipineTfs2) {
 			assertNotNull(aTf);
@@ -300,7 +307,7 @@ public class TestPrescribing {
 				}
 			}
 		}
-		assertNotEquals(1, maxDoseForms);
+		assertEquals(1, maxDoseForms);		// each VMP represents a single dose form
 	}
 
 }

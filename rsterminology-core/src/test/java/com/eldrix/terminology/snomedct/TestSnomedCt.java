@@ -278,7 +278,7 @@ public class TestSnomedCt {
 		}
 	}
 	
-	private static void printConcept(Concept c) {
+	public static void printConcept(Concept c) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("Concept : " + c.getConceptId() + " : " + c.getFullySpecifiedName() + " DM&D structure : " + Dmd.Product.productForConcept(c));
 		c.getRecursiveChildConcepts().forEach(child -> sb.append("\n  childConcept: " + child.getFullySpecifiedName()));

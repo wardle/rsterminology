@@ -1,6 +1,7 @@
 package com.eldrix.terminology.snomedct;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Objects;
 import java.util.Optional;
@@ -192,13 +193,31 @@ public class Semantic {
 
 		/**
 		 * Return the VMPs for the given VTM
+		 * There is some hierarchy here, in which a child of a VTM is a broad concept (such as oral dose) which has
+		 * itself children that are VMP but it itself is not a VMP.
 		 * VTM <->> VMP
 		 * @param vtm
 		 * @return
 		 */
 		public static Stream<Concept> getVmps(Concept vtm) {
-			return vtm.getChildConcepts().stream()
+			ArrayList<Concept> vmps = new ArrayList<>();
+			_addVmps(vtm, vmps);
+			return vmps.stream()
 					.filter(child -> Product.VIRTUAL_MEDICINAL_PRODUCT.isAProduct(child));
+		}
+
+		/*
+		 * Deal with hierarchically nested VMPs for a VTM.
+		 * e.g. see amlodipine.
+		 */
+		private static void _addVmps(Concept vtm, ArrayList<Concept> vmps) {
+			for (Concept child : vtm.getChildConcepts()) {	// looking only as IS-A relationships
+				if (Product.VIRTUAL_MEDICINAL_PRODUCT.isAProduct(child)) {
+					vmps.add(child);
+				} else {
+					_addVmps(child, vmps);
+				}
+			}
 		}
 		
 
@@ -269,9 +288,26 @@ public class Semantic {
 		 * @return
 		 */
 		public static Optional<Concept> getVtm(Concept vmp) {
-			return vmp.getParentConcepts().stream()
-					.filter(parent -> Product.VIRTUAL_THERAPEUTIC_MOIETY.isAProduct(parent))
-					.findFirst();
+			return Optional.ofNullable(_findVtm(vmp));
+		}
+		
+		/*
+		 * Deal with hierarchically nested VMPs for a VTM.
+		 * e.g. see amlodipine.
+		 */
+		private static Concept _findVtm(Concept vmp) {
+			Concept vtm = null;
+			for (Concept parent : vmp.getParentConcepts()) {	// looking only at IS-A relationships
+				if (Product.VIRTUAL_THERAPEUTIC_MOIETY.isAProduct(parent)) {
+					vtm = parent;
+				} else {
+					vtm = _findVtm(parent);
+				}
+				if (vtm != null) {
+					return vtm;
+				}
+			}
+			return vtm;
 		}
 
 		public Optional<Vtm> getVtm() {
