@@ -4,7 +4,7 @@
 
 	<groupId>com.eldrix.rsterminology.core</groupId>
 	<artifactId>rsterminology-core</artifactId>
-	<version>1.0</version>
+	<version>1.1-SNAPSHOT</version>
 	<name>RSTerminology</name>
 	<description>A terminology service</description>
 
@@ -99,19 +99,6 @@
 						</configuration>
 						<goals>
 							<goal>cgen</goal>
-						</goals>
-					</execution>
-					<execution>
-						<id>cdbgen</id>
-						<configuration>
-							<map>${project.build.sourceDirectory}/../resources/datamap.map.xml</map>
-							<adapter>org.apache.cayenne.dba.postgres.PostgresAdapter</adapter>
-							<driver>org.postgresql.Driver</driver>
-							<url>jdbc:postgresql:rsdb</url>
-							<username>mark</username>
-						</configuration>
-						<goals>
-							<goal>cdbgen</goal>
 						</goals>
 					</execution>
 				</executions>
