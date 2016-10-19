@@ -61,4 +61,7 @@ public class Tf extends Dmd {
 				.flatMap(amp -> Amp.getDispensedDoseForms(amp))
 				.distinct();
 	}
+	public Stream<Concept> getDispensedDoseForms() {
+		return Tf.getDispensedDoseForms(_concept);
+	}
 }
