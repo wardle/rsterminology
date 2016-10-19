@@ -263,7 +263,9 @@ public class Browser extends CommandWithMetadata {
 		appendDmdProduct(sb, tf);
 		System.out.println(sb.toString());
 		if (showOthers) {
+			tf.getDispensedDoseForms().forEach(c -> showConcept(indent+2, "doseForm", c));
 			tf.getAmps().forEach(amp -> showAmp(indent+2, amp, false));
+			tf.getVmps().forEach(vmp -> showVmp(indent+2, vmp, false));
 			tf.getVtms().forEach(vtm -> showVtm(indent+2, vtm, false));
 		}
 	}
@@ -287,6 +289,7 @@ public class Browser extends CommandWithMetadata {
 			vmp.getAmps().forEach(amp -> showAmp(indent+2, amp, false));
 			vmp.getVtm().ifPresent(vtm -> showVtm(indent+2, vtm, false));
 			vmp.getActiveIngredients().forEach(c -> System.out.println(indent(indent+2) + "activeIngredient:" + c.getPreferredDescription().getTerm()));
+			vmp.getDispensedDoseForms().forEach(c -> showConcept(indent+2, "doseForm", c));
 		}
 	}
 	private void showVmpp(Vmpp vmpp) {
@@ -316,11 +319,18 @@ public class Browser extends CommandWithMetadata {
 		sb.append(indent(indent));
 		sb.append("VTM:");
 		appendDmdProduct(sb, vtm);
+		System.out.println(sb.toString());
 		if (showOthers) {
 			vtm.getVmps().forEach(vmp -> showVmp(indent + 2, vmp, false));
 			vtm.getTfs().forEach(tf -> showTf(indent + 2, tf, false));
+			vtm.getDispensedDoseForms().forEach(c -> showConcept(indent+2, "doseForm", c));
 		}
 	}
+	
+	private void showConcept(int indent, String title, Concept c) {
+		System.out.println(indent(indent) + title + ":" + c.getPreferredDescription().getTerm());
+	}
+	
 	private String indent(int n) {
 		StringBuilder sb = new StringBuilder();
 		for (int i=0; i<n; i++) {
