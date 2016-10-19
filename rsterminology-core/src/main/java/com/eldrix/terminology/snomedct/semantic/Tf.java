@@ -38,7 +38,8 @@ public class Tf extends Dmd {
 	public static Stream<Concept> getVmps(Concept tf) {
 		return Tf.getAmps(tf).map(Amp::getVmp)
 				.filter(Optional::isPresent)
-				.map(Optional::get);
+				.map(Optional::get)
+				.distinct();
 	}
 	public Stream<Vmp> getVmps() {
 		return Tf.getVmps(_concept).map(Vmp::new);
