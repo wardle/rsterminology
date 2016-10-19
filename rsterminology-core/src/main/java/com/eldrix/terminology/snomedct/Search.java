@@ -53,8 +53,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.eldrix.terminology.cayenne.CayenneUtility;
-import com.eldrix.terminology.snomedct.Semantic.Dmd;
-import com.eldrix.terminology.snomedct.Semantic.RelationType;
+import com.eldrix.terminology.snomedct.semantic.Dmd;
+import com.eldrix.terminology.snomedct.semantic.RelationType;
 
 
 /**

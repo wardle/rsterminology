@@ -2,8 +2,8 @@ package com.eldrix.terminology.snomedct;
 
 import java.util.Optional;
 
-import com.eldrix.terminology.snomedct.Semantic.RelationType;
 import com.eldrix.terminology.snomedct.auto._Relationship;
+import com.eldrix.terminology.snomedct.semantic.RelationType;
 
 public class Relationship extends _Relationship {
 	private static final long serialVersionUID = 1L; 

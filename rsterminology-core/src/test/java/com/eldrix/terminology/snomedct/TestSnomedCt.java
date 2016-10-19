@@ -28,9 +28,11 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.eldrix.terminology.snomedct.Search.Request.Builder;
+import com.eldrix.terminology.snomedct.semantic.Category;
+import com.eldrix.terminology.snomedct.semantic.Dmd;
+import com.eldrix.terminology.snomedct.semantic.Tf;
+import com.eldrix.terminology.snomedct.semantic.Vtm;
 import com.eldrix.terminology.snomedct.Search.ResultItem;
-import com.eldrix.terminology.snomedct.Semantic.Dmd;
-import com.eldrix.terminology.snomedct.Semantic.Vtm;
 
 public class TestSnomedCt {
 	static ServerRuntime _runtime;
@@ -200,10 +202,10 @@ public class TestSnomedCt {
 		assertEquals(1, sAmlodipine.size());
 		Concept amlodipine = ObjectSelect.query(Concept.class, Concept.CONCEPT_ID.eq(sAmlodipine.get(0).getConceptId())).selectOne(context);
 		assertNotNull(amlodipine);
-		assertTrue(Semantic.Vtm.isA(amlodipine));		// this should be a VTM
+		assertTrue(Vtm.isA(amlodipine));		// this should be a VTM
 		List<ResultItem> aMadopar = b.search("madopar").setMaxHits(1).withFilters(Search.Filter.DMD_VTM_OR_TF).build().search();
 		Concept madopar = ObjectSelect.query(Concept.class, Concept.CONCEPT_ID.eq(aMadopar.get(0).getConceptId())).selectOne(context);
-		assertTrue(Semantic.Tf.isA(madopar));
+		assertTrue(Tf.isA(madopar));
 
 		assertEquals(0, b.search("madopar").clearFilters().withDirectParent(Dmd.Product.VIRTUAL_THERAPEUTIC_MOIETY.conceptId).build().search().size());
 		assertEquals(0, b.search("madopar").clearFilters().withDirectParent(Dmd.Product.VIRTUAL_MEDICINAL_PRODUCT.conceptId).build().search().size());
@@ -226,10 +228,10 @@ public class TestSnomedCt {
 		List<ResultItem> sMultipleSclerosisInDrugs = new Search.Request.Builder(search).searchUsingQueryParser("multiple sclerosis").withFilters(Search.Filter.DMD_VTM_OR_TF).build().search();
 		assertEquals(0, sMultipleSclerosisInDrugs.size());
 		
-		List<ResultItem> sMultipleSclerosis = new Search.Request.Builder(search).search("multiple sclerosis").withRecursiveParent(Semantic.Category.DISEASE.conceptId).setMaxHits(1).build().search();
+		List<ResultItem> sMultipleSclerosis = new Search.Request.Builder(search).search("multiple sclerosis").withRecursiveParent(Category.DISEASE.conceptId).setMaxHits(1).build().search();
 		assertEquals(1, sMultipleSclerosis.size());
 		
-		List<ResultItem> sMs = new Search.Request.Builder(search).search("ms").withRecursiveParent(Semantic.Category.DISEASE.conceptId).withFilters(Search.Filter.CONCEPT_ACTIVE).setMaxHits(200).build().search();
+		List<ResultItem> sMs = new Search.Request.Builder(search).search("ms").withRecursiveParent(Category.DISEASE.conceptId).withFilters(Search.Filter.CONCEPT_ACTIVE).setMaxHits(200).build().search();
 		//sMs.forEach(ri -> System.out.println(ri));
 		assertTrue(sMs.stream().anyMatch(ri -> ri.getConceptId()==24700007L));	// multiple sclerosis
 		assertTrue(sMs.stream().anyMatch(ri -> ri.getConceptId()==79619009L));		// mitral stenosis

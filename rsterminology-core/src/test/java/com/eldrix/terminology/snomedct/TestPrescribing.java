@@ -29,15 +29,15 @@ import com.eldrix.terminology.medicine.ParsedMedication;
 import com.eldrix.terminology.medicine.ParsedMedicationBuilder;
 import com.eldrix.terminology.snomedct.Search.Filter;
 import com.eldrix.terminology.snomedct.Search.Request.Builder;
+import com.eldrix.terminology.snomedct.semantic.Amp;
+import com.eldrix.terminology.snomedct.semantic.Ampp;
+import com.eldrix.terminology.snomedct.semantic.Dmd;
+import com.eldrix.terminology.snomedct.semantic.RelationType;
+import com.eldrix.terminology.snomedct.semantic.Tf;
+import com.eldrix.terminology.snomedct.semantic.Vmp;
+import com.eldrix.terminology.snomedct.semantic.Vmpp;
+import com.eldrix.terminology.snomedct.semantic.Vtm;
 import com.eldrix.terminology.snomedct.Search.ResultItem;
-import com.eldrix.terminology.snomedct.Semantic.Amp;
-import com.eldrix.terminology.snomedct.Semantic.Ampp;
-import com.eldrix.terminology.snomedct.Semantic.Dmd;
-import com.eldrix.terminology.snomedct.Semantic.RelationType;
-import com.eldrix.terminology.snomedct.Semantic.Tf;
-import com.eldrix.terminology.snomedct.Semantic.Vmp;
-import com.eldrix.terminology.snomedct.Semantic.Vmpp;
-import com.eldrix.terminology.snomedct.Semantic.Vtm;
 
 public class TestPrescribing {
 	static ServerRuntime _runtime;
@@ -293,7 +293,7 @@ public class TestPrescribing {
 	@Test
 	public void testSomeVmps() {
 		ObjectContext context = getRuntime().newContext();
-		Expression exp = Concept.PARENT_RELATIONSHIPS.dot(Relationship.TARGET_CONCEPT.dot(Concept.CONCEPT_ID)).eq(Semantic.Dmd.Product.VIRTUAL_MEDICINAL_PRODUCT.conceptId).andExp(Concept.PARENT_RELATIONSHIPS.dot(Relationship.RELATIONSHIP_TYPE_CONCEPT.dot(Concept.CONCEPT_ID)).eq(Semantic.RelationType.IS_A.conceptId));
+		Expression exp = Concept.PARENT_RELATIONSHIPS.dot(Relationship.TARGET_CONCEPT.dot(Concept.CONCEPT_ID)).eq(Dmd.Product.VIRTUAL_MEDICINAL_PRODUCT.conceptId).andExp(Concept.PARENT_RELATIONSHIPS.dot(Relationship.RELATIONSHIP_TYPE_CONCEPT.dot(Concept.CONCEPT_ID)).eq(RelationType.IS_A.conceptId));
 		SelectQuery<Concept> query = SelectQuery.query(Concept.class, exp);
 		query.setFetchLimit(500);
 		long maxDoseForms = 0;

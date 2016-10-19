@@ -17,8 +17,8 @@ import org.apache.cayenne.validation.BeanValidationFailure;
 import org.apache.cayenne.validation.ValidationResult;
 
 import com.eldrix.terminology.snomedct.Description.Type;
-import com.eldrix.terminology.snomedct.Semantic.RelationType;
 import com.eldrix.terminology.snomedct.auto._Concept;
+import com.eldrix.terminology.snomedct.semantic.RelationType;
 
 /**
  * A SNOMED CT clinical concept.

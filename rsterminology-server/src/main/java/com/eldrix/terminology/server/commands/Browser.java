@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.List;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -14,7 +15,14 @@ import org.apache.cayenne.query.ObjectSelect;
 import com.eldrix.terminology.snomedct.Concept;
 import com.eldrix.terminology.snomedct.Search;
 import com.eldrix.terminology.snomedct.Search.ResultItem;
-import com.eldrix.terminology.snomedct.Semantic.Dmd;
+import com.eldrix.terminology.snomedct.semantic.Amp;
+import com.eldrix.terminology.snomedct.semantic.Ampp;
+import com.eldrix.terminology.snomedct.semantic.Dmd;
+import com.eldrix.terminology.snomedct.semantic.Dmd.Product;
+import com.eldrix.terminology.snomedct.semantic.Tf;
+import com.eldrix.terminology.snomedct.semantic.Vmp;
+import com.eldrix.terminology.snomedct.semantic.Vmpp;
+import com.eldrix.terminology.snomedct.semantic.Vtm;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 
@@ -78,6 +86,7 @@ public class Browser extends CommandWithMetadata {
 		performShowDescriptions(line);
 		performShowChildRelationships(line);
 		performFind(line);
+		performDmd(line);
 		return false;
 	}
 	private boolean performQuit(String line) {
@@ -92,6 +101,7 @@ public class Browser extends CommandWithMetadata {
 			System.out.println("d        : Show descriptions for currently selected concept");
 			System.out.println("c        : Show child relationships for currently selected concept");
 			System.out.println("f <name> : Find a concept matching the specified name");
+			System.out.println("dmd      : Displays DMD information for currently selected concept");
 		}
 	}
 
@@ -148,7 +158,11 @@ public class Browser extends CommandWithMetadata {
 
 	private static void printConcept(Concept c, boolean includeRelations) {
 		StringBuilder sb = new StringBuilder();
-		sb.append("Concept : " + c.getConceptId() + " : " + c.getFullySpecifiedName());
+		sb.append("Concept : " + c.getConceptId());
+		sb.append(":[");
+		sb.append(c.getFullySpecifiedName());
+		sb.append("]:");
+		sb.append(c.getPreferredDescription().getTerm());
 		if (Dmd.Product.productForConcept(c) != null) {
 			sb.append("  DM&D concept: " + Dmd.Product.productForConcept(c));
 		}
@@ -204,5 +218,119 @@ public class Browser extends CommandWithMetadata {
 			}
 		}
 
+	}
+	
+	private void performDmd(String line) {
+		if ("dmd".equalsIgnoreCase(line.trim())) {
+			if (currentConcept() != null) {
+				Product product = Product.productForConcept(currentConcept());
+				if (product != null) {
+					switch (product) {
+					case VIRTUAL_THERAPEUTIC_MOIETY:
+						showVtm(0, new Vtm(currentConcept()), true);
+						break;
+					case ACTUAL_MEDICINAL_PRODUCT:
+						showAmp(0, new Amp(currentConcept()), true);
+						break;
+					case ACTUAL_MEDICINAL_PRODUCT_PACK:
+						showAmpp(new Ampp(currentConcept()));
+						break;
+					case TRADE_FAMILY:
+						showTf(0, new Tf(currentConcept()), true);
+						break;
+					case VIRTUAL_MEDICINAL_PRODUCT:
+						showVmp(0, new Vmp(currentConcept()), true);
+						break;
+					case VIRTUAL_MEDICINAL_PRODUCT_PACK:
+						showVmpp(new Vmpp(currentConcept()));
+						break;
+					default:
+						break;
+						
+					}
+				} else {
+					System.out.println("Not a DMD concept: " +currentConcept().getFullySpecifiedName());
+				}
+			} else {
+				System.out.println("No current concept selected");
+			}
+		}
+	}
+	private void showTf(int indent, Tf tf, boolean showOthers) {
+		StringBuilder sb = new StringBuilder();
+		sb.append(indent(indent));
+		sb.append("TF:");
+		appendDmdProduct(sb, tf);
+		System.out.println(sb.toString());
+		if (showOthers) {
+			tf.getAmps().forEach(amp -> showAmp(indent+2, amp, false));
+			tf.getVtms().forEach(vtm -> showVtm(indent+2, vtm, false));
+		}
+	}
+	private void showVmp(int indent, Vmp vmp, boolean showOthers) {
+		StringBuilder sb = new StringBuilder();
+		sb.append(indent(indent));
+		sb.append("VMP: ");
+		appendDmdProduct(sb, vmp);
+		sb.append(" Rx:");
+		if (vmp.isInvalidToPrescribe()) {
+			sb.append("invalid");
+		} else {
+			if (vmp.isNotRecommendedToPrescribe()) {
+				sb.append("not recommended");
+			} else {
+				sb.append("valid");
+			}
+		}
+		System.out.println(sb.toString());
+		if (showOthers) {
+			vmp.getAmps().forEach(amp -> showAmp(indent+2, amp, false));
+			vmp.getVtm().ifPresent(vtm -> showVtm(indent+2, vtm, false));
+			vmp.getActiveIngredients().forEach(c -> System.out.println(indent(indent+2) + "activeIngredient:" + c.getPreferredDescription().getTerm()));
+		}
+	}
+	private void showVmpp(Vmpp vmpp) {
+		
+	}
+	private void showAmp(int indent, Amp amp, boolean showOthers) {
+		StringBuilder sb = new StringBuilder();
+		sb.append(indent(indent));
+		sb.append("AMP:");
+		appendDmdProduct(sb, amp);
+		if (!(amp.getVmp().map(Vmp::isInvalidToPrescribe).orElse(true))) {
+			sb.append(" ( should prescribe VMP:");
+			Optional<Vmp> vmp = amp.getVmp();
+			if (vmp.isPresent()) {
+				appendDmdProduct(sb, vmp.get());
+			} else {
+				sb.append("Erorr: No VMP!");
+			}
+		}
+		System.out.println(sb.toString());
+	}
+	private void showAmpp(Ampp amp) {
+		
+	}
+	private void showVtm(int indent, Vtm vtm, boolean showOthers) {
+		StringBuilder sb = new StringBuilder();
+		sb.append(indent(indent));
+		sb.append("VTM:");
+		appendDmdProduct(sb, vtm);
+		if (showOthers) {
+			vtm.getVmps().forEach(vmp -> showVmp(indent + 2, vmp, false));
+			vtm.getTfs().forEach(tf -> showTf(indent + 2, tf, false));
+		}
+	}
+	private String indent(int n) {
+		StringBuilder sb = new StringBuilder();
+		for (int i=0; i<n; i++) {
+			sb.append('-');
+		}
+		return sb.toString();
+	}
+	private void appendDmdProduct(StringBuilder sb, Dmd product) {
+		sb.append(product.getConcept().getConceptId());
+		sb.append(":");
+		sb.append(product.getConcept().getPreferredDescription().getTerm());
 	}
 }

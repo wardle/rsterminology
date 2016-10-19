@@ -17,6 +17,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.eldrix.terminology.snomedct.Search.ResultItem;
+import com.eldrix.terminology.snomedct.semantic.Category;
 
 public class TestProject {
 	static ServerRuntime _runtime;
@@ -52,9 +53,9 @@ public class TestProject {
 		Search search = Search.getInstance();
 		List<ResultItem> result = new Search.Request.Builder(search)
 				.search("bronchio").onlyActive().withoutFullySpecifiedNames()
-				.withRecursiveParent(Semantic.Category.DISEASE.conceptId).build()
+				.withRecursiveParent(Category.DISEASE.conceptId).build()
 				.search();
-		List<ResultItem> filtered1 = SearchUtilities.filterSearchForProject(result, p, Collections.singletonList(Semantic.Category.DISEASE.conceptId));
+		List<ResultItem> filtered1 = SearchUtilities.filterSearchForProject(result, p, Collections.singletonList(Category.DISEASE.conceptId));
 		
 		// and now prove we have the correct result
 		List<Long> filtered2 = filtered1.stream().map(ResultItem::getConceptId).collect(Collectors.toList());
