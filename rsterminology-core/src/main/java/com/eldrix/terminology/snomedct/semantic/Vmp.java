@@ -4,12 +4,10 @@ import java.math.BigDecimal;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 
 import com.eldrix.terminology.snomedct.Concept;
 import com.eldrix.terminology.snomedct.Relationship;
-import com.eldrix.terminology.snomedct.semantic.Dmd.Product;
 
 /**
  * A virtual medicinal product (VMP).
@@ -42,7 +40,7 @@ public class Vmp extends Dmd {
 	
 	/*
 	 * Deal with hierarchically nested VMPs for a VTM.
-	 * e.g. see amlodipine.
+	 * e.g. see amlodipine or pyridostigmine
 	 */
 	private static Concept _findVtm(Concept vmp) {
 		Concept vtm = null;
@@ -222,8 +220,7 @@ public class Vmp extends Dmd {
 	 */
 	public static BigDecimal getDose(Concept vmp) {
 		//String term = vmp.getPreferredDescription().getTerm();
-		throw new NotImplementedException();
-		//return null;
+		return BigDecimal.ZERO;
 	}
 	public BigDecimal getDose() {
 		return getDose(_concept);
