@@ -4,7 +4,6 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import com.eldrix.terminology.snomedct.Concept;
-import com.eldrix.terminology.snomedct.semantic.Dmd.Product;
 
 /**
  * A trade family (TF).
