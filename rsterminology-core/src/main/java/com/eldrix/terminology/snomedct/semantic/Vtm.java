@@ -5,7 +5,6 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import com.eldrix.terminology.snomedct.Concept;
-import com.eldrix.terminology.snomedct.semantic.Dmd.Product;
 
 /**
  * A virtual therapeutic moiety (VTM).
@@ -62,8 +61,10 @@ public class Vtm extends Dmd {
 
 	public static Stream<Concept> getDispensedDoseForms(Concept vtm) {
 		return getVmps(vtm)
-			.flatMap(vmp -> Vmp.getDispensedDoseForms(vmp))
-			.distinct();
+				.map(Vmp::getDispensedDoseForm)
+				.filter(Optional::isPresent)
+				.map(Optional::get)
+				.distinct();
 	}
 	
 	public Stream<Concept> getDispensedDoseForms() {

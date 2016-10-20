@@ -62,7 +62,7 @@ public abstract class Dmd {
 			}
 			return null;
 		}
-	
+		
 		/**
 		 * Is this concept a type of this product?
 		 * Note: This is different to the usual SNOMED-CT understanding as the DM&D has slightly

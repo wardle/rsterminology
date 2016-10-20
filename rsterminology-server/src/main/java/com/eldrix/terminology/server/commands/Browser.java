@@ -86,7 +86,6 @@ public class Browser extends CommandWithMetadata {
 		performShowDescriptions(line);
 		performShowChildRelationships(line);
 		performFind(line);
-		performDmd(line);
 		return false;
 	}
 	private boolean performQuit(String line) {
@@ -176,6 +175,9 @@ public class Browser extends CommandWithMetadata {
 			});
 		}
 		System.out.println(sb.toString());
+		if (Dmd.Product.productForConcept(c) != null) {
+			showDmd(c);
+		}
 	}
 
 	private void performFind(String line) {
@@ -219,44 +221,38 @@ public class Browser extends CommandWithMetadata {
 		}
 
 	}
-	
-	private void performDmd(String line) {
-		if ("dmd".equalsIgnoreCase(line.trim())) {
-			if (currentConcept() != null) {
-				Product product = Product.productForConcept(currentConcept());
-				if (product != null) {
-					switch (product) {
-					case VIRTUAL_THERAPEUTIC_MOIETY:
-						showVtm(0, new Vtm(currentConcept()), true);
-						break;
-					case ACTUAL_MEDICINAL_PRODUCT:
-						showAmp(0, new Amp(currentConcept()), true);
-						break;
-					case ACTUAL_MEDICINAL_PRODUCT_PACK:
-						showAmpp(new Ampp(currentConcept()));
-						break;
-					case TRADE_FAMILY:
-						showTf(0, new Tf(currentConcept()), true);
-						break;
-					case VIRTUAL_MEDICINAL_PRODUCT:
-						showVmp(0, new Vmp(currentConcept()), true);
-						break;
-					case VIRTUAL_MEDICINAL_PRODUCT_PACK:
-						showVmpp(new Vmpp(currentConcept()));
-						break;
-					default:
-						break;
-						
-					}
-				} else {
-					System.out.println("Not a DMD concept: " +currentConcept().getFullySpecifiedName());
-				}
-			} else {
-				System.out.println("No current concept selected");
+
+	private static void showDmd(Concept c) {
+		Product product = Product.productForConcept(c);
+		if (product != null) {
+			switch (product) {
+			case VIRTUAL_THERAPEUTIC_MOIETY:
+				showVtm(0, new Vtm(c), true);
+				break;
+			case ACTUAL_MEDICINAL_PRODUCT:
+				showAmp(0, new Amp(c), true);
+				break;
+			case ACTUAL_MEDICINAL_PRODUCT_PACK:
+				showAmpp(new Ampp(c));
+				break;
+			case TRADE_FAMILY:
+				showTf(0, new Tf(c), true);
+				break;
+			case VIRTUAL_MEDICINAL_PRODUCT:
+				showVmp(0, new Vmp(c), true);
+				break;
+			case VIRTUAL_MEDICINAL_PRODUCT_PACK:
+				showVmpp(new Vmpp(c));
+				break;
+			default:
+				break;
+
 			}
+		} else {
+			System.out.println("Not a DMD concept: " +c.getFullySpecifiedName());
 		}
 	}
-	private void showTf(int indent, Tf tf, boolean showOthers) {
+	private static void showTf(int indent, Tf tf, boolean showOthers) {
 		StringBuilder sb = new StringBuilder();
 		sb.append(indent(indent));
 		sb.append("TF:");
@@ -269,7 +265,7 @@ public class Browser extends CommandWithMetadata {
 			tf.getVtms().forEach(vtm -> showVtm(indent+2, vtm, false));
 		}
 	}
-	private void showVmp(int indent, Vmp vmp, boolean showOthers) {
+	private static void showVmp(int indent, Vmp vmp, boolean showOthers) {
 		StringBuilder sb = new StringBuilder();
 		sb.append(indent(indent));
 		sb.append("VMP: ");
@@ -287,15 +283,15 @@ public class Browser extends CommandWithMetadata {
 		System.out.println(sb.toString());
 		if (showOthers) {
 			vmp.getAmps().forEach(amp -> showAmp(indent+2, amp, false));
-			vmp.getVtm().ifPresent(vtm -> showVtm(indent+2, vtm, false));
+			vmp.getVtms().forEach(vtm -> showVtm(indent+2, vtm, false));
 			vmp.getActiveIngredients().forEach(c -> System.out.println(indent(indent+2) + "activeIngredient:" + c.getPreferredDescription().getTerm()));
-			vmp.getDispensedDoseForms().forEach(c -> showConcept(indent+2, "doseForm", c));
+			vmp.getDispensedDoseForm().ifPresent(c -> showConcept(indent+2, "doseForm", c));
 		}
 	}
-	private void showVmpp(Vmpp vmpp) {
-		
+	private static void showVmpp(Vmpp vmpp) {
+
 	}
-	private void showAmp(int indent, Amp amp, boolean showOthers) {
+	private static void showAmp(int indent, Amp amp, boolean showOthers) {
 		StringBuilder sb = new StringBuilder();
 		sb.append(indent(indent));
 		sb.append("AMP:");
@@ -311,10 +307,10 @@ public class Browser extends CommandWithMetadata {
 		}
 		System.out.println(sb.toString());
 	}
-	private void showAmpp(Ampp amp) {
-		
+	private static void showAmpp(Ampp amp) {
+
 	}
-	private void showVtm(int indent, Vtm vtm, boolean showOthers) {
+	private static void showVtm(int indent, Vtm vtm, boolean showOthers) {
 		StringBuilder sb = new StringBuilder();
 		sb.append(indent(indent));
 		sb.append("VTM:");
@@ -326,19 +322,19 @@ public class Browser extends CommandWithMetadata {
 			vtm.getDispensedDoseForms().forEach(c -> showConcept(indent+2, "doseForm", c));
 		}
 	}
-	
-	private void showConcept(int indent, String title, Concept c) {
+
+	private static void showConcept(int indent, String title, Concept c) {
 		System.out.println(indent(indent) + title + ":" + c.getPreferredDescription().getTerm());
 	}
-	
-	private String indent(int n) {
+
+	private static String indent(int n) {
 		StringBuilder sb = new StringBuilder();
 		for (int i=0; i<n; i++) {
 			sb.append('-');
 		}
 		return sb.toString();
 	}
-	private void appendDmdProduct(StringBuilder sb, Dmd product) {
+	private static void appendDmdProduct(StringBuilder sb, Dmd product) {
 		sb.append(product.getConcept().getConceptId());
 		sb.append(":");
 		sb.append(product.getConcept().getPreferredDescription().getTerm());

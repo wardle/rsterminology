@@ -5,7 +5,6 @@ import java.util.stream.Stream;
 
 import com.eldrix.terminology.snomedct.Concept;
 import com.eldrix.terminology.snomedct.Relationship;
-import com.eldrix.terminology.snomedct.semantic.Dmd.Product;
 
 /**
  * A virtual medicine product pack (VMPP).
@@ -38,11 +37,11 @@ public class Vmpp extends Dmd {
 		return getVmp(_concept).map(Vmp::new);
 	}
 	
-	public static Optional<Concept> getVtm(Concept vmpp) {
-		return getVmp(vmpp).flatMap(vmp -> Vmp.getVtm(vmp));
+	public static Stream<Concept> getVtms(Concept vmpp) {
+		return getVmp(vmpp).map(vmp -> Vmp.getVtms(vmp)).orElse(Stream.empty());
 	}
-	public Optional<Vtm> getVtm() {
-		return getVtm(_concept).map(Vtm::new);
+	public Stream<Vtm> getVtms() {
+		return getVtms(_concept).map(Vtm::new);
 	}
 
 	/**

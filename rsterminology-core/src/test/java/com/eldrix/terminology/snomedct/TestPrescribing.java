@@ -29,6 +29,7 @@ import com.eldrix.terminology.medicine.ParsedMedication;
 import com.eldrix.terminology.medicine.ParsedMedicationBuilder;
 import com.eldrix.terminology.snomedct.Search.Filter;
 import com.eldrix.terminology.snomedct.Search.Request.Builder;
+import com.eldrix.terminology.snomedct.Search.ResultItem;
 import com.eldrix.terminology.snomedct.semantic.Amp;
 import com.eldrix.terminology.snomedct.semantic.Ampp;
 import com.eldrix.terminology.snomedct.semantic.Dmd;
@@ -37,7 +38,6 @@ import com.eldrix.terminology.snomedct.semantic.Tf;
 import com.eldrix.terminology.snomedct.semantic.Vmp;
 import com.eldrix.terminology.snomedct.semantic.Vmpp;
 import com.eldrix.terminology.snomedct.semantic.Vtm;
-import com.eldrix.terminology.snomedct.Search.ResultItem;
 
 public class TestPrescribing {
 	static ServerRuntime _runtime;
@@ -74,7 +74,7 @@ public class TestPrescribing {
 		assertDrugType(madoparVmp, Dmd.Product.VIRTUAL_MEDICINAL_PRODUCT);
 		assertEquals(2, Vmp.getActiveIngredients(madoparVmp).count());
 		
-		testTradeFamily(madoparTf);
+		testTradeFamily(madoparTf, 2);
 	}
 	
 	@Test
@@ -113,7 +113,7 @@ public class TestPrescribing {
 		Vtm amlodipine1 = new Vtm(amlodipineVtm);
 		Vtm amlodipine2 = new Vtm(amlodipineVtm);
 		Vmp amlodipineVmp = amlodipine1.getVmps().findAny().get();
-		Vtm amlodipine3 = amlodipineVmp.getVtm().get();
+		Vtm amlodipine3 = amlodipineVmp.getVtms().findAny().get();
 		assertEquals(amlodipine1, amlodipine2);
 		assertEquals(amlodipine2, amlodipine3);
 		assertEquals(amlodipine1, amlodipine3);
@@ -127,12 +127,9 @@ public class TestPrescribing {
 		List<ResultItem> aMadopar = b.search("madopar").setMaxHits(1).withFilters(Search.Filter.DMD_VTM_OR_TF).build().search();
 		Concept madopar = ObjectSelect.query(Concept.class, Concept.CONCEPT_ID.eq(aMadopar.get(0).getConceptId())).selectOne(context);
 		Tf madoparTf = new Tf(madopar);
-		List<Vtm> vtms = madoparTf.getAmps()
-			.map(Amp::getVmp).filter(Optional::isPresent).map(Optional::get)
-			.map(Vmp::getVtm).filter(Optional::isPresent).map(Optional::get)
-			.distinct().collect(Collectors.toList());
+		List<Vtm> vtms = madoparTf.getVtms().collect(Collectors.toList());
 		vtms.stream().forEach(vtm -> System.out.println(vtm.getConcept().getFullySpecifiedName()));
-		assertEquals(1, vtms.size());
+		assertEquals(2, vtms.size());
 	}
 	
 	
@@ -147,8 +144,7 @@ public class TestPrescribing {
 		List<Concept> amlodipineTfs1 = SelectQuery.query(Concept.class, Concept.CONCEPT_ID.in(amlodipineTfIds)).select(context);
 
 		Tf istin = new Tf(amlodipineTfs1.get(0));
-		Optional<Vtm> istinVtm = istin.getAmps().map(Amp::getVmp).filter(Optional::isPresent).map(Optional::get)
-			.map(Vmp::getVtm).filter(Optional::isPresent).map(Optional::get).findFirst();
+		Optional<Vtm> istinVtm = istin.getVtms().findAny();
 		assertTrue(istinVtm.isPresent());
 		assertEquals(istinVtm.get().getConcept(), amlodipineVtm);
 		
@@ -172,12 +168,6 @@ public class TestPrescribing {
 		assertFalse(Vmp.hasMultipleActiveIngredientsInName(amlodipineVmp));
 		assertEquals(1, Vmp.getActiveIngredients(amlodipineVmp).count());
 		assertFalse(Vmp.isInvalidToPrescribe(amlodipineVmp));
-		Amp.getDispensedDoseForms(amlodipineAmp)
-			.forEach(c -> System.out.println(c.getFullySpecifiedName()));
-		Vmp.getDispensedDoseForms(amlodipineVmp)
-			.forEach(c -> System.out.println(c.getFullySpecifiedName()));
-		Vtm.getDispensedDoseForms(Vmp.getVtm(amlodipineVmp).get())
-			.forEach(c -> System.out.println(c.getFullySpecifiedName()));
 		
 		Concept amlodipineSuspensionVmp = ObjectSelect.query(Concept.class, Concept.CONCEPT_ID.eq(8278311000001107L)).selectOne(context);
 		assertTrue(Vtm.getVmps(amlodipineVtm).anyMatch(vmp -> vmp == amlodipineSuspensionVmp));
@@ -198,7 +188,6 @@ public class TestPrescribing {
 		Concept a2 = ObjectSelect.query(Concept.class, Concept.CONCEPT_ID.eq(a1.getConceptId())).selectOne(context);
 		assertTrue(Vmp.isA(a2));
 		Vmp amlodipineVmp = new Vmp(a2);
-		assertEquals(1, amlodipineVmp.getDispensedDoseForms().count());	// a VMP should have a single dose form?
 		assertEquals(1, amlodipineVmp.getActiveIngredients().count());	// this VMP has only a single active ingredient.
 		// and now check that the dose is correctly parsed
 		//assertEquals(new BigDecimal("5.0"), amlodipineVmp.getDose());
@@ -225,7 +214,7 @@ public class TestPrescribing {
 		);
 	}
 	
-	public void testTradeFamily(Concept tradeFamily) {
+	public void testTradeFamily(Concept tradeFamily, int numberOfVtms ) {
 		Dmd.Product tf = Dmd.Product.productForConcept(tradeFamily);
 		assertEquals(tf, Dmd.Product.TRADE_FAMILY);
 		
@@ -249,7 +238,7 @@ public class TestPrescribing {
 		assertTrue(Vmp.getAmps(vmp).anyMatch(a -> a == amp));
 		
 		// get the VTM
-		Concept vtm = Vmp.getVtm(vmp).get();
+		Concept vtm = Vmp.getVtms(vmp).findAny().get();
 		assertDrugType(vtm, Dmd.Product.VIRTUAL_THERAPEUTIC_MOIETY);
 		assertEquals(Dmd.Product.VIRTUAL_THERAPEUTIC_MOIETY, Dmd.Product.productForConcept(vtm));
 		assertTrue(Vtm.getVmps(vtm).anyMatch(v -> v == vmp));
@@ -275,18 +264,12 @@ public class TestPrescribing {
 		assertTrue(Vmp.getVmpps(vmp).anyMatch(v -> v == vmpp));
 		
 		// walk the dm&d structure directly to get from TF to VTM
-		Concept vtm2 = Vmp.getVtm(Amp.getVmp(Tf.getAmps(tradeFamily).findFirst().get()).get()).get();
-		assertEquals(vtm2, vtm);
-		
+		assertTrue(Tf.getVtms(tradeFamily).anyMatch(vtm2 -> vtm2.getConceptId() == vtm.getConceptId()));		
 		assertTrue(Vtm.getVmps(vtm).anyMatch(v -> v == vmp));
 
 		// use new streams to do the same but more safely...
-		List<Concept> vtms = Tf.getAmps(tradeFamily)
-				.map(Amp::getVmp).filter(Optional::isPresent).map(Optional::get)
-				.map(Vmp::getVtm).filter(Optional::isPresent).map(Optional::get)
-				.distinct()
-				.collect(Collectors.toList());
-		assertEquals(1, vtms.size());
+		List<Concept> vtms = Tf.getVtms(tradeFamily).collect(Collectors.toList());
+		assertEquals(numberOfVtms, vtms.size());
 		assertEquals(vtm, vtms.get(0));
 		
 	}
@@ -295,19 +278,20 @@ public class TestPrescribing {
 		ObjectContext context = getRuntime().newContext();
 		Expression exp = Concept.PARENT_RELATIONSHIPS.dot(Relationship.TARGET_CONCEPT.dot(Concept.CONCEPT_ID)).eq(Dmd.Product.VIRTUAL_MEDICINAL_PRODUCT.conceptId).andExp(Concept.PARENT_RELATIONSHIPS.dot(Relationship.RELATIONSHIP_TYPE_CONCEPT.dot(Concept.CONCEPT_ID)).eq(RelationType.IS_A.conceptId));
 		SelectQuery<Concept> query = SelectQuery.query(Concept.class, exp);
-		query.setFetchLimit(500);
-		long maxDoseForms = 0;
+		//query.setFetchLimit(500);
 		try (ResultBatchIterator<Concept> iterator = query.batchIterator(context, 100)) {
 			for(List<Concept> vmps : iterator) {
 				for (Concept c : vmps) {
 					assertTrue(Vmp.isA(c));
 					Vmp vmp = new Vmp(c);
-					long doseForms = vmp.getDispensedDoseForms().count();
-					maxDoseForms = Math.max(maxDoseForms, doseForms);
+					vmp.getAmps().forEach(amp -> {
+						long count = amp.getDispensedDoseForms().count();
+						if (count == 0) {
+						}
+					});
 				}
 			}
 		}
-		assertEquals(1, maxDoseForms);		// each VMP represents a single dose form
 	}
 
 }

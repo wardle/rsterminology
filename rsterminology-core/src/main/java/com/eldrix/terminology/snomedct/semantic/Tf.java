@@ -45,7 +45,7 @@ public class Tf extends Dmd {
 	}
 	
 	public static Stream<Concept> getVtms(Concept tf) {
-		return getVmps(tf).map(Vmp::getVtm).filter(Optional::isPresent).map(Optional::get).distinct();
+		return getVmps(tf).flatMap(Vmp::getVtms).distinct();
 	}
 	public Stream<Vtm> getVtms() {
 		return Tf.getVtms(_concept).map(Vtm::new);

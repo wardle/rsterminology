@@ -1,6 +1,7 @@
 package com.eldrix.terminology.snomedct.semantic;
 
 import java.math.BigDecimal;
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -34,31 +35,32 @@ public class Vmp extends Dmd {
 	 * @param vmp
 	 * @return
 	 */
-	public static Optional<Concept> getVtm(Concept vmp) {
-		return Optional.ofNullable(_findVtm(vmp));
+	public static Stream<Concept> getVtms(Concept vmp) {
+		HashSet<Concept> vtms = new HashSet<>();
+		_findVtm(vmp, vtms);
+		return vtms.stream();
 	}
 	
 	/*
 	 * Deal with hierarchically nested VMPs for a VTM.
 	 * e.g. see amlodipine or pyridostigmine
 	 */
-	private static Concept _findVtm(Concept vmp) {
-		Concept vtm = null;
+	private static void _findVtm(Concept vmp, HashSet<Concept> vtms) {
+		// if we've reached the top of the pharmaceutical hierarchy, don't explore further
+		if (vmp.getConceptId() == Category.PHARMACEUTICAL_OR_BIOLOGICAL_PRODUCT.conceptId) {
+			return;
+		}
 		for (Concept parent : vmp.getParentConcepts()) {	// looking only at IS-A relationships
 			if (Product.VIRTUAL_THERAPEUTIC_MOIETY.isAProduct(parent)) {
-				vtm = parent;
+				vtms.add(parent);
 			} else {
-				vtm = _findVtm(parent);
-			}
-			if (vtm != null) {
-				return vtm;
+				_findVtm(parent, vtms);
 			}
 		}
-		return vtm;
 	}
 
-	public Optional<Vtm> getVtm() {
-		return getVtm(_concept).map(Vtm::new);
+	public Stream<Vtm> getVtms() {
+		return getVtms(_concept).map(Vtm::new);
 	}
 
 	/**
@@ -111,20 +113,18 @@ public class Vmp extends Dmd {
 	}
 
 	/**
-	 * Return the dispensed dose forms for the specified VMP.
-	 * It is usually the case that VMPs have a single dose form, but there are some VMPs that have multiple dose forms.
-	 * For example, many ear drops are recorded as "ear drops" AND "drops".
+	 * Return the dispensed dose form for the specified VMP.
 	 * @param vmp
 	 * @return
 	 */
-	public static Stream<Concept> getDispensedDoseForms(Concept vmp) {
+	public static Optional<Concept> getDispensedDoseForm(Concept vmp) {
 		return vmp.getParentRelationships().stream()
 				.filter(r -> r.getRelationshipTypeConcept().getConceptId() == RelationType.HAS_DISPENSED_DOSE_FORM.conceptId)
-				.map(Relationship::getTargetConcept)
-				.distinct();
+				.findFirst()
+				.map(Relationship::getTargetConcept);
 	}
-	public Stream<Concept> getDispensedDoseForms() {
-		return getDispensedDoseForms(_concept);
+	public Optional<Concept> getDispensedDoseForm() {
+		return getDispensedDoseForm(_concept);
 	}
 
 	/**
@@ -147,11 +147,11 @@ public class Vmp extends Dmd {
 	 * @param vmp
 	 * @return
 	 */
-	public static boolean hasNoVtm(Concept vmp) {
-		return !getVtm(vmp).isPresent();
+	public static boolean hasNoVtms(Concept vmp) {
+		return getVtms(vmp).findAny().isPresent();
 	}
-	public boolean hasNoVtm() {
-		return hasNoVtm(_concept);
+	public boolean hasNoVtms() {
+		return hasNoVtms(_concept);
 	}
 
 	/**

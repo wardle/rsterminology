@@ -5,7 +5,6 @@ import java.util.stream.Stream;
 
 import com.eldrix.terminology.snomedct.Concept;
 import com.eldrix.terminology.snomedct.Relationship;
-import com.eldrix.terminology.snomedct.semantic.Dmd.Product;
 
 /**
  * An actual medicinal product (AMP).
@@ -67,11 +66,11 @@ public class Amp extends Dmd {
 		return getVmp(_concept).map(Vmp::new);
 	}
 
-	public static Optional<Concept> getVtm(Concept amp) {
-		return Amp.getVmp(amp).flatMap(Vmp::getVtm);
+	public static Stream<Concept> getVtms(Concept amp) {
+		return Amp.getVmp(amp).map(Vmp::getVtms).orElse(Stream.empty());
 	}
-	public Optional<Vtm> getVtm() {
-		return getVtm(_concept).map(Vtm::new);
+	public Stream<Vtm> getVtms() {
+		return getVtms(_concept).map(Vtm::new);
 	}
 
 	/**
@@ -86,4 +85,5 @@ public class Amp extends Dmd {
 	public Stream<Concept> getDispensedDoseForms() {
 		return getDispensedDoseForms(_concept);
 	}
+	
 }
