@@ -4,7 +4,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.List;
-import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -271,19 +270,12 @@ public class Browser extends CommandWithMetadata {
 		sb.append("VMP: ");
 		appendDmdProduct(sb, vmp);
 		sb.append(" Rx:");
-		if (vmp.isInvalidToPrescribe()) {
-			sb.append("invalid");
-		} else {
-			if (vmp.isNotRecommendedToPrescribe()) {
-				sb.append("not recommended");
-			} else {
-				sb.append("valid");
-			}
-		}
+		sb.append(vmp.getPrescribingStatus());
 		System.out.println(sb.toString());
 		if (showOthers) {
 			vmp.getAmps().forEach(amp -> showAmp(indent+2, amp, false));
 			vmp.getVtms().forEach(vtm -> showVtm(indent+2, vtm, false));
+			vmp.getTfs().forEach(tf -> showTf(indent+2, tf, false));
 			vmp.getActiveIngredients().forEach(c -> System.out.println(indent(indent+2) + "activeIngredient:" + c.getPreferredDescription().getTerm()));
 			vmp.getDispensedDoseForm().ifPresent(c -> showConcept(indent+2, "doseForm", c));
 		}
@@ -296,14 +288,10 @@ public class Browser extends CommandWithMetadata {
 		sb.append(indent(indent));
 		sb.append("AMP:");
 		appendDmdProduct(sb, amp);
-		if (!(amp.getVmp().map(Vmp::isInvalidToPrescribe).orElse(true))) {
+		if (amp.shouldPrescribeVmp()) {
 			sb.append(" ( should prescribe VMP:");
-			Optional<Vmp> vmp = amp.getVmp();
-			if (vmp.isPresent()) {
-				appendDmdProduct(sb, vmp.get());
-			} else {
-				sb.append("Erorr: No VMP!");
-			}
+			appendDmdProduct(sb, amp.getVmp().get());
+			sb.append(")");
 		}
 		System.out.println(sb.toString());
 	}

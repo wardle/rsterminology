@@ -1,6 +1,7 @@
 package com.eldrix.terminology.snomedct.semantic;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -15,16 +16,34 @@ import com.eldrix.terminology.snomedct.Relationship;
  *
  */
 public class Vmp extends Dmd {
+	private static long VMP_IS_AVAILABLE=8940901000001109L;
 
-	public static long VMP_VALID_AS_A_PRESCRIBABLE_PRODUCT=8940201000001104L;
-	public static long VMP_INVALID_AS_A_PRESCRIBABLE_PRODUCT=8940301000001108L;
-	public static long VMP_NOT_RECOMMENDED_TO_PRESCRIBE__BRANDS_NOT_BIOEQUIVALENT=9900001000001104L;
-	public static long VMP_NOT_RECOMMENDED_TO_PRESCRIBE__PATIENT_TRAINING=9900101000001103L;
+	public enum PrescribingStatus {
+		VALID(true, 8940201000001104L),
+		INVALID(false, 8940301000001108L),
+		NOT_RECOMMENDED_BRANDS_NOT_BIOEQUIVALENT(false, 8940301000001108L),
+		NOT_RECOMMENDED_PATIENT_TRAINING(false, 9900101000001103L);
+		@SuppressWarnings("serial")
+		static HashMap<Long, PrescribingStatus> _lookup = new HashMap<Long, PrescribingStatus>() {{
+			for (PrescribingStatus ps : PrescribingStatus.values()) {
+				put(ps.conceptId, ps);
+			}
+		}};
+		public final boolean isValid;
+		final long conceptId;
+		PrescribingStatus(boolean valid, long conceptId) {
+			this.isValid = valid;
+			this.conceptId = conceptId;
+		}
+		public static PrescribingStatus statusForConcept(long conceptId) {
+			return Optional.ofNullable(_lookup.get(conceptId)).orElse(PrescribingStatus.INVALID);
+		}
+	}
 
 	public Vmp(Concept c) {
 		super(Product.VIRTUAL_MEDICINAL_PRODUCT, c);
 	}
-	
+
 	public static boolean isA(Concept c) {
 		return Product.VIRTUAL_MEDICINAL_PRODUCT.isAProduct(c);
 	}
@@ -40,7 +59,7 @@ public class Vmp extends Dmd {
 		_findVtm(vmp, vtms);
 		return vtms.stream();
 	}
-	
+
 	/*
 	 * Deal with hierarchically nested VMPs for a VTM.
 	 * e.g. see amlodipine or pyridostigmine
@@ -155,23 +174,6 @@ public class Vmp extends Dmd {
 	}
 
 	/**
-	 * Is this VMP invalid to prescribe?
-	 * See Rule #3 of the DM&D implementation guide
-	 * @param vmp
-	 * @return
-	 */
-	public static boolean isInvalidToPrescribe(Concept vmp) {
-		return vmp.getParentRelationships().stream()
-				.filter(r -> r.getRelationshipTypeConcept().getConceptId() == RelationType.VMP_PRESCRIBING_STATUS.conceptId)
-				.map(Relationship::getTargetConcept)
-				.map(Concept::getConceptId)
-				.anyMatch(id -> VMP_INVALID_AS_A_PRESCRIBABLE_PRODUCT == id);
-	}
-	public boolean isInvalidToPrescribe() {
-		return isInvalidToPrescribe(_concept);
-	}
-
-	/**
 	 * Is this a co-name drug?
 	 * @param vmp
 	 * @return
@@ -183,23 +185,29 @@ public class Vmp extends Dmd {
 		return isCoNameDrug(_concept);
 	}
 
-	/**
-	 * Is this VMP not recommended for prescribing?
-	 * @param vmp
-	 * @return
-	 */
-	public static boolean isNotRecommendedToPrescribe(Concept vmp) {
+	public static Optional<Concept> getPrescribingStatus(Concept vmp) {
 		return vmp.getParentRelationships().stream()
 				.filter(r -> r.getRelationshipTypeConcept().getConceptId() == RelationType.VMP_PRESCRIBING_STATUS.conceptId)
-				.map(Relationship::getTargetConcept)
-				.map(Concept::getConceptId)
-				.anyMatch(id -> VMP_NOT_RECOMMENDED_TO_PRESCRIBE__BRANDS_NOT_BIOEQUIVALENT == id ||
-				VMP_NOT_RECOMMENDED_TO_PRESCRIBE__PATIENT_TRAINING == id);
+				.findAny()
+				.map(Relationship::getTargetConcept);
 	}
-	public boolean isNotRecommendedToPrescribe() {
-		return isNotRecommendedToPrescribe(_concept);
+	public PrescribingStatus getPrescribingStatus() {
+		return Vmp.getPrescribingStatus(_concept)
+				.map(Concept::getConceptId)
+				.map(PrescribingStatus::statusForConcept)
+				.orElse(PrescribingStatus.INVALID);
 	}
 
+	public static boolean isAvailable(Concept vmp) {
+		return vmp.getParentRelationships().stream()
+				.filter(r -> r.getRelationshipTypeConcept().getConceptId() == RelationType.VMP_NON_AVAILABILITY_INDICATOR.conceptId)
+				.anyMatch(r -> r.getTargetConcept().getConceptId() == VMP_IS_AVAILABLE);
+	}
+	
+	public boolean isAvailable() {
+		return Vmp.isAvailable(_concept);
+	}
+	
 	/**
 	 * Return the active ingredients for this VMP.
 	 * @param vmp
@@ -213,10 +221,12 @@ public class Vmp extends Dmd {
 	public Stream<Concept> getActiveIngredients() {
 		return getActiveIngredients(_concept);
 	}
-	
+
 	/**
 	 * Parse the dose and units for a given VMP.
 	 * TODO: not implemented
+	 * TODO: how would this work for liquids? getDose() as an API doesn't really work!
+	 * TODO: remove and replace with something that can cope with VMPs of multiple types.
 	 */
 	public static BigDecimal getDose(Concept vmp) {
 		//String term = vmp.getPreferredDescription().getTerm();

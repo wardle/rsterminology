@@ -36,6 +36,7 @@ import com.eldrix.terminology.snomedct.semantic.Dmd;
 import com.eldrix.terminology.snomedct.semantic.RelationType;
 import com.eldrix.terminology.snomedct.semantic.Tf;
 import com.eldrix.terminology.snomedct.semantic.Vmp;
+import com.eldrix.terminology.snomedct.semantic.Vmp.PrescribingStatus;
 import com.eldrix.terminology.snomedct.semantic.Vmpp;
 import com.eldrix.terminology.snomedct.semantic.Vtm;
 
@@ -89,11 +90,8 @@ public class TestPrescribing {
 				Concept.CONCEPT_ID.eq(searchVmp.search("co-careldopa 25mg/250mg").build().searchForConcepts().get(0))).selectOne(context);
 		assertEquals(Dmd.Product.VIRTUAL_MEDICINAL_PRODUCT, Dmd.Product.productForConcept(cocareldopa));
 		Vmp cocareldopaVmp = new Vmp(cocareldopa);
-		assertFalse(cocareldopaVmp.isInvalidToPrescribe());
-		assertFalse(cocareldopaVmp.isNotRecommendedToPrescribe());
+		assertEquals(PrescribingStatus.VALID, cocareldopaVmp.getPrescribingStatus());
 		assertEquals(2,cocareldopaVmp.getActiveIngredients().count());	// it has two active ingredients.
-		assertFalse(cocareldopaVmp.isInvalidToPrescribe());
-		assertFalse(cocareldopaVmp.isNotRecommendedToPrescribe());
 		// check that this product contains levodopa.
 		assertTrue(cocareldopaVmp.getActiveIngredients().map(c -> c.getPreferredDescription().getTerm()).anyMatch(s -> s.equalsIgnoreCase("levodopa")));
 		
@@ -101,8 +99,8 @@ public class TestPrescribing {
 		Concept diltiazem = ObjectSelect.query(Concept.class, 
 				Concept.CONCEPT_ID.eq(searchVmp.search("diltiazem 120mg m/r").build().searchForConcepts().get(0))).selectOne(context);
 		Vmp diltiazemVmp = new Vmp(diltiazem);
-		assertFalse(diltiazemVmp.isInvalidToPrescribe());
-		assertTrue(diltiazemVmp.isNotRecommendedToPrescribe());
+		assertTrue(diltiazemVmp.getAmps().allMatch(amp -> amp.shouldPrescribeVmp()));
+		assertEquals(PrescribingStatus.NOT_RECOMMENDED_BRANDS_NOT_BIOEQUIVALENT, diltiazemVmp.getPrescribingStatus());
 		assertTrue(diltiazemVmp.getAmps().count() > 0);
 	}
 	
@@ -167,7 +165,7 @@ public class TestPrescribing {
 		assertDrugType(amlodipineAmp, Dmd.Product.ACTUAL_MEDICINAL_PRODUCT);
 		assertFalse(Vmp.hasMultipleActiveIngredientsInName(amlodipineVmp));
 		assertEquals(1, Vmp.getActiveIngredients(amlodipineVmp).count());
-		assertFalse(Vmp.isInvalidToPrescribe(amlodipineVmp));
+		assertEquals(PrescribingStatus.VALID, Vmp.getPrescribingStatus(amlodipineVmp));
 		
 		Concept amlodipineSuspensionVmp = ObjectSelect.query(Concept.class, Concept.CONCEPT_ID.eq(8278311000001107L)).selectOne(context);
 		assertTrue(Vtm.getVmps(amlodipineVtm).anyMatch(vmp -> vmp == amlodipineSuspensionVmp));
