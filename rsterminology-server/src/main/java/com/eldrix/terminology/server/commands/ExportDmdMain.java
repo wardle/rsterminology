@@ -86,14 +86,17 @@ public class ExportDmdMain extends CommandWithMetadata {
 				if (Vtm.getVmps(c).anyMatch(vmp -> Vmp.isPrescribable(vmp) == true)) {
 					return true;
 				}
+				break;
 			case VIRTUAL_MEDICINAL_PRODUCT:
 				if (Vmp.isPrescribable(c)) {
 					return true;
 				}
+				break;
 			case ACTUAL_MEDICINAL_PRODUCT:
 				if (Amp.shouldPrescribeVmp(c) == false) {
 					return true;
 				}
+				break;
 			default:
 				return false;
 			}
