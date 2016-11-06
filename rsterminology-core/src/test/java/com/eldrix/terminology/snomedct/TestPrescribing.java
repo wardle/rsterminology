@@ -99,6 +99,7 @@ public class TestPrescribing {
 		Concept diltiazem = ObjectSelect.query(Concept.class, 
 				Concept.CONCEPT_ID.eq(searchVmp.search("diltiazem 120mg m/r").build().searchForConcepts().get(0))).selectOne(context);
 		Vmp diltiazemVmp = new Vmp(diltiazem);
+		assertFalse(diltiazemVmp.isPrescribable());
 		assertTrue(diltiazemVmp.getAmps().allMatch(amp -> amp.shouldPrescribeVmp() == false));
 				
 		assertEquals(PrescribingStatus.NOT_RECOMMENDED__BRANDS_NOT_BIOEQUIVALENT, diltiazemVmp.getPrescribingStatus());
