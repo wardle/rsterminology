@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.List;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -222,9 +223,9 @@ public class Browser extends CommandWithMetadata {
 	}
 
 	private static void showDmd(Concept c) {
-		Product product = Product.productForConcept(c);
-		if (product != null) {
-			switch (product) {
+		Optional<Product> product = Product.productForConcept(c);
+		if (product.isPresent()) {
+			switch (product.get()) {
 			case VIRTUAL_THERAPEUTIC_MOIETY:
 				showVtm(0, new Vtm(c), true);
 				break;

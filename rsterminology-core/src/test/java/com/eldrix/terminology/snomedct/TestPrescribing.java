@@ -88,7 +88,7 @@ public class TestPrescribing {
 		ParsedMedication pm1 = new ParsedMedicationBuilder().parseString("co-careldopa 25mg/250mg 1t tds").build();
 		Concept cocareldopa = ObjectSelect.query(Concept.class, 
 				Concept.CONCEPT_ID.eq(searchVmp.search("co-careldopa 25mg/250mg").build().searchForConcepts().get(0))).selectOne(context);
-		assertEquals(Dmd.Product.VIRTUAL_MEDICINAL_PRODUCT, Dmd.Product.productForConcept(cocareldopa));
+		assertEquals(Dmd.Product.VIRTUAL_MEDICINAL_PRODUCT, Dmd.Product.productForConcept(cocareldopa).get());
 		Vmp cocareldopaVmp = new Vmp(cocareldopa);
 		assertEquals(PrescribingStatus.VALID, cocareldopaVmp.getPrescribingStatus());
 		assertEquals(2,cocareldopaVmp.getActiveIngredients().count());	// it has two active ingredients.
@@ -99,8 +99,9 @@ public class TestPrescribing {
 		Concept diltiazem = ObjectSelect.query(Concept.class, 
 				Concept.CONCEPT_ID.eq(searchVmp.search("diltiazem 120mg m/r").build().searchForConcepts().get(0))).selectOne(context);
 		Vmp diltiazemVmp = new Vmp(diltiazem);
-		assertTrue(diltiazemVmp.getAmps().allMatch(amp -> amp.shouldPrescribeVmp()));
-		assertEquals(PrescribingStatus.NOT_RECOMMENDED_BRANDS_NOT_BIOEQUIVALENT, diltiazemVmp.getPrescribingStatus());
+		assertTrue(diltiazemVmp.getAmps().allMatch(amp -> amp.shouldPrescribeVmp() == false));
+				
+		assertEquals(PrescribingStatus.NOT_RECOMMENDED__BRANDS_NOT_BIOEQUIVALENT, diltiazemVmp.getPrescribingStatus());
 		assertTrue(diltiazemVmp.getAmps().count() > 0);
 	}
 	
@@ -213,7 +214,7 @@ public class TestPrescribing {
 	}
 	
 	public void testTradeFamily(Concept tradeFamily, int numberOfVtms ) {
-		Dmd.Product tf = Dmd.Product.productForConcept(tradeFamily);
+		Dmd.Product tf = Dmd.Product.productForConcept(tradeFamily).get();
 		assertEquals(tf, Dmd.Product.TRADE_FAMILY);
 		
 		// now let's get its AMPs.
@@ -224,7 +225,7 @@ public class TestPrescribing {
 		
 		// choose one AMP and interrogate it
 		Concept amp = Tf.getAmps(tradeFamily).findFirst().get();		// get the first AMP
-		assertEquals(Dmd.Product.ACTUAL_MEDICINAL_PRODUCT, Dmd.Product.productForConcept(amp));
+		assertEquals(Dmd.Product.ACTUAL_MEDICINAL_PRODUCT, Dmd.Product.productForConcept(amp).get());
 		assertDrugType(amp, Dmd.Product.ACTUAL_MEDICINAL_PRODUCT);
 		assertEquals(tradeFamily, Amp.getTf(amp).get());
 		
@@ -232,13 +233,13 @@ public class TestPrescribing {
 		Concept vmp = Amp.getVmp(amp).get();
 		assertNotNull(vmp);
 		assertDrugType(vmp, Dmd.Product.VIRTUAL_MEDICINAL_PRODUCT);
-		assertEquals(Dmd.Product.VIRTUAL_MEDICINAL_PRODUCT, Dmd.Product.productForConcept(vmp));
+		assertEquals(Dmd.Product.VIRTUAL_MEDICINAL_PRODUCT, Dmd.Product.productForConcept(vmp).get());
 		assertTrue(Vmp.getAmps(vmp).anyMatch(a -> a == amp));
 		
 		// get the VTM
 		Concept vtm = Vmp.getVtms(vmp).findAny().get();
 		assertDrugType(vtm, Dmd.Product.VIRTUAL_THERAPEUTIC_MOIETY);
-		assertEquals(Dmd.Product.VIRTUAL_THERAPEUTIC_MOIETY, Dmd.Product.productForConcept(vtm));
+		assertEquals(Dmd.Product.VIRTUAL_THERAPEUTIC_MOIETY, Dmd.Product.productForConcept(vtm).get());
 		assertTrue(Vtm.getVmps(vtm).anyMatch(v -> v == vmp));
 		
 		// get an AMPP from our AMP
@@ -246,7 +247,7 @@ public class TestPrescribing {
 		assertTrue(Amp.getAmpps(amp).count() > 0);
 		Concept ampp = Amp.getAmpps(amp).findFirst().get();
 		assertDrugType(ampp, Dmd.Product.ACTUAL_MEDICINAL_PRODUCT_PACK);
-		assertEquals(Dmd.Product.ACTUAL_MEDICINAL_PRODUCT_PACK, Dmd.Product.productForConcept(ampp));
+		assertEquals(Dmd.Product.ACTUAL_MEDICINAL_PRODUCT_PACK, Dmd.Product.productForConcept(ampp).get());
 		
 		// get AMP from AMPP
 		assertEquals(amp, Ampp.getAmp(ampp).get());
@@ -254,7 +255,7 @@ public class TestPrescribing {
 		// get VMPP from AMPP
 		Concept vmpp = Ampp.getVmpp(ampp).get();
 		assertDrugType(vmpp, Dmd.Product.VIRTUAL_MEDICINAL_PRODUCT_PACK);
-		assertEquals(Dmd.Product.VIRTUAL_MEDICINAL_PRODUCT_PACK, Dmd.Product.productForConcept(vmpp));
+		assertEquals(Dmd.Product.VIRTUAL_MEDICINAL_PRODUCT_PACK, Dmd.Product.productForConcept(vmpp).get());
 
 		// and now get VMP from the VMPP and check it is what we think it should be
 		assertEquals(vmp, Vmpp.getVmp(vmpp).get());
@@ -276,7 +277,7 @@ public class TestPrescribing {
 		ObjectContext context = getRuntime().newContext();
 		Expression exp = Concept.PARENT_RELATIONSHIPS.dot(Relationship.TARGET_CONCEPT.dot(Concept.CONCEPT_ID)).eq(Dmd.Product.VIRTUAL_MEDICINAL_PRODUCT.conceptId).andExp(Concept.PARENT_RELATIONSHIPS.dot(Relationship.RELATIONSHIP_TYPE_CONCEPT.dot(Concept.CONCEPT_ID)).eq(RelationType.IS_A.conceptId));
 		SelectQuery<Concept> query = SelectQuery.query(Concept.class, exp);
-		//query.setFetchLimit(500);
+		query.setFetchLimit(500);
 		try (ResultBatchIterator<Concept> iterator = query.batchIterator(context, 100)) {
 			for(List<Concept> vmps : iterator) {
 				for (Concept c : vmps) {

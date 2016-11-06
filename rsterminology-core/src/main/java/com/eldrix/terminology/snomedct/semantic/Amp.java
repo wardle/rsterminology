@@ -5,7 +5,6 @@ import java.util.stream.Stream;
 
 import com.eldrix.terminology.snomedct.Concept;
 import com.eldrix.terminology.snomedct.Relationship;
-import com.eldrix.terminology.snomedct.semantic.Vmp.PrescribingStatus;
 
 /**
  * An actual medicinal product (AMP).
@@ -100,12 +99,7 @@ public class Amp extends Dmd {
 	 * @return
 	 */
 	public static boolean shouldPrescribeVmp(Concept amp) {
-		return Amp.getVmp(amp)
-			.filter(Vmp::isAvailable)
-			.filter(vmp -> Vmp.getPrescribingStatus(vmp).isPresent())
-			.filter(vmp -> PrescribingStatus.statusForConcept(Vmp.getPrescribingStatus(vmp).get().getConceptId()).isValid)
-			.filter(vmp -> Vmp.isAvailable(vmp))
-			.isPresent();
+		return Amp.getVmp(amp).map(Vmp::isPrescribable).orElse(Boolean.FALSE);
 	}
 	public boolean shouldPrescribeVmp() {
 		return Amp.shouldPrescribeVmp(_concept);

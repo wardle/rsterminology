@@ -21,8 +21,8 @@ public class Vmp extends Dmd {
 	public enum PrescribingStatus {
 		VALID(true, 8940201000001104L),
 		INVALID(false, 8940301000001108L),
-		NOT_RECOMMENDED_BRANDS_NOT_BIOEQUIVALENT(false, 8940301000001108L),
-		NOT_RECOMMENDED_PATIENT_TRAINING(false, 9900101000001103L);
+		NOT_RECOMMENDED__BRANDS_NOT_BIOEQUIVALENT(false, 9900001000001104L),
+		NOT_RECOMMENDED__PATIENT_TRAINING(false, 9900101000001103L);
 		@SuppressWarnings("serial")
 		static HashMap<Long, PrescribingStatus> _lookup = new HashMap<Long, PrescribingStatus>() {{
 			for (PrescribingStatus ps : PrescribingStatus.values()) {
@@ -185,17 +185,17 @@ public class Vmp extends Dmd {
 		return isCoNameDrug(_concept);
 	}
 
-	public static Optional<Concept> getPrescribingStatus(Concept vmp) {
+	public static PrescribingStatus getPrescribingStatus(Concept vmp) {
 		return vmp.getParentRelationships().stream()
 				.filter(r -> r.getRelationshipTypeConcept().getConceptId() == RelationType.VMP_PRESCRIBING_STATUS.conceptId)
 				.findAny()
-				.map(Relationship::getTargetConcept);
-	}
-	public PrescribingStatus getPrescribingStatus() {
-		return Vmp.getPrescribingStatus(_concept)
+				.map(Relationship::getTargetConcept)
 				.map(Concept::getConceptId)
 				.map(PrescribingStatus::statusForConcept)
-				.orElse(PrescribingStatus.INVALID);
+				.orElse(PrescribingStatus.INVALID);			
+	}
+	public PrescribingStatus getPrescribingStatus() {
+		return Vmp.getPrescribingStatus(_concept);
 	}
 
 	public static boolean isAvailable(Concept vmp) {
@@ -206,6 +206,13 @@ public class Vmp extends Dmd {
 	
 	public boolean isAvailable() {
 		return Vmp.isAvailable(_concept);
+	}
+	
+	public static boolean isPrescribable(Concept vmp) {
+		return isAvailable(vmp) && getPrescribingStatus(vmp).isValid;
+	}
+	public boolean isPrescribable() {
+		return Vmp.isPrescribable(_concept);
 	}
 	
 	/**

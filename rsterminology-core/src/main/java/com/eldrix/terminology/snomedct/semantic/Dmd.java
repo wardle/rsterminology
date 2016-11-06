@@ -1,6 +1,7 @@
 package com.eldrix.terminology.snomedct.semantic;
 
 import java.util.Objects;
+import java.util.Optional;
 
 import com.eldrix.terminology.snomedct.Concept;
 import com.eldrix.terminology.snomedct.Relationship;
@@ -52,15 +53,15 @@ public abstract class Dmd {
 		 * @param c
 		 * @return
 		 */
-		public static Dmd.Product productForConcept(Concept c) {
+		public static Optional<Dmd.Product> productForConcept(Concept c) {
 			for (Concept p : c.getParentConcepts()) {
 				for (Dmd.Product med : Product.values()) {
 					if (p.getConceptId() == med.conceptId) {
-						return med;
+						return Optional.of(med);
 					}
 				}
 			}
-			return null;
+			return Optional.empty();
 		}
 		
 		/**
