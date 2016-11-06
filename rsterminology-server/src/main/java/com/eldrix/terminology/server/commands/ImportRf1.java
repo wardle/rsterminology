@@ -49,14 +49,14 @@ public class ImportRf1 extends CommandWithMetadata {
 			}
 		}
 		if (filename != null) {
-		System.out.println("Importing file: " + filename);
-		try {
-			ParseRf1.processFile(cayenne.get(), filename);
-			return CommandOutcome.succeeded();
-		} catch (IOException e) {
-			e.printStackTrace();
-			return CommandOutcome.failed(-1, e);
-		}
+			System.out.println("Importing file: " + filename);
+			try {
+				ParseRf1.processFile(cayenne.get(), filename);
+				return CommandOutcome.succeeded();
+			} catch (IOException e) {
+				e.printStackTrace();
+				return CommandOutcome.failed(-1, e);
+			}
 		}
 		return CommandOutcome.failed(1, "No file specified");
 	}
