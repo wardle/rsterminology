@@ -72,9 +72,8 @@ public class Vmp extends Dmd {
 		for (Concept parent : vmp.getParentConcepts()) {	// looking only at IS-A relationships
 			if (Product.VIRTUAL_THERAPEUTIC_MOIETY.isAProduct(parent)) {
 				vtms.add(parent);
-			} else {
-				_findVtm(parent, vtms);
 			}
+			_findVtm(parent, vtms);
 		}
 	}
 

@@ -113,7 +113,7 @@ public class TestPrescribing {
 		Vtm amlodipine1 = new Vtm(amlodipineVtm);
 		Vtm amlodipine2 = new Vtm(amlodipineVtm);
 		Vmp amlodipineVmp = amlodipine1.getVmps().findAny().get();
-		Vtm amlodipine3 = amlodipineVmp.getVtms().findAny().get();
+		Vtm amlodipine3 = amlodipineVmp.getVtms().filter(vtm -> vtm.equals(amlodipine1)).findAny().get();
 		assertEquals(amlodipine1, amlodipine2);
 		assertEquals(amlodipine2, amlodipine3);
 		assertEquals(amlodipine1, amlodipine3);
@@ -156,7 +156,8 @@ public class TestPrescribing {
 			assertTrue(amlodipineTfs2.contains(aTf));
 		}
 		
-		Concept amlodipineVmp = Vtm.getVmps(amlodipineVtm).findAny().get();
+		// find a vmp with only this vtm as a vtm.
+		Concept amlodipineVmp = Vtm.getVmps(amlodipineVtm).filter(vmp -> Vmp.getVtms(vmp).count() == 1).findAny().get();
 		List<Concept> amlodipineTfs3 = Vmp.getTfs(amlodipineVmp).collect(Collectors.toList());
 		for (Concept aTf : amlodipineTfs3) {
 			assertTrue(amlodipineTfs2.contains(aTf));
@@ -177,6 +178,7 @@ public class TestPrescribing {
 		 */
 		Vtm amlodipine = new Vtm(amlodipineVtm);
 		assertNotEquals(0, amlodipine.getTfs().count());
+		assertTrue(amlodipine.getVmps().filter(vmp -> vmp.getVtms().count() > 1).allMatch(vmp -> vmp.getActiveIngredients().count() > 1));
 		
 	}
 	

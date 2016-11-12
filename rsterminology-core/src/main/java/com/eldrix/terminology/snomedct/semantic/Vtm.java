@@ -43,9 +43,8 @@ public class Vtm extends Dmd {
 		for (Concept child : vtm.getChildConcepts()) {	// looking only at IS-A relationships
 			if (Product.VIRTUAL_MEDICINAL_PRODUCT.isAProduct(child)) {
 				vmps.add(child);
-			} else {
-				_addVmps(child, vmps);
 			}
+			_addVmps(child, vmps);
 		}
 	}
 	
