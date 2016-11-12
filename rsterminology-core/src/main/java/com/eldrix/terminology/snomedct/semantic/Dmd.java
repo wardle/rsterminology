@@ -87,7 +87,7 @@ public abstract class Dmd {
 			return false;
 		}
 	}
-
+	protected final Product _product;
 	protected final Concept _concept;
 
 	protected Dmd(Dmd.Product product, Concept c) {
@@ -97,6 +97,7 @@ public abstract class Dmd {
 		if (!product.isAProduct(c)) {
 			throw new IllegalArgumentException("Concept is not a " + product);
 		}
+		_product = product;
 		_concept = c;
 	}
 	
@@ -119,5 +120,16 @@ public abstract class Dmd {
 	@Override
 	public int hashCode() {
 		return Objects.hash(_concept);
+	}
+	
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append(_product.abbreviation());
+		sb.append("-");
+		sb.append(_concept.getPreferredDescription().getTerm());
+		sb.append("-");
+		sb.append(_concept.getConceptId());
+		return sb.toString();
 	}
 }
