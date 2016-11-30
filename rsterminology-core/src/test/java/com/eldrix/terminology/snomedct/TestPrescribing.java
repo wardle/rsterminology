@@ -295,5 +295,25 @@ public class TestPrescribing {
 			}
 		}
 	}
+	@Test
+	public void testDmd() {
+		ObjectContext context = getRuntime().newContext();
+		Amp nifedipress = new Amp(ObjectSelect.query(Concept.class, Concept.CONCEPT_ID.eq(7855311000001102L)).selectOne(context));
+		assertEquals(2, nifedipress.getExcipients().count());		//lactose and polysorbate
+		
+		assertTrue(nifedipress.isAvailable());	// this is currently true, but may change in the future
+		
+		Amp istin = new Amp(ObjectSelect.query(Concept.class, Concept.CONCEPT_ID.eq(5523911000001100L)).selectOne(context));
+		assertEquals(0, istin.getExcipients().count());		// Excipient not declared (qualifier value) 8653301000001102
+		assertTrue(istin.isAvailable());
+		istin.getVtms().forEach(vtm -> assertTrue(vtm.isPrescribable()));
+		
+		Vmp rofecoxib = new Vmp(ObjectSelect.query(Concept.class, Concept.CONCEPT_ID.eq(330162006L)).selectOne(context));
+		assertFalse(rofecoxib.isAvailable());	// rofecoxib isn't available anymore
+		assertFalse(rofecoxib.isPrescribable());	// and so isn't prescribable either
+		rofecoxib.getAmps().forEach(amp -> assertFalse(amp.isAvailable()));	// none of the AMPs are available either.
+		rofecoxib.getTfs().forEach(tf -> assertFalse(tf.isPrescribable()));	// likewise for the TFs
+		rofecoxib.getVtms().forEach(vtm -> assertFalse(vtm.isPrescribable()));
+	}
 
 }

@@ -4,18 +4,22 @@ import java.util.Optional;
 
 import com.eldrix.terminology.snomedct.Concept;
 import com.eldrix.terminology.snomedct.Relationship;
-import com.eldrix.terminology.snomedct.semantic.Dmd.Product;
 
 /**
  * An actual medicinal product pack (AMPP).
  *
  */
-public class Ampp extends Dmd{
+public class Ampp extends Dmd {
 
 	public Ampp(Concept c) {
 		super(Product.ACTUAL_MEDICINAL_PRODUCT_PACK, c);
 	}
 
+	/**
+	 * Is the concept specified a type of AMPP?
+	 * @param c
+	 * @return
+	 */
 	public static boolean isA(Concept c) {
 		return Product.ACTUAL_MEDICINAL_PRODUCT_PACK.isAProduct(c);
 	}

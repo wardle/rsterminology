@@ -11,11 +11,17 @@ import com.eldrix.terminology.snomedct.Relationship;
  *
  */
 public class Amp extends Dmd {
+	private final static long CONCEPT_EXCIPIENT_NOT_DECLARED = 8653301000001102L;
 
 	public Amp(Concept c) {
 		super(Product.ACTUAL_MEDICINAL_PRODUCT, c);
 	}
 
+	/**
+	 * Is the concept specified a type of AMP?
+	 * @param c
+	 * @return
+	 */
 	public static boolean isA(Concept c) {
 		return Product.ACTUAL_MEDICINAL_PRODUCT.isAProduct(c);
 	}
@@ -103,5 +109,39 @@ public class Amp extends Dmd {
 	}
 	public boolean shouldPrescribeVmp() {
 		return Amp.shouldPrescribeVmp(_concept);
+	}
+	
+	public static boolean isAvailable(Concept amp) {
+		return Vmp.isAvailable(amp);		// the logic for VMP works for AMPs as well
+	}
+	public boolean isAvailable() {
+		return Amp.isAvailable(_concept);
+	}
+	
+	public static Stream<Concept> getActiveIngredients(Concept amp) {
+		return amp.getParentRelationships().stream()
+				.filter(r -> RelationType.HAS_ACTIVE_INGREDIENT.conceptId == r.getRelationshipTypeConcept().getConceptId())
+				.map(Relationship::getTargetConcept);
+	}
+	public Stream<Concept> getActiveIngredients() {
+		return Amp.getActiveIngredients(_concept);
+	}
+	
+	/**
+	 * Return the excipients for this AMP.
+	 * If no excipients are recorded, DM&D explicitly includes an excipient 
+	 * CONCEPT_EXCIPIENT_NOT_DECLARED which we filter out here as it makes no sense
+	 * to include it.
+	 * @param amp
+	 * @return
+	 */
+	public static Stream<Concept> getExcipients(Concept amp) {
+		return amp.getParentRelationships().stream()
+				.filter(r -> RelationType.HAS_EXCIPIENT.conceptId == r.getRelationshipTypeConcept().getConceptId())
+				.filter(r -> r.getTargetConcept().getConceptId() != CONCEPT_EXCIPIENT_NOT_DECLARED)
+				.map(Relationship::getTargetConcept);
+	}
+	public Stream<Concept> getExcipients() {
+		return Amp.getExcipients(_concept);
 	}
 }

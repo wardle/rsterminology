@@ -3,9 +3,11 @@ package com.eldrix.terminology.snomedct.semantic;
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import org.apache.cayenne.exp.Expression;
 import org.apache.commons.lang3.StringUtils;
 
 import com.eldrix.terminology.snomedct.Concept;
@@ -16,7 +18,36 @@ import com.eldrix.terminology.snomedct.Relationship;
  *
  */
 public class Vmp extends Dmd {
-	private static long VMP_IS_AVAILABLE=8940901000001109L;
+	/*
+	 * Availability is defined by a relation VMP_NON_AVAILABILITY_INDICATOR
+	 * which currently has the following values:
+	 * select * from t_concept where concept_id in (select target_concept_id from t_relationship where relationship_type_concept_id = 8940601000001102 group by target_concept_id);
+	 */
+	public enum VmpAvailability {
+		VMP_IS_AVAILABLE(true, 8940901000001109L),
+		VMP_REINTRODUCED(true, 8940801000001103L),
+		VMP_NOT_AVAILABLE(false, 8941001000001100L);
+		public final boolean isAvailable;
+		public final long conceptId;
+		private static final Map<Long, VmpAvailability> _lookup;
+		static {
+			HashMap<Long, VmpAvailability> lookup = new HashMap<>();
+			for (VmpAvailability a : VmpAvailability.values()) {
+				lookup.put(a.conceptId, a);
+			}
+			_lookup = lookup;
+		}
+		VmpAvailability(boolean available, long conceptId) {
+			this.isAvailable = available;
+			this.conceptId = conceptId;
+		}
+		public static boolean isAvailable(long conceptId) {
+			return _lookup.getOrDefault(conceptId, VMP_NOT_AVAILABLE).isAvailable;
+		}
+		
+	}
+
+	public static Expression QUALIFIER_CONCEPT_IS_VMP = Concept.PARENT_RELATIONSHIPS.dot(Relationship.TARGET_CONCEPT.dot(Concept.CONCEPT_ID)).eq(Dmd.Product.VIRTUAL_MEDICINAL_PRODUCT.conceptId).andExp(Concept.PARENT_RELATIONSHIPS.dot(Relationship.RELATIONSHIP_TYPE_CONCEPT.dot(Concept.CONCEPT_ID)).eq(RelationType.IS_A.conceptId));
 
 	public enum PrescribingStatus {
 		VALID(true, 8940201000001104L),
@@ -39,11 +70,16 @@ public class Vmp extends Dmd {
 			return Optional.ofNullable(_lookup.get(conceptId)).orElse(PrescribingStatus.INVALID);
 		}
 	}
-
+	
 	public Vmp(Concept c) {
 		super(Product.VIRTUAL_MEDICINAL_PRODUCT, c);
 	}
 
+	/**
+	 * Is the concept specified a type of VMP?
+	 * @param c
+	 * @return
+	 */
 	public static boolean isA(Concept c) {
 		return Product.VIRTUAL_MEDICINAL_PRODUCT.isAProduct(c);
 	}
@@ -200,7 +236,7 @@ public class Vmp extends Dmd {
 	public static boolean isAvailable(Concept vmp) {
 		return vmp.getParentRelationships().stream()
 				.filter(r -> r.getRelationshipTypeConcept().getConceptId() == RelationType.VMP_NON_AVAILABILITY_INDICATOR.conceptId)
-				.anyMatch(r -> r.getTargetConcept().getConceptId() == VMP_IS_AVAILABLE);
+				.anyMatch(r -> VmpAvailability.isAvailable(r.getTargetConcept().getConceptId()));
 	}
 	
 	public boolean isAvailable() {

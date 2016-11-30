@@ -16,6 +16,11 @@ public class Vmpp extends Dmd {
 		super(Product.VIRTUAL_MEDICINAL_PRODUCT_PACK, c);
 	}
 
+	/**
+	 * Is the type specified a type of VMPP?
+	 * @param c
+	 * @return
+	 */
 	public static boolean isA(Concept c) {
 		return Product.VIRTUAL_MEDICINAL_PRODUCT_PACK.isAProduct(c);
 	}

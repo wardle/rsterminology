@@ -271,7 +271,7 @@ public class Browser extends CommandWithMetadata {
 		sb.append("VMP: ");
 		appendDmdProduct(sb, vmp);
 		sb.append(" Rx:");
-		sb.append(vmp.getPrescribingStatus());
+		sb.append(vmp.isPrescribable());
 		System.out.println(sb.toString());
 		if (showOthers) {
 			vmp.getAmps().forEach(amp -> showAmp(indent+2, amp, false));

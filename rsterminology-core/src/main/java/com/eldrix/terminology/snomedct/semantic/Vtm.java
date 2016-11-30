@@ -16,6 +16,11 @@ public class Vtm extends Dmd {
 		super(Product.VIRTUAL_THERAPEUTIC_MOIETY, c);
 	}
 
+	/**
+	 * Is the concept specified a type of VTM?
+	 * @param c
+	 * @return
+	 */
 	public static boolean isA(Concept c) {
 		return Product.VIRTUAL_THERAPEUTIC_MOIETY.isAProduct(c);
 	}
@@ -89,5 +94,12 @@ public class Vtm extends Dmd {
 	}
 	public Stream<Tf> getTfs() {
 		return getTfs(_concept).map(Tf::new);
+	}
+	
+	public static boolean isPrescribable(Concept vtm) {
+		return vtm.isActive() && Vtm.getVmps(vtm).anyMatch(vmp -> Vmp.isAvailable(vmp));
+	}
+	public boolean isPrescribable() {
+		return Vtm.isPrescribable(_concept);
 	}
 }

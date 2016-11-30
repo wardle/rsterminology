@@ -15,6 +15,11 @@ public class Tf extends Dmd {
 		super(Product.TRADE_FAMILY, c);
 	}
 
+	/**
+	 * Is the concept specified a type of TF?
+	 * @param c
+	 * @return
+	 */
 	public static boolean isA(Concept c) {
 		return Product.TRADE_FAMILY.isAProduct(c);
 	}
@@ -63,5 +68,12 @@ public class Tf extends Dmd {
 	}
 	public Stream<Concept> getDispensedDoseForms() {
 		return Tf.getDispensedDoseForms(_concept);
+	}
+	
+	public static boolean isPrescribable(Concept tf) {
+		return tf.isActive() && Tf.getAmps(tf).anyMatch(amp -> Amp.isAvailable(amp));
+	}
+	public boolean isPrescribable() {
+		return Tf.isPrescribable(_concept);
 	}
 }
