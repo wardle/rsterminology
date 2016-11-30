@@ -151,7 +151,7 @@ public class Medication {
 		public long conceptId() {
 			return _conceptId;
 		}
-		
+
 		public String[] names() {
 			return _names;
 		}
@@ -167,7 +167,7 @@ public class Medication {
 		DOSE_BASED,
 		PRODUCT_BASED;
 	}
-	
+
 	public enum Units {
 		MICROGRAM(PrescribingType.DOSE_BASED, 258685003L, new String[] { "mcg" }, new BigDecimal("0.00001")),
 		MILLIGRAM(PrescribingType.DOSE_BASED, 258684004L, new String[] { "mg" }, new BigDecimal("0.001")),
@@ -177,18 +177,18 @@ public class Medication {
 		TABLETS(PrescribingType.PRODUCT_BASED, 385055001L, new String[] { "tablets", "tab", "t" }, BigDecimal.ONE),
 		PUFFS(PrescribingType.PRODUCT_BASED, 415215001L, new String[] { "puffs", "puff", "p" }, BigDecimal.ONE),
 		NONE(PrescribingType.PRODUCT_BASED, 408102007L, new String[] { "" }, BigDecimal.ONE);
-		
+
 		private final PrescribingType _prescribingType;
 		private final long _conceptId;
 		private final String[] _abbreviations;
 		public final BigDecimal conversion;
-		private static final HashMap<String, Units> _lookup = new HashMap<String, Units>() {
-			{
-				for (Units unit : Units.values()) {
-					for (String abbrev : unit.abbreviations()) {
-						if (abbrev.length() > 0) {
-							put(abbrev, unit);
-						}
+		private static final HashMap<String, Units> _lookup;
+		static {
+			_lookup = new HashMap<String, Units>(); 
+			for (Units unit : Units.values()) {
+				for (String abbrev : unit.abbreviations()) {
+					if (abbrev.length() > 0) {
+						_lookup.put(abbrev, unit);
 					}
 				}
 			}
@@ -208,7 +208,7 @@ public class Medication {
 		public long conceptId() {
 			return _conceptId;
 		}
-		
+
 		public String abbreviation() {
 			return _abbreviations[0];
 		}
@@ -240,13 +240,13 @@ public class Medication {
 		TOPICAL(2762601000001108L, "top");
 		final long _conceptId;
 		final String _abbreviation;
-		final static HashMap<String, Route> _routes = new HashMap<String, Route>() {
-			{
-				for (Route route : Route.values()) {
-					put(route.abbreviation().toUpperCase(), route);
-				}
+		final static HashMap<String, Route> _routes;
+		static {
+			_routes = new HashMap<String, Route>(); 
+			for (Route route : Route.values()) {
+				_routes.put(route.abbreviation().toUpperCase(), route);
 			}
-		};
+		}
 
 		Route(long conceptId, String abbreviation) {
 			_conceptId = conceptId;
