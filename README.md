@@ -1,6 +1,21 @@
 # rsterminology
-An open-source SNOMED-CT implementation.
+An open-source SNOMED-CT implementation.  Copyright (C) Dr. Mark Wardle 2007-2016 and Eldrix Ltd 2013-2016
 
+## Licence
+ rsterminology is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    rsterminology is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
+
+## About
 This is a conversion of a legacy WebObjects-based SNOMED-CT web service and administration portal. It is currently running and passing unit tests to query and explore the SNOMED-CT hierarchy.
 
 It is built using Bootique, Apache Cayenne and LinkRest together with Apache Lucene. 
