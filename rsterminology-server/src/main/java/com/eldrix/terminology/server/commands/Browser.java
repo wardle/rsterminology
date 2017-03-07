@@ -26,10 +26,10 @@ import com.eldrix.terminology.snomedct.semantic.Vtm;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 
-import io.bootique.application.CommandMetadata;
 import io.bootique.cli.Cli;
 import io.bootique.command.CommandOutcome;
 import io.bootique.command.CommandWithMetadata;
+import io.bootique.meta.application.CommandMetadata;
 
 /**
  * This is a very simply command-line SNOMED-CT browser.
@@ -85,6 +85,7 @@ public class Browser extends CommandWithMetadata {
 		performShowConcept(line);
 		performShowDescriptions(line);
 		performShowChildRelationships(line);
+		performShowRecursiveChildRelationships(line);
 		performFind(line);
 		return false;
 	}
@@ -99,6 +100,7 @@ public class Browser extends CommandWithMetadata {
 			System.out.println("s <conceptId> : Show or change the currently selected concept");
 			System.out.println("d        : Show descriptions for currently selected concept");
 			System.out.println("c        : Show child relationships for currently selected concept");
+			System.out.println("cc       : Show recursive children (IS-A) for currently selected concept");
 			System.out.println("f <name> : Find a concept matching the specified name");
 			System.out.println("dmd      : Displays DMD information for currently selected concept");
 		}
@@ -148,13 +150,28 @@ public class Browser extends CommandWithMetadata {
 		if ("c".equalsIgnoreCase(line.trim()) && currentConcept() != null) {
 			StringBuilder sb = new StringBuilder();
 			sb.append("Child relationships:");
-			currentConcept().getChildRelationships().forEach(r -> {
-				sb.append("\n  |    |-" + r.getSourceConcept().getFullySpecifiedName()  + " " +r.getSourceConceptId() + " "+ " [" + r.getRelationshipTypeConcept().getFullySpecifiedName() + "] " + r.getTargetConcept().getFullySpecifiedName());
+			currentConcept().getChildRelationships().stream()
+				.sorted( (r1, r2) -> r1.getRelationshipTypeConcept().getFullySpecifiedName().compareTo(r2.getRelationshipTypeConcept().getFullySpecifiedName()))
+				.forEach(r -> {
+					sb.append("\n  |    |-" + r.getSourceConcept().getFullySpecifiedName()  + " " +r.getSourceConceptId() + " "+ " [" + r.getRelationshipTypeConcept().getFullySpecifiedName() + "] " + r.getTargetConcept().getFullySpecifiedName());
 			});
 			System.out.println(sb.toString());
 		}
 	}
 
+	private void performShowRecursiveChildRelationships(String line) {
+		if ("cc".equalsIgnoreCase(line.trim()) && currentConcept() != null) {
+			StringBuilder sb = new StringBuilder();
+			sb.append("Recursive children:");
+			currentConcept().getRecursiveChildConcepts().stream()
+				.forEach(c -> {
+					sb.append("\n  |    |-" + c.getFullySpecifiedName()  + " " +c.getConceptId());
+			});
+			System.out.println(sb.toString());
+		}
+	}
+
+	
 	private static void printConcept(Concept c, boolean includeRelations) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("Concept : " + c.getConceptId());
@@ -187,11 +204,11 @@ public class Browser extends CommandWithMetadata {
 			String roots = m.group("roots");		// root identifiers
 			String search = m.group("search");
 			try {
-				int hits = 20;
+				int maxHits = 20;
 				if (number != null && number.length() > 0) {
 					try {
 						int h = Integer.parseInt(number);
-						hits = h;
+						maxHits = h;
 					}
 					catch (NumberFormatException e) {
 						;
@@ -204,11 +221,15 @@ public class Browser extends CommandWithMetadata {
 						rootConceptIds = r;
 					}
 				}
-				List<ResultItem> results = Search.getInstance().newBuilder().search(search).setMaxHits(hits).withRecursiveParent(rootConceptIds).build().search();
-				if (results.size() > 0) {
-					results.forEach(ri -> {
+				List<ResultItem> results = Search.getInstance().newBuilder().search(search).setMaxHits(maxHits+1).withRecursiveParent(rootConceptIds).build().search();
+				int count = results.size();
+				if (count > 0) {
+					results.subList(0, count > maxHits ? maxHits : count).forEach(ri -> {
 						System.out.println(ri.getTerm() + " -- " + ri.getPreferredTerm() + " -- " + ri.getConceptId());
 					});
+					if (results.size() > maxHits) {
+						System.out.println("Warning: more results available than shown!");
+					}
 				}
 				else {
 					System.out.println("No results found");
