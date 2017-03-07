@@ -49,7 +49,7 @@ public class TestPrescribing {
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
-		_runtime = new ServerRuntime("cayenne-project.xml");        
+		_runtime = ServerRuntime.builder().addConfig("cayenne-project.xml").build();
 	}
 
 	@AfterClass
@@ -88,6 +88,7 @@ public class TestPrescribing {
 		ParsedMedication pm1 = new ParsedMedicationBuilder().parseString("co-careldopa 25mg/250mg 1t tds").build();
 		Concept cocareldopa = ObjectSelect.query(Concept.class, 
 				Concept.CONCEPT_ID.eq(searchVmp.search("co-careldopa 25mg/250mg").build().searchForConcepts().get(0))).selectOne(context);
+		assertEquals(pm1.getConceptId(), cocareldopa.getConceptId());
 		assertEquals(Dmd.Product.VIRTUAL_MEDICINAL_PRODUCT, Dmd.Product.productForConcept(cocareldopa).get());
 		Vmp cocareldopaVmp = new Vmp(cocareldopa);
 		assertEquals(PrescribingStatus.VALID, cocareldopaVmp.getPrescribingStatus());

@@ -43,7 +43,7 @@ public class TestSnomedCt {
 
 	@BeforeClass
 	public static void setUp() throws Exception {
-		_runtime = new ServerRuntime("cayenne-project.xml");        
+		_runtime = ServerRuntime.builder().addConfig("cayenne-project.xml").build();
 	}
 
 	@AfterClass
