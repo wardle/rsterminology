@@ -1,7 +1,6 @@
 package com.eldrix.terminology.snomedct;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -45,6 +44,10 @@ public class TestProject {
 		Project p = ObjectSelect.query(Project.class, Project.NAME.eq(ACUTE_PAEDS_NAME)).selectOne(context);
 		assertEquals(ACUTE_PAEDS_NAME, p.getName());
 
+		// how many projects?
+		long numberProjects = ObjectSelect.query(Project.class).count().selectOne(context);
+		assertNotEquals(0, numberProjects);
+		
 		// calculate a list of common concepts manually rather than in a single fetch
 		HashSet<Concept> common = new HashSet<Concept>();
 		p.getOrderedParents().forEach(proj -> common.addAll(proj.getCommonConcepts()));

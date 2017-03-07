@@ -10,7 +10,7 @@
 		<data-source>
 			<driver value="org.postgresql.Driver"/>
 			<url value="jdbc:postgresql:rsdb"/>
-			<connectionPool min="1" max="1"/>
+			<connectionPool min="1" max="50"/>
 			<login/>
 		</data-source>
 	</node>
