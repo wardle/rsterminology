@@ -18,7 +18,7 @@ An open-source SNOMED-CT implementation.  Copyright (C) Dr. Mark Wardle 2007-201
 ## About
 This is a conversion of a legacy WebObjects-based SNOMED-CT web service and administration portal. It is currently running and passing unit tests to query and explore the SNOMED-CT hierarchy.
 
-It is built using Bootique, Apache Cayenne and LinkRest together with Apache Lucene. 
+It is built using Bootique, Apache Cayenne and LinkRest together with Apache Lucene.
 
 The current version can now:
 
@@ -37,28 +37,28 @@ A runnable jar file is available so that you can experiment without having to co
 ```
     git clone https://github.com/wardle/rsterminology.git
 ```
-    
+
 ### Compile using maven.
 
 ```
 cd rsterminology
 mvn package
-```    
+```
 
-Note: this step requires unit tests to work with appropriate runtime configuration. Have a look at the run.yml file within rsterminology-server. 
+Note: this step requires unit tests to work with appropriate runtime configuration. Have a look at the run.yml file within rsterminology-server.
 
     jdbc:
       rsdb:
         url: jdbc:postgresql:rsdb
         driver: org.postgresql.Driver
-    
+
     cayenne:
       datasource: rsdb
       createSchema: false
 
 
 For example, you may need to change your database url. Alternatively, you can run maven without running unit tests.
-  
+
 ### Locate and run the executable jar file
 
 ```
@@ -67,22 +67,22 @@ java -jar rsterminology-server-1.0-SNAPSHOT.jar
 ```
 
 This should show the help for the rsterminology server software. This will look something like this:
-    
+
 ```
-    Option                    Description                           
-    ------                    -----------                           
-    --browser                 Browse and search SNOMED-CT           
-                                interactively.                      
-    --buildparentcache        Rebuilds the concept parent cache. Use
-                                after updating concepts from a new  
-                                release.                            
-    --config <yaml_location>  Specifies YAML config location, which 
-                                can be a file path or a URL.        
-    --createindex             Builds a new lucene index.            
-    --help                    Prints this message.                  
-    --importrf1               Import concepts, descriptions and     
-                                relationships for SNOMED-CT in RF1  
-                                format.                             
+    Option                    Description
+    ------                    -----------
+    --browser                 Browse and search SNOMED-CT
+                                interactively.
+    --build-parent-cache        Rebuilds the concept parent cache. Use
+                                after updating concepts from a new
+                                release.
+    --config <yaml_location>  Specifies YAML config location, which
+                                can be a file path or a URL.
+    --build-index             Builds a new lucene index.
+    --help                    Prints this message.
+    --import-rf1               Import concepts, descriptions and
+                                relationships for SNOMED-CT in RF1
+                                format.
     --server                  Starts Jetty server
 ```
 
@@ -92,10 +92,10 @@ You should use the supplied run.yml file from within rsterminology-server as a s
 
 ### Import SNOMED-CT
 
-Download a SNOMED-CT release. These releases consist of files representing SNOMED-CT concepts, relationships and descriptions. The order of imports is important. Always import concepts first before importing relationships or descriptions. 
+Download a SNOMED-CT release. These releases consist of files representing SNOMED-CT concepts, relationships and descriptions. The order of imports is important. Always import concepts first before importing relationships or descriptions.
 
 ```
-java -jar rsterminology-server-1.0-SNAPSHOT.jar --config run.yml --importrf1 sctXXX....
+java -jar rsterminology-server-1.0-SNAPSHOT.jar --config run.yml --import-rf1 sctXXX....
 ```
 
 ### Build the parent cache
@@ -103,7 +103,7 @@ java -jar rsterminology-server-1.0-SNAPSHOT.jar --config run.yml --importrf1 sct
 In order to optimise the runtime operation of SNOMED-CT, there is a database-backed cache of the recursive parent concepts for all concepts. Build this cache using the following command:
 
 ```
-java -jar rsterminology-server-1.0-SNAPSHOT.jar --config run.yml --buildparentcache
+java -jar rsterminology-server-1.0-SNAPSHOT.jar --config run.yml --build-parent-cache
 ```
 
 ### Create the search index
@@ -111,7 +111,7 @@ java -jar rsterminology-server-1.0-SNAPSHOT.jar --config run.yml --buildparentca
 In order to support fast free-text searching, you need to create a free-text index. Choose a reasonable location (e.g. I use /var/rsdb/sct_lucene/)
 
 ```
-java -jar rsterminology-server-1.0-SNAPSHOT.jar --config run.yml --createindex /var/rsdb/sct_lucene
+java -jar rsterminology-server-1.0-SNAPSHOT.jar --config run.yml --build-index /var/rsdb/sct_lucene
 ```
 
 ### And run your server
@@ -124,7 +124,7 @@ java -jar rsterminology-server-1.0-SNAPSHOT.jar --config run.yml --server
 
 ## Guide to the web-service
 
-You may now use the web-service from your code. 
+You may now use the web-service from your code.
 
 ### Obtaining information about a SNOMED-CT concept
 
