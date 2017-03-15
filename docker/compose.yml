@@ -1,0 +1,27 @@
+version: "2"
+services:
+  rsterminology:
+    build:
+      ./rsterminology
+      #dockerfile:Dockerfile
+    #- ports: 8080:8080
+    depends_on:
+      - pg
+    networks:
+      back-tier:
+
+  pg:
+    image: postgres:9.5.1
+    mem_limit: 512m
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: rsterminologyPass
+      POSTGRES_USER: rsterminology
+    volumes:
+      - rsterminology-postgres:/var/lib/postgresql/data
+    networks:
+      back-tier:
+networks:
+  back-tier:
+volumes:
+  rsterminology-postgres:
