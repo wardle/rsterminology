@@ -1,7 +1,7 @@
 jdbc:
   rsdb:
     url: jdbc:postgresql://pg:5432/rsterminology
-    user: rsterminology
+    username: rsterminology
     password: rsterminologyPass
     driverClassName: org.postgresql.Driver
     initialSize: 10

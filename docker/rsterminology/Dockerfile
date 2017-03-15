@@ -1,24 +1,13 @@
 
-from openjdk:7
+from openjdk:8
 
 
-COPY ../rsterminology-server/target/rsterminology-server-1.1-SNAPSHOT.jar
-COPY config.yml .
-COPY snomedCT_InternationalRF1_*.zip snomedCT_International.zip
-
-#Import SNOMED-CT
-#needs a sct file
-# http://download.nlm.nih.gov/umls/kss/IHTSDO20170131/SnomedCT_InternationalRF2_Production_20170131T120000.zip
-RUN java -jar rsterminology-server.jar --config run.yml --importrf1 snomedCT_International.zip
-RUN rm snomedCT_International.zip
-
-#Build the parent cache
-RUN java -jar rsterminology-server.jar --config run.yml --buildparentcache
-
-#Create the search index
-
-RUN java -jar rsterminology-server.jar --config run.yml --createindex /var/rsdb/sct_lucene
-
+COPY rsterminology-server-1.1-SNAPSHOT.jar rsterminology-server.jar
+COPY config.yml config.yml
+COPY uk_sct1cl_22.0.0_20161001000001.zip snomedCT.zip
+COPY docker-entrypoint.sh docker-entrypoint.sh
+RUN chmod +x docker-entrypoint.sh
+RUN unzip snomedCT.zip
 EXPOSE 8080
 
-CMD java -jar rsterminology-server.jar --config run.yml --server
+CMD ./docker-entrypoint.sh
