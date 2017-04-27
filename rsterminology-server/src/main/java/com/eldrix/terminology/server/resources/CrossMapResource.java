@@ -31,7 +31,7 @@ public class CrossMapResource {
 
 	@GET
 	public DataResponse<CrossMapSet> getAll(@Context UriInfo uriInfo) {
-		return LinkRest.select(CrossMapSet.class, config).uri(uriInfo).select();
+		return LinkRest.select(CrossMapSet.class, config).uri(uriInfo).get();
 	}
 
 	@GET
@@ -39,7 +39,7 @@ public class CrossMapResource {
 	public DataResponse<CrossMapSet> getOne(@PathParam("setId") long id, @Context UriInfo uriInfo) {
 		return LinkRest.select(CrossMapSet.class, config)
 				.byId(id).uri(uriInfo)
-				.selectOne();
+				.getOne();
 	}
 
 	@GET
@@ -53,7 +53,7 @@ public class CrossMapResource {
 				.property(CrossMapTable.TARGET.dot(CrossMapTarget.CODES).getName())
 				.listener(new CrossMapTableFilter(setId))
 				.uri(uriInfo)
-				.select();
+				.get();
 	}
 
 

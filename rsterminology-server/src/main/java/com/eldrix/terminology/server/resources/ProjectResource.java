@@ -38,12 +38,12 @@ public class ProjectResource {
 	public DataResponse<Project> getOne(@PathParam("projectId") int id, @Context UriInfo uriInfo) {
 		return LinkRest.select(Project.class, config)
 				.byId(id).uri(uriInfo)
-				.selectOne();
+				.getOne();
 	}
 	
 	@GET
 	public DataResponse<Project> getAll(@Context UriInfo uriInfo) {
-		return LinkRest.select(Project.class, config).uri(uriInfo).select();
+		return LinkRest.select(Project.class, config).uri(uriInfo).get();
 	}
 	
 	@GET
@@ -57,7 +57,7 @@ public class ProjectResource {
 		if (!recursiveParents.isEmpty()) {
 			sb.listener(new ConceptFilter(recursiveParents));
 		}
-		return sb.select();
+		return sb.get();
 	}
 	
 	public class ConceptFilter {

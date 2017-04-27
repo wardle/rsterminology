@@ -37,7 +37,7 @@ public class ConceptResource {
 	public DataResponse<Concept> getOne(@PathParam("conceptId") long id, @Context UriInfo uriInfo) {
 		return LinkRest.select(Concept.class, config)
 				.byId(id).uri(uriInfo)
-				.selectOne();
+				.getOne();
 	}
 
 	@GET
@@ -46,7 +46,7 @@ public class ConceptResource {
 		return LinkRest.select(Description.class, config)
 				.toManyParent(Concept.class, conceptId, Concept.DESCRIPTIONS)
 				.uri(uriInfo)
-				.select();
+				.get();
 	}
 
 	@GET
@@ -55,7 +55,7 @@ public class ConceptResource {
 		return LinkRest.select(Relationship.class, config)
 				.toManyParent(Concept.class, conceptId, Concept.CHILD_RELATIONSHIPS)
 				.uri(uriInfo)
-				.select();
+				.get();
 	}
 
 	@GET
@@ -64,7 +64,7 @@ public class ConceptResource {
 		return LinkRest.select(Relationship.class, config)
 				.toManyParent(Concept.class, conceptId, Concept.PARENT_RELATIONSHIPS)
 				.uri(uriInfo)
-				.select();
+				.get();
 	}
 
 	@GET
@@ -73,7 +73,7 @@ public class ConceptResource {
 		return LinkRest.select(Concept.class, config)
 				.toManyParent(Concept.class, conceptId, Concept.RECURSIVE_PARENT_CONCEPTS)
 				.uri(uriInfo)
-				.select();
+				.get();
 	}
 
 
@@ -87,6 +87,6 @@ public class ConceptResource {
 		if (crossMapSetId != null) {
 			sb.listener(new CrossMapTableFilter(crossMapSetId));
 		}
-		return sb.select();
+		return sb.get();
 	}
 }

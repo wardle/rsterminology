@@ -11,11 +11,9 @@ import com.eldrix.terminology.server.resources.ProjectResource;
 import com.eldrix.terminology.server.resources.SearchResource;
 import com.google.inject.Binder;
 import com.google.inject.Module;
-import com.google.inject.multibindings.Multibinder;
 
 import io.bootique.BQCoreModule;
 import io.bootique.Bootique;
-import io.bootique.command.Command;
 import io.bootique.jersey.JerseyModule;
 
 /**
@@ -24,7 +22,6 @@ import io.bootique.jersey.JerseyModule;
 public class SnomedCTApplication implements Module {
 
 	public static void main(String[] args) throws Exception {
-
 		Bootique.app(args)
 		.autoLoadModules()
 		.module(SnomedCTApplication.class)
@@ -33,17 +30,16 @@ public class SnomedCTApplication implements Module {
 
 	@Override
 	public void configure(Binder binder) {
-		Multibinder<Command> multibinder = BQCoreModule.contributeCommands(binder);
-		multibinder.addBinding().to(BuildIndex.class);
-		multibinder.addBinding().to(BuildParentCache.class);
-		multibinder.addBinding().to(ImportRf1.class);
-		multibinder.addBinding().to(Browser.class);
-		multibinder.addBinding().to(ExportDmdMain.class);
-		
-		Multibinder<Object> jersey = JerseyModule.contributeResources(binder);
-		jersey.addBinding().to(SearchResource.class);
-		jersey.addBinding().to(ConceptResource.class);
-		jersey.addBinding().to(ProjectResource.class);
-		jersey.addBinding().to(CrossMapResource.class);
+		BQCoreModule.extend(binder)
+			.addCommand(BuildIndex.class)
+			.addCommand(BuildParentCache.class)
+			.addCommand(ImportRf1.class)
+			.addCommand(Browser.class)
+			.addCommand(ExportDmdMain.class);
+		JerseyModule.extend(binder)
+			.addResource(SearchResource.class)
+			.addResource(ConceptResource.class)
+			.addResource(ProjectResource.class)
+			.addResource(CrossMapResource.class);
 	}
 }
