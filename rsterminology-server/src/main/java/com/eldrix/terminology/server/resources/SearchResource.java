@@ -1,7 +1,9 @@
 package com.eldrix.terminology.server.resources;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.ws.rs.DefaultValue;
@@ -25,6 +27,7 @@ import org.apache.lucene.queryparser.classic.ParseException;
 
 import com.eldrix.terminology.medicine.ParsedMedication;
 import com.eldrix.terminology.medicine.ParsedMedicationBuilder;
+import com.eldrix.terminology.snomedct.Concept;
 import com.eldrix.terminology.snomedct.Description;
 import com.eldrix.terminology.snomedct.Project;
 import com.eldrix.terminology.snomedct.Search;
@@ -151,12 +154,13 @@ public class SearchResource {
 			@DefaultValue("false") @QueryParam("inactive") boolean includeInactive,
 			@DefaultValue("false") @QueryParam("fuzzy") boolean fuzzy,
 			@DefaultValue("true") @QueryParam("fallbackFuzzy") boolean fallbackFuzzy,
+			@DefaultValue("false") @QueryParam("includeChildren") boolean includeChildren,
 			@Context UriInfo uriInfo) {
 		if (search == null || search.length() == 0) {
 			throw new LinkRestException(Status.BAD_REQUEST, ERROR_NO_SEARCH_PARAMETER);
 		}
 		try {
-			List<String> result = _performSynonymSearch(search, roots, maxHits, includeFsn, includeInactive, fuzzy, fallbackFuzzy);
+			List<String> result = _performSynonymSearch(search, roots, maxHits, includeFsn, includeInactive, fuzzy, fallbackFuzzy, includeChildren);
 			return responseWithList(result);
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -166,7 +170,7 @@ public class SearchResource {
 
 
 	private List<String> _performSynonymSearch(String search, List<Long> roots, int maxHits, boolean includeFsn,
-			boolean includeInactive, boolean fuzzy, boolean fallbackFuzzy) throws IOException, CorruptIndexException {
+			boolean includeInactive, boolean fuzzy, boolean fallbackFuzzy, boolean includeChildren) throws IOException, CorruptIndexException {
 		Search.Request.Builder b = Search.getInstance().newBuilder()
 				.search(search).setMaxHits(maxHits).withRecursiveParent(roots);
 		if (!includeInactive) {
@@ -184,7 +188,19 @@ public class SearchResource {
 		}
 		ICayennePersister cayenne = LinkRestRuntime.service(ICayennePersister.class, config);
 		ObjectContext context = cayenne.newContext();
-		Expression qual = Description.CONCEPT_ID.in(conceptIds);
+		Expression qual;
+		if (includeChildren) {
+			Expression q1 = Concept.CONCEPT_ID.in(conceptIds);
+			List<Concept> concepts = ObjectSelect.query(Concept.class, q1).select(context);
+			Set<Concept> allConcepts = new HashSet<>();
+			concepts.forEach(c -> {
+				allConcepts.add(c);
+				allConcepts.addAll(c.getRecursiveChildConcepts());
+			});
+			qual = Description.CONCEPT.in(allConcepts);
+		} else {
+			qual = Description.CONCEPT_ID.in(conceptIds);
+		}
 		if (!includeFsn) {
 			qual = qual.andExp(Description.DESCRIPTION_TYPE_CODE.ne(Description.Type.FULLY_SPECIFIED_NAME.code));
 		}
