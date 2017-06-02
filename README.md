@@ -20,13 +20,16 @@ This is a conversion of a legacy WebObjects-based SNOMED-CT web service and admi
 
 It is built using Bootique, Apache Cayenne and LinkRest together with Apache Lucene.
 
+For more information, please see [my blog](http://wardle.org/clinical-informatics/2017/04/29/rsterminology-part2.html). There is a live demonstration system that shows a small part of the functionality [here](https://msdata.org.uk/apps/WebObjects/SnomedBrowser.woa/). 
+
+
 The current version can now:
 
 1. Import data in RF1 (Release format 1) format into a backend database.
 2. Build an optimised concept parent cache.
 3. Build a backend lucene index to support fast free-text search.
 
-The SNOMED-CT international releases are now made in RF2 file format. At the time of writing RF1 file format files are still available and the DM&D are only available in RF1 format. Future versions might need to add support for RF2 file format and RefSets. The legacy application supported RF1 (Release format 1) as it was written in 2009 but RF2 support will almost certainly be required in the future.
+The SNOMED-CT international releases are now made in RF2 file format. At the time of writing RF1 file format files are still available and the DM&D are only available in RF1 format. Future versions might need to add support for RF2 file format and RefSets. The legacy application supported RF1 (Release format 1) as it was written in 2009 but RF2 support will almost certainly be required in the future. There are currently tools available to turn files in RF2 format into RF1 but it would be nice to handle them natively. 
 
 ## Getting started
 
