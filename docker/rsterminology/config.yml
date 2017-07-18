@@ -1,0 +1,17 @@
+jdbc:
+  rsdb:
+    url: jdbc:postgresql://pg:5432/rsterminology
+    username: rsterminology
+    password: rsterminologyPass
+    driverClassName: org.postgresql.Driver
+    initialSize: 10
+
+cayenne:
+  datasource: rsdb
+  createSchema: false
+
+log:
+  level: warn
+  loggers:
+    org.apache.cayenne:
+      level: warn
