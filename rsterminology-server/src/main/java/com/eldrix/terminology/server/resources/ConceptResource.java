@@ -76,6 +76,16 @@ public class ConceptResource {
 				.get();
 	}
 
+	@GET
+	@Path("{conceptId}/allChildren")
+	public DataResponse<Concept> isA(@PathParam("conceptId") long conceptId, @Context UriInfo uriInfo) {
+		return LinkRest.select(Concept.class, config)
+				.toManyParent(Concept.class, conceptId, Concept.RECURSIVE_CHILD_CONCEPTS)
+				.fetchLimit(50)
+				.uri(uriInfo)
+				.get();
+
+	}
 
 	@GET
 	@Path("{conceptId}/crossmaps")
