@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Configuration;
@@ -168,6 +169,20 @@ public class SearchResource {
 		}
 	}
 
+	/**
+	 * Search for a concept by using Read code
+	 */
+	@GET
+	@Path("read/{readCode}")
+	public DataResponse<Long> getByRead(@PathParam("readCode") String readCode, 
+			@Context UriInfo uriInfo) {
+		ICayennePersister cayenne = LinkRestRuntime.service(ICayennePersister.class, config);
+		ObjectContext context = cayenne.newContext();
+		Expression qual = Concept.CTV_ID.startsWith(readCode);
+		List<Concept> concepts = ObjectSelect.query(Concept.class, qual).select(context);
+		List<Long> results = concepts.stream().map(c -> c.getConceptId()).collect(Collectors.toList()); 
+		return responseWithList(results);
+	}
 
 	private List<String> _performSynonymSearch(String search, List<Long> roots, int maxHits, boolean includeFsn,
 			boolean includeInactive, boolean fuzzy, boolean fallbackFuzzy, boolean includeChildren) throws IOException, CorruptIndexException {
@@ -214,17 +229,17 @@ public class SearchResource {
 				.collect(Collectors.toList());
 	}
 
-	private <T> DataResponse<T> responseWithList(List<T> data) {
+	<T> DataResponse<T> responseWithList(List<T> data) {
 		DataResponse<T> response = DataResponse.forObjects(data);
 		response.setEncoder(encoder());
 		return response;
 	}
-	private <T> DataResponse<T> responseWithObject(T object) {
+	<T> DataResponse<T> responseWithObject(T object) {
 		DataResponse<T> response = DataResponse.forObject(object);
 		response.setEncoder(encoder());
 		return response;
 	}
-	private Encoder encoder() {
+	Encoder encoder() {
 		return new DataResponseEncoder("data", new ListEncoder(GenericEncoder.encoder()), "total", GenericEncoder.encoder());
 	}
 }
