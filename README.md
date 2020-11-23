@@ -1,7 +1,9 @@
+This repository has been archived. It has been replaced by a new terminology service/library [hermes](https://github.com/wardle/hermes).
+
+-----
+
 # rsterminology
 An open-source SNOMED-CT implementation.  Copyright (C) Dr. Mark Wardle 2007-2016 and Eldrix Ltd 2013-2016
-
-This project has been replaced by a new terminology server, [go-terminology](https://github.com/wardle/go-terminology) that is more powerful and supports RF2.
 
 ## Licence
  rsterminology is free software: you can redistribute it and/or modify
